@@ -694,38 +694,202 @@ describe('::searchNodes', () => {
 
   it('returns expected nodes when using match and regexMatch simultaneously', async () => {
     expect.hasAssertions();
+
+    const regex = /(view|edit)/im;
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: { createdAt: { $lt: Date.now() } },
+        regexMatch: { 'permissions.User2': 'view|edit' }
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[2].username).filter(
+        (n) => n.createdAt < Date.now() && regex.test(n.permissions?.User2)
+      )
+    );
   });
 
   it('returns expected nodes when matching case-insensitively by tag', async () => {
     expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[0].username,
+        after: null,
+        match: { tags: ['MuSiC'] },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[0].username).filter(
+        (n) => n.type == 'file' && n.tags.includes('music')
+      )
+    );
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[0].username,
+        after: null,
+        match: { tags: ['MuSiC', 'muse'] },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[0].username).filter(
+        (n) => n.type == 'file' && n.tags.includes('music') && n.tags.includes('muse')
+      )
+    );
   });
 
   it('returns expected nodes when matching case-insensitively by name', async () => {
     expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[0].username,
+        after: null,
+        match: { name: 'USER1-FILE1' },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[0].username).filter(
+        (n) => n['name-lowercase'] == 'user1-file1'
+      )
+    );
   });
 
   it('returns expected nodes when matching conditioned on createdAt and/or modifiedAt', async () => {
     expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[0].username,
+        after: null,
+        match: { createdAt: { $lt: Date.now() - 5000, $gt: Date.now() - 10000 } },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[0].username).filter(
+        (n) => n.createdAt < Date.now() - 5000 && n.createdAt > Date.now() - 10000
+      )
+    );
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[0].username,
+        after: null,
+        match: { modifiedAt: { $lt: Date.now() - 500, $gt: Date.now() - 1000 } },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[0].username).filter(
+        (n) =>
+          n.type == 'file' &&
+          n.modifiedAt < Date.now() - 500 &&
+          n.modifiedAt > Date.now() - 1000
+      )
+    );
   });
 
   it('supports special "$or" sub-matcher', async () => {
     expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: {
+          createdAt: { $or: [{ $lt: Date.now() - 10000 }, { $gt: Date.now() - 5000 }] }
+        },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[2].username).filter(
+        (n) => n.createdAt < Date.now() - 10000 || n.createdAt > Date.now() - 5000
+      )
+    );
   });
 
   it('supports multi-line case-insensitive regular expression matching of text via regexMatch', async () => {
     expect.hasAssertions();
+
+    const regex = /^cause look.*$/im;
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[0].username,
+        after: null,
+        match: {},
+        regexMatch: { text: '^cause look.*$' }
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[0].username).filter(
+        (n) => n.type == 'file' && regex.test(n.text)
+      )
+    );
   });
 
   it('rejects when attempting to search for more than MAX_SEARCHABLE_TAGS tags', async () => {
     expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: {
+          tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map(() =>
+            Math.random().toString(32).slice(2, 7)
+          )
+        },
+        regexMatch: {}
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.TooManyItemsRequested('tags') });
   });
 
-  it('rejects when attempting to search disallowed or unknown fields', async () => {
+  it('rejects when attempting to search using disallowed or unknown fields', async () => {
     expect.hasAssertions();
+
+    const matchers: [
+      match: Parameters<typeof Backend.searchNodes>[0]['match'],
+      regexMatch: Parameters<typeof Backend.searchNodes>[0]['regexMatch'],
+      errorMessage: string
+    ][] = [[{}, {}, '']];
+
+    await Promise.all(
+      matchers.map(([match, regexMatch, message]) =>
+        expect(
+          Backend.searchNodes({
+            username: dummyAppData.users[0].username,
+            after: null,
+            match,
+            regexMatch
+          })
+        ).rejects.toMatchObject({ message })
+      )
+    );
   });
 
   it('rejects when match and regexMatch are given strange or bad inputs', async () => {
     expect.hasAssertions();
+
+    const matchers: [
+      match: Parameters<typeof Backend.searchNodes>[0]['match'],
+      regexMatch: Parameters<typeof Backend.searchNodes>[0]['regexMatch'],
+      errorMessage: string
+    ][] = [[{}, {}, '']];
+
+    await Promise.all(
+      matchers.map(([match, regexMatch, message]) =>
+        expect(
+          Backend.searchNodes({
+            username: dummyAppData.users[0].username,
+            after: null,
+            match,
+            regexMatch
+          })
+        ).rejects.toMatchObject({ message })
+      )
+    );
   });
 });
 
