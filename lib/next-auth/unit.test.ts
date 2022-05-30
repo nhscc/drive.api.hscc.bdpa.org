@@ -104,6 +104,7 @@ describe('::isValidAuthHeader', () => {
     ).resolves.toStrictEqual({ valid: true });
   });
 
+  // ? Rejecting banned tokens is handled at a different layer than validation
   it('returns a valid response even if bearer token is banned', async () => {
     expect.hasAssertions();
 

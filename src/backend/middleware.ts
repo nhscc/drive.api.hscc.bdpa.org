@@ -10,6 +10,10 @@ import checkVersion, {
 
 import useCors, { Options as UseCorsOptions } from 'multiverse/next-adhesive/use-cors';
 
+import authRequest, {
+  Options as AuthRequestOptions
+} from 'multiverse/next-adhesive/auth-request';
+
 import limitRequest, {
   Options as LimitRequestOptions
 } from 'multiverse/next-adhesive/limit-request';
@@ -38,12 +42,21 @@ const withMiddleware = middlewareFactory<
   LogRequestOptions &
     CheckVersionOptions &
     UseCorsOptions &
+    AuthRequestOptions &
     LimitRequestOptions &
     CheckMethodOptions &
     HandleErrorOptions &
     ContriveErrorOptions
 >({
-  use: [logRequest, checkVersion, useCors, limitRequest, checkMethod, contriveError],
+  use: [
+    logRequest,
+    checkVersion,
+    useCors,
+    authRequest,
+    limitRequest,
+    checkMethod,
+    contriveError
+  ],
   useOnError: [handleError]
 });
 

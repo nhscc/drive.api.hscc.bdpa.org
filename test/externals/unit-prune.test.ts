@@ -9,7 +9,6 @@ import {
 } from 'testverse/setup';
 
 import type { InternalRequestLogEntry } from 'multiverse/next-log';
-import type { WithId } from 'mongodb';
 
 // ? Ensure the isolated external picks up the memory server override
 jest.mock('multiverse/mongo-schema', () => {
@@ -41,7 +40,7 @@ const countCollection = async (collections: string | string[]) => {
       [collections].flat().map((collection) =>
         getDb({ name: 'root' }).then((db) =>
           db
-            .collection<WithId<InternalRequestLogEntry>>(collection)
+            .collection<InternalRequestLogEntry>(collection)
             .countDocuments()
             .then((count) => ({ [collection]: count }))
         )

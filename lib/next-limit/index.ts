@@ -4,11 +4,12 @@ import { getClientIp } from 'request-ip';
 
 import type { NextApiRequest } from 'next';
 import type { UnixEpochMs } from '@xunnamius/types';
+import type { WithId, WithoutId } from 'mongodb';
 
 /**
  * The shape of an entry in the well-known "limited log" collection.
  */
-export type InternalLimitedLogEntry =
+export type InternalLimitedLogEntry = WithId<
   | {
       until: UnixEpochMs;
       ip: string | null;
@@ -18,7 +19,13 @@ export type InternalLimitedLogEntry =
       until: UnixEpochMs;
       ip?: never;
       header: string | null;
-    };
+    }
+>;
+
+/**
+ * The shape of a new entry in the well-known "limited log" collection.
+ */
+export type NewLimitedLogEntry = WithoutId<InternalLimitedLogEntry>;
 
 /**
  * Returns an object with two keys: `isLimited` and `retryAfter`. If `isLimited`

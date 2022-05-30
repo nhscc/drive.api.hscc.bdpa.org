@@ -7,7 +7,6 @@ import {
   DUMMY_BEARER_TOKEN
 } from 'multiverse/next-auth';
 
-import type { WithId } from 'mongodb';
 import type { DbSchema } from 'multiverse/mongo-schema';
 import type { DummyData } from 'multiverse/mongo-test';
 import type { InternalAuthEntry } from 'multiverse/next-auth';
@@ -45,7 +44,11 @@ export function getCommonSchemaConfig(additionalSchemaConfig?: DbSchema): DbSche
         collections: [
           {
             name: 'auth',
-            indices: [{ spec: 'token.bearer', options: { unique: true } }]
+            indices: [
+              { spec: 'token.bearer', options: { unique: true } },
+              // ? To ensure the index is hit, order matters
+              { spec: ['scheme', 'token'] }
+            ]
           },
           {
             name: 'request-log',
@@ -80,9 +83,9 @@ export function getCommonDummyData(additionalDummyData?: DummyData): DummyData {
  */
 export type DummyRootData = {
   _generatedAt: number;
-  auth: WithId<InternalAuthEntry>[];
-  'request-log': WithId<InternalRequestLogEntry>[];
-  'limited-log': WithId<InternalLimitedLogEntry>[];
+  auth: InternalAuthEntry[];
+  'request-log': InternalRequestLogEntry[];
+  'limited-log': InternalLimitedLogEntry[];
 };
 
 /**

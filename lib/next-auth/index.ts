@@ -2,6 +2,8 @@ import { GuruMeditationError, InvalidSecretError } from 'named-app-errors';
 import { getEnv } from 'multiverse/next-env';
 import { getDb } from 'multiverse/mongo-schema';
 
+import type { WithId, WithoutId } from 'mongodb';
+
 /**
  * This string is guaranteed never to appear in data generated during tests or
  * in production. Hence, this string can be used to represent a `null` or
@@ -35,11 +37,18 @@ export const DEV_BEARER_TOKEN = 'dev-xunn-dev-294a-536h-9751-rydmj';
  * The shape of a basic credentials entry in the well-known "auth" collection.
  * **More complex credential types must extend from this base type.**
  */
-export type InternalAuthEntry = {
+export type InternalAuthEntry = WithId<{
   owner: { name: string };
   scheme: string;
   token: Record<string, unknown>;
-};
+}>;
+
+/**
+ * The shape of a new basic credentials entry in the well-known "auth"
+ * collection. **More complex credential types must extend from this base
+ * type.**
+ */
+export type NewAuthEntry = WithoutId<InternalAuthEntry>;
 
 /**
  * The shape of a bearer token entry in the well-known "auth" collection.
@@ -50,6 +59,11 @@ export interface InternalAuthBearerEntry extends InternalAuthEntry {
     bearer: string;
   };
 }
+
+/**
+ * The shape of a new bearer token entry in the well-known "auth" collection.
+ */
+export type NewAuthBearerEntry = WithoutId<InternalAuthBearerEntry>;
 
 /**
  * An array of supported HTTP Authorization header schemes.
@@ -140,6 +154,7 @@ export async function isValidAuthHeader({
       await getDb({ name: 'root' })
     )
       .collection<InternalAuthEntry>('auth')
+      // ? To hit the index, order matters
       .findOne({ scheme, token })
       .then((r) => !!r)
   };

@@ -2,126 +2,179 @@ import { ObjectId } from 'mongodb';
 import { getCommonDummyData, generatedAt } from 'multiverse/mongo-common';
 
 import type { DummyData } from 'multiverse/mongo-test';
-import type { WithId } from 'mongodb';
 import type {
-  InternalLinkMapEntry,
-  InternalPkgCompatFlagEntry
+  InternalFileNode,
+  InternalMetaNode,
+  InternalUser
 } from 'universe/backend/db';
 
 /**
  * Returns data used to hydrate databases and their collections.
  */
 export function getDummyData(): DummyData {
-  return getCommonDummyData({ 'xunn-at': dummyAppData, 'pkg-compat': dummyCompatData });
+  return getCommonDummyData({ 'hscc-api-drive': dummyAppData });
 }
 
 /**
- * The shape of the application database(s)' test data.
+ * The shape of the application database's test data.
  */
 export type DummyAppData = {
   _generatedAt: number;
-  'link-map': WithId<InternalLinkMapEntry>[];
+  users: InternalUser[];
+  'file-nodes': InternalFileNode[];
+  'meta-nodes': InternalMetaNode[];
 };
 
-/**
- * The shape of the compat database's test data.
- */
-export type DummyCompatData = {
-  _generatedAt: number;
-  flags: WithId<InternalPkgCompatFlagEntry>[];
-};
+const knownFolderId = new ObjectId();
+const knownFileId1 = new ObjectId();
+const knownFileId2 = new ObjectId();
+const knownSymlinkId = new ObjectId();
 
 /**
- * Test data for the application database(s).
+ * Test data for the application database.
  */
 export const dummyAppData: DummyAppData = {
   _generatedAt: generatedAt,
-  // ! In unit-index.test.ts and integration tests order matters, so APPEND ONLY
-  'link-map': [
+  // ! Order matters in unit and integration tests, so APPEND ONLY
+  users: [
+    // ? Dummy users' passwords are the same as their usernames
     {
       _id: new ObjectId(),
-      type: 'uri',
-      shortId: 'aaa',
-      createdAt: generatedAt,
-      realLink: 'https://fake1.fake1',
-      headers: { 'header-1': 'header-1-value' }
+      username: 'User1',
+      salt: '91db41c494502f9ebb6217e4590cccc2',
+      key: '17660270f4c4c1741ab9d43e6fb800bc784f0a3bc2f4cd31f0e26bf821ef2ae788f83af134d8c3824f5e0552f8cd432d6b23963d2ffbceb6a7c91b0f59533206',
+      email: 'user1@fake-email.com'
+    },
+    {
+      _id: new ObjectId(),
+      username: 'User2',
+      salt: 'bfe69b665a1ae64bb7d76c32347adecb',
+      key: 'e71e8bbd23df52bec8af8280ad7901ddd0ecd5cc43371915f7a95cd17ce0a8515127bfcd433435425c4d245f4a18efcb08e4484682aeb53fcfce5b536d79e4e4',
+      email: 'user2@fake-email.com'
+    },
+    {
+      _id: new ObjectId(),
+      username: 'User3',
+      salt: '12ef85b518da764294abf0a2095bb5ec',
+      key: 'e745893e064e26d4349b1639b1596c14bc9b5d050b56bf31ff3ef0dfce6f959aef8a3722a35bc35b2d142169e75ca3e1967cd6ee4818af0813d8396a724fdd22',
+      email: 'user3@fake-email.com'
+    }
+  ],
+  'file-nodes': [
+    {
+      _id: new ObjectId(),
+      type: 'file',
+      owner: 'User1',
+      createdAt: generatedAt - 10000,
+      modifiedAt: generatedAt - 1000,
+      name: 'user1-file1',
+      'name-lowercase': 'user1-file1',
+      size: 28,
+      text: 'Tell me how did we get here?',
+      tags: ['grandson', 'music'],
+      lock: null,
+      permissions: {}
     },
     {
       _id: new ObjectId(),
       type: 'file',
-      shortId: 'bbb',
-      createdAt: generatedAt,
-      name: 'file-b.xml',
-      resourceLink: 'https://fake2.fake2',
-      headers: { 'header-2': 'header-2-value', 'header-3': 'header-3-value' }
+      owner: 'User1',
+      createdAt: generatedAt - 8000,
+      modifiedAt: generatedAt - 800,
+      name: 'User1-File1',
+      'name-lowercase': 'user1-file1',
+      size: 28,
+      text: 'TELL ME HOW DID WE GET HERE?',
+      tags: ['grandson', 'music'],
+      lock: null,
+      permissions: {}
     },
     {
       _id: new ObjectId(),
-      type: 'badge',
-      shortId: 'ccc',
-      createdAt: generatedAt,
-      color: 'yellow',
-      label: 'label-1',
-      labelColor: 'black',
-      message: 'message-1',
-      headers: { 'header-4': 'header-4-value' }
+      type: 'file',
+      owner: 'User2',
+      createdAt: generatedAt - 150000,
+      modifiedAt: generatedAt - 50000,
+      name: 'user2-file2',
+      'name-lowercase': 'user2-file2',
+      size: 39,
+      text: "You'll take only seconds to draw me in.",
+      tags: ['muse', 'darkshines', 'origin', 'symmetry', 'music'],
+      lock: {
+        user: 'User2',
+        client: 'F951YAClN2',
+        createdAt: generatedAt - 50000
+      },
+      permissions: {}
     },
     {
-      _id: new ObjectId(),
-      type: 'github-pkg',
-      shortId: 'ddd',
-      createdAt: generatedAt,
-      defaultCommit: 'commit',
-      owner: 'owner',
-      repo: 'repo',
-      subdir: null,
-      tagPrefix: 'prefix-',
-      headers: { 'header-5': 'header-5-value' }
+      _id: knownFileId1,
+      type: 'file',
+      owner: 'User3',
+      createdAt: generatedAt - 10000,
+      modifiedAt: generatedAt - 1000,
+      name: 'USER3-FILE3',
+      'name-lowercase': 'user3-file3',
+      size: 28,
+      text: 'Tell me how did we get here?',
+      tags: ['grandson', 'music'],
+      lock: null,
+      permissions: {
+        User1: 'view',
+        User2: 'edit'
+      }
     },
     {
-      _id: new ObjectId(),
-      type: 'github-pkg',
-      shortId: 'eee',
-      createdAt: generatedAt,
-      defaultCommit: 'commit',
-      owner: 'ownr',
-      repo: 'rpo',
-      subdir: 'subdir/does/not/exist',
-      tagPrefix: 'pre-',
-      headers: { 'header-6': 'header-6-value' }
-    },
-    {
-      _id: new ObjectId(),
-      type: 'github-pkg',
-      shortId: 'fff',
-      createdAt: generatedAt,
-      defaultCommit: 'commit-2',
-      owner: 'owner-2',
-      repo: 'repo-2',
-      subdir: 'packages/pkg-1',
-      tagPrefix: 'fix-',
-      headers: { 'header-7': 'header-7-value', 'header-8': 'header-8-value' }
-    },
-    {
-      _id: new ObjectId(),
-      type: 'badge',
-      shortId: 'zzz',
-      createdAt: generatedAt + 12345,
-      color: 'green',
-      label: 'label-2',
-      labelColor: 'white',
-      message: 'message-2'
+      _id: knownFileId2,
+      type: 'file',
+      owner: 'User3',
+      createdAt: generatedAt - 20000,
+      modifiedAt: generatedAt - 5432,
+      name: 'user-3-file-4',
+      'name-lowercase': 'user-3-file-4',
+      size: 39,
+      text: 'Did you see His Dark Materials on BBC?!',
+      tags: ['his', 'dark', 'materials', 'lorne', 'balfe'],
+      lock: null,
+      permissions: {
+        public: 'view'
+      }
     }
-  ]
-};
-
-/**
- * Test data for the compat database.
- */
-export const dummyCompatData: DummyCompatData = {
-  _generatedAt: generatedAt,
-  flags: [
-    { _id: new ObjectId(), name: 'ntarh-next', value: '5.7.9' },
-    { _id: new ObjectId(), name: 'fake-flag', value: 5 }
+  ],
+  'meta-nodes': [
+    {
+      _id: new ObjectId(),
+      type: 'directory',
+      owner: 'User3',
+      createdAt: generatedAt - 200000,
+      name: 'My Music',
+      'name-lowercase': 'my music',
+      contents: [knownFolderId, knownFileId1, knownSymlinkId],
+      permissions: {
+        User1: 'view'
+      }
+    },
+    {
+      _id: knownFolderId,
+      type: 'directory',
+      owner: 'User3',
+      createdAt: generatedAt - 15000,
+      name: 'tv show music',
+      'name-lowercase': 'tv show music',
+      contents: [knownFileId2],
+      permissions: {
+        User2: 'view'
+      }
+    },
+    {
+      _id: knownSymlinkId,
+      type: 'symlink',
+      owner: 'User3',
+      createdAt: generatedAt - 4859,
+      name: 'HisDarkMaterials-Symlink',
+      'name-lowercase': 'hisdarkmaterials-symlink',
+      contents: [knownFileId2],
+      permissions: {}
+    }
   ]
 };

@@ -12,7 +12,7 @@ import {
 
 import type { InternalLimitedLogEntry } from 'multiverse/next-limit';
 import type { InternalRequestLogEntry } from 'multiverse/next-log';
-import { ObjectId, WithId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
 // ? Ensure the isolated external picks up the memory server override
 jest.mock('multiverse/mongo-schema', () => {
@@ -42,13 +42,13 @@ setupMemoryServerOverride();
 useMockDateNow();
 
 const getRequestLogCollection = async () => {
-  return (await getDb({ name: 'root' })).collection<WithId<InternalRequestLogEntry>>(
+  return (await getDb({ name: 'root' })).collection<InternalRequestLogEntry>(
     'request-log'
   );
 };
 
 const getRateLimitsCollection = async () => {
-  return (await getDb({ name: 'root' })).collection<WithId<InternalLimitedLogEntry>>(
+  return (await getDb({ name: 'root' })).collection<InternalLimitedLogEntry>(
     'limited-log'
   );
 };

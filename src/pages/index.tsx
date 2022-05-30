@@ -23,7 +23,7 @@ export default function Index({
     <React.Fragment>
       <p>
         Serverless node runtime: <strong>{nodeVersion}</strong> <br />
-        Xunn.at runtime: <strong>{`v${pkgVersion}`}</strong>
+        BDPADrive runtime: <strong>{`v${pkgVersion}`}</strong>
         <br />
       </p>
       <p>
