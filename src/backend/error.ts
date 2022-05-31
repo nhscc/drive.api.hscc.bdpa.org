@@ -41,5 +41,13 @@ export const ErrorMessage = {
           }s (inclusive)`
         : `${min} ${syntax == 'bytes' ? 'byte' : 'character'} string`
     }${nullable ? ' or null' : ''}`,
-  UnknownField: (prop: string) => `encountered unknown or illegal field \`${prop}\``
+  UnknownField: (prop: string) => `encountered unknown or illegal field \`${prop}\``,
+  InvalidSpecifier: (prop: string, sub = false) =>
+    `\`${prop}\`: invalid ${sub ? 'sub-' : ''}specifier`,
+  InvalidSpecifierValue: (prop: string, sub = false) =>
+    `\`${prop}\`: invalid ${sub ? 'sub-' : ''}specifier value`,
+  InvalidRegexString: (prop: string) => `\`${prop}\`: invalid regex value`,
+  InvalidMatcher: (prop: string) => `invalid \`${prop}\`: must be an object`,
+  InvalidSpecifierCombination: () => `invalid combination of specifiers`,
+  InvalidObjectId: (id: string) => `invalid ${id}`
 };

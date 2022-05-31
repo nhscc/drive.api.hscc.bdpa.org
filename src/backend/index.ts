@@ -5,8 +5,6 @@ import {
   PublicUser,
   NewUser,
   PatchUser,
-  UserId,
-  NodeId,
   Username,
   NodePermission
 } from 'universe/backend/db';
@@ -14,7 +12,7 @@ import {
 export async function getAllUsers({
   after
 }: {
-  after: UserId | null;
+  after: string | null;
 }): Promise<PublicUser[]> {
   void after;
   return [];
@@ -62,7 +60,7 @@ export async function getNodes({
   node_ids
 }: {
   username: Username;
-  node_ids: NodeId[];
+  node_ids: string[];
 }): Promise<PublicNode[]> {
   void username, node_ids;
   return [];
@@ -77,7 +75,7 @@ export async function searchNodes({
   regexMatch
 }: {
   username: Username;
-  after: NodeId | null;
+  after: string | null;
   match:
     | {
         [specifier: string]:
@@ -114,7 +112,7 @@ export async function updateNode({
   data
 }: {
   username: Username;
-  node_id: NodeId;
+  node_id: string;
   data: PatchNode;
 }): Promise<void> {
   void username, node_id, data;
@@ -126,7 +124,7 @@ export async function deleteNodes({
   node_ids
 }: {
   username: Username;
-  node_ids: NodeId[];
+  node_ids: string[];
 }): Promise<void> {
   void username, node_ids;
   return;

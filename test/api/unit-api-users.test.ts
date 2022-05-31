@@ -260,7 +260,7 @@ describe('api/v1/users', () => {
     it('accepts a user_id; errors on invalid user_id', async () => {
       expect.hasAssertions();
 
-      const factory = itemFactory([
+      const factory = itemFactory<[params: { user_id: string }, status: number]>([
         [{ user_id: new ObjectId().toString() }, 200],
         [{ user_id: 'invalid-id' }, 400]
       ]);

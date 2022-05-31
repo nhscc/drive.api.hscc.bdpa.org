@@ -58,10 +58,10 @@ describe('::getAllUsers', () => {
         expect([
           await Backend.getAllUsers({ after: null }),
           await Backend.getAllUsers({
-            after: dummyAppData.users.at(-1)?._id || toss(new TrialError())
+            after: dummyAppData.users.at(-1)?._id.toString() || toss(new TrialError())
           }),
           await Backend.getAllUsers({
-            after: dummyAppData.users.at(-2)?._id || toss(new TrialError())
+            after: dummyAppData.users.at(-2)?._id.toString() || toss(new TrialError())
           })
         ]).toStrictEqual(
           dummyAppData.users
@@ -72,6 +72,10 @@ describe('::getAllUsers', () => {
       },
       { RESULTS_PER_PAGE: '1' }
     );
+
+    await expect(Backend.getAllUsers({ after: 'fake-oid' })).rejects.toMatchObject({
+      message: ErrorMessage.InvalidObjectId('after')
+    });
   });
 });
 
@@ -395,7 +399,7 @@ describe('::deleteUser', () => {
     const usersDb = (await getDb({ name: 'hscc-api-drive' })).collection('users');
 
     await expect(
-      usersDb.countDocuments({ _id: dummyAppData.users[0]._id })
+      usersDb.countDocuments({ _id: dummyAppData.users[0]._id.toString() })
     ).resolves.toBe(1);
 
     await expect(
@@ -403,7 +407,7 @@ describe('::deleteUser', () => {
     ).resolves.toBeUndefined();
 
     await expect(
-      usersDb.countDocuments({ _id: dummyAppData.users[0]._id })
+      usersDb.countDocuments({ _id: dummyAppData.users[0]._id.toString() })
     ).resolves.toBe(0);
   });
 
@@ -486,10 +490,28 @@ describe('::getNodes', () => {
     await Promise.all(
       testNodes.map(([username, nodes]) =>
         expect(
-          Backend.getNodes({ username, node_ids: nodes.map((n) => n._id) })
+          Backend.getNodes({ username, node_ids: nodes.map((n) => n._id.toString()) })
         ).resolves.toIncludeSameMembers(nodes.map(toPublicNode))
       )
     );
+  });
+
+  it('rejects if one or more node_ids are not a valid ObjectId', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.getNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: ['bad']
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+
+    await expect(
+      Backend.getNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: [dummyAppData['file-nodes'][0]._id.toString(), 'bad']
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
   });
 
   it('rejects if one or more node_ids not found', async () => {
@@ -498,14 +520,17 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [new ObjectId()]
+        node_ids: [new ObjectId().toString()]
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
 
     await expect(
       Backend.getNodes({
         username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id, new ObjectId()]
+        node_ids: [
+          dummyAppData['file-nodes'][0]._id.toString(),
+          new ObjectId().toString()
+        ]
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
   });
@@ -516,7 +541,7 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: dummyAppData['file-nodes'][2].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id]
+        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
   });
@@ -533,7 +558,7 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id]
+        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
   });
@@ -546,7 +571,7 @@ describe('::getNodes', () => {
         await expect(
           Backend.getNodes({
             username: 'User1',
-            node_ids: [new ObjectId(), new ObjectId()]
+            node_ids: [new ObjectId().toString(), new ObjectId().toString()]
           })
         ).rejects.toMatchObject({
           message: ErrorMessage.TooManyItemsRequested('node_ids')
@@ -630,7 +655,7 @@ describe('::searchNodes', () => {
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: new ObjectId(nodes[0].node_id),
+            after: nodes[0].node_id,
             match: {},
             regexMatch: {}
           })
@@ -639,7 +664,7 @@ describe('::searchNodes', () => {
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: new ObjectId(nodes[1].node_id),
+            after: nodes[1].node_id,
             match: {},
             regexMatch: {}
           })
@@ -648,7 +673,7 @@ describe('::searchNodes', () => {
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: new ObjectId(nodes[2].node_id),
+            after: nodes[2].node_id,
             match: {},
             regexMatch: {}
           })
@@ -657,7 +682,7 @@ describe('::searchNodes', () => {
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: new ObjectId(nodes[3].node_id),
+            after: nodes[3].node_id,
             match: {},
             regexMatch: {}
           })
@@ -665,6 +690,17 @@ describe('::searchNodes', () => {
       },
       { RESULTS_PER_PAGE: '1' }
     );
+
+    await expect(
+      Backend.searchNodes({
+        username: 'fake-user',
+        after: 'fake-oid',
+        match: {},
+        regexMatch: {}
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidObjectId('after')
+    });
   });
 
   it('does not crash when database is empty', async () => {
@@ -791,6 +827,62 @@ describe('::searchNodes', () => {
     );
   });
 
+  it('supports special "$gt", "$gte", "$lt", "$lte" sub-matcher', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: { createdAt: { $lt: Date.now() - 10000 } },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[2].username).filter(
+        (n) => n.createdAt < Date.now() - 10000
+      )
+    );
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: { createdAt: { $lte: Date.now() - 10000 } },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[2].username).filter(
+        (n) => n.createdAt <= Date.now() - 10000
+      )
+    );
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: { createdAt: { $gt: Date.now() - 10000 } },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[2].username).filter(
+        (n) => n.createdAt > Date.now() - 10000
+      )
+    );
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: { createdAt: { $gte: Date.now() - 10000 } },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[2].username).filter(
+        (n) => n.createdAt >= Date.now() - 10000
+      )
+    );
+  });
+
   it('supports special "$or" sub-matcher', async () => {
     expect.hasAssertions();
 
@@ -853,7 +945,24 @@ describe('::searchNodes', () => {
       match: Parameters<typeof Backend.searchNodes>[0]['match'],
       regexMatch: Parameters<typeof Backend.searchNodes>[0]['regexMatch'],
       errorMessage: string
-    ][] = [[{}, {}, '']];
+    ][] = [
+      [
+        { node_id: new ObjectId().toString() },
+        {},
+        ErrorMessage.InvalidSpecifier('node_id')
+      ],
+      [
+        {},
+        { node_id: new ObjectId().toString() },
+        ErrorMessage.InvalidSpecifier('node_id')
+      ],
+      [{ owner: 'User1' }, {}, ErrorMessage.InvalidSpecifier('owner')],
+      [{}, { owner: 'User1' }, ErrorMessage.InvalidSpecifier('owner')],
+      [{ lock: {} }, {}, ErrorMessage.InvalidSpecifier('lock')],
+      [{}, { lock: '' }, ErrorMessage.InvalidSpecifier('lock')],
+      [{ contents: '' }, {}, ErrorMessage.InvalidSpecifier('contents')],
+      [{}, { contents: '' }, ErrorMessage.InvalidSpecifier('contents')]
+    ];
 
     await Promise.all(
       matchers.map(([match, regexMatch, message]) =>
@@ -873,22 +982,163 @@ describe('::searchNodes', () => {
     expect.hasAssertions();
 
     const matchers: [
-      match: Parameters<typeof Backend.searchNodes>[0]['match'],
-      regexMatch: Parameters<typeof Backend.searchNodes>[0]['regexMatch'],
-      errorMessage: string
-    ][] = [[{}, {}, '']];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      matcher: any,
+      errors: [matchError: string, regexMatchError: string]
+    ][] = [
+      [
+        'wtf',
+        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
+      ],
+      [
+        null,
+        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
+      ],
+      [
+        undefined,
+        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
+      ],
+      [
+        { type: 'dne' },
+        [
+          ErrorMessage.InvalidSpecifierValue('type'),
+          ErrorMessage.InvalidSpecifierValue('type')
+        ]
+      ],
+      [
+        { type: 'directory', text: '' },
+        [
+          ErrorMessage.InvalidSpecifierCombination(),
+          ErrorMessage.InvalidSpecifierCombination()
+        ]
+      ],
+      [
+        { bad: 'super-bad' },
+        [ErrorMessage.InvalidSpecifier('bad'), ErrorMessage.InvalidSpecifier('bad')]
+      ],
+      [
+        { createdAt: () => 'wtf' },
+        [
+          ErrorMessage.InvalidSpecifierValue('createdAt'),
+          ErrorMessage.InvalidRegexString('createdAt')
+        ]
+      ],
+      [
+        { size: [] },
+        [
+          ErrorMessage.InvalidSpecifierValue('size'),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $in: [5] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: { bad: 'or' } } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ bad: 5 }, { $lte: 5 }] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 5 }, { $lte: 'bad' }] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 6 }, 'b'] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 6 }, { $gt: 6, $lte: 5 }] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 7 }, undefined] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [{}] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: {} },
+        [
+          ErrorMessage.InvalidSpecifierValue('size'),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 5 }, { $gt: 5 }, { $gt: 5 }] } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ],
+      [
+        { size: { $gte: 'bad' } },
+        [
+          ErrorMessage.InvalidSpecifierValue('size', true),
+          ErrorMessage.InvalidRegexString('size')
+        ]
+      ]
+    ];
 
     await Promise.all(
-      matchers.map(([match, regexMatch, message]) =>
-        expect(
-          Backend.searchNodes({
-            username: dummyAppData.users[0].username,
-            after: null,
-            match,
-            regexMatch
-          })
-        ).rejects.toMatchObject({ message })
-      )
+      matchers.flatMap(([matcher, [matchMessage, regexMatchMessage]]) => {
+        return [
+          // eslint-disable-next-line jest/valid-expect
+          expect(
+            Backend.searchNodes({
+              username: dummyAppData.users[0].username,
+              after: null,
+              match: matcher,
+              regexMatch: {}
+            })
+          ).rejects.toMatchObject({ message: matchMessage }),
+          // eslint-disable-next-line jest/valid-expect
+          expect(
+            Backend.searchNodes({
+              username: dummyAppData.users[0].username,
+              after: null,
+              match: {},
+              regexMatch: matcher
+            })
+          ).rejects.toMatchObject({ message: regexMatchMessage })
+        ];
+      })
     );
   });
 });
@@ -1257,7 +1507,9 @@ describe('::createNode', () => {
         {
           type: 'directory',
           name: 'x',
-          contents: Array.from({ length: maxNodeContents + 1 }).map(() => new ObjectId())
+          contents: Array.from({ length: maxNodeContents + 1 }).map(() =>
+            new ObjectId().toString()
+          )
         } as unknown as NewNode,
         ErrorMessage.TooManyItemsRequested('contents')
       ],
@@ -1403,7 +1655,7 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: dummyAppData['file-nodes'][0].owner,
-        node_id: dummyAppData['file-nodes'][0]._id,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
         data: { owner: 'new-user' }
       })
     ).resolves.toBeUndefined();
@@ -1411,7 +1663,7 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: dummyAppData['meta-nodes'][0].owner,
-        node_id: dummyAppData['meta-nodes'][0]._id,
+        node_id: dummyAppData['meta-nodes'][0]._id.toString(),
         data: { owner: 'new-user' }
       })
     ).resolves.toBeUndefined();
@@ -1429,13 +1681,25 @@ describe('::updateNode', () => {
     ).resolves.toBe(1);
   });
 
+  it('rejects if the node_id is not a valid ObjectId', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_id: 'bad',
+        data: { owner: 'new-user' }
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+  });
+
   it('rejects if the node_id is not found', async () => {
     expect.hasAssertions();
 
     await expect(
       Backend.updateNode({
         username: dummyAppData['file-nodes'][0].owner,
-        node_id: new ObjectId(),
+        node_id: new ObjectId().toString(),
         data: { owner: 'new-user' }
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound('node_id') });
@@ -1447,7 +1711,7 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: 'fake-user',
-        node_id: dummyAppData['file-nodes'][0]._id,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
         data: { owner: 'new-user' }
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ForbiddenAction() });
@@ -1642,7 +1906,9 @@ describe('::updateNode', () => {
       ],
       [
         {
-          contents: Array.from({ length: maxNodeContents + 1 }).map(() => new ObjectId())
+          contents: Array.from({ length: maxNodeContents + 1 }).map(() =>
+            new ObjectId().toString()
+          )
         } as unknown as PatchNode,
         ErrorMessage.TooManyItemsRequested('contents')
       ],
@@ -1677,7 +1943,7 @@ describe('::updateNode', () => {
         expect(
           Backend.updateNode({
             username: dummyAppData['file-nodes'][0].owner,
-            node_id: dummyAppData['file-nodes'][0]._id,
+            node_id: dummyAppData['file-nodes'][0]._id.toString(),
             data
           })
         ).rejects.toMatchObject({ message })
@@ -1687,7 +1953,7 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: dummyAppData['meta-nodes'][0].owner,
-        node_id: dummyAppData['meta-nodes'][0]._id,
+        node_id: dummyAppData['meta-nodes'][0]._id.toString(),
         data: {
           owner: 'User1',
           name: 'user1-file1',
@@ -1713,40 +1979,67 @@ describe('::deleteNodes', () => {
     await expect(
       fileNodeDb.countDocuments({
         _id: {
-          $in: [dummyAppData['file-nodes'][0]._id, dummyAppData['file-nodes'][1]._id]
+          $in: [
+            dummyAppData['file-nodes'][0]._id.toString(),
+            dummyAppData['file-nodes'][1]._id.toString()
+          ]
         }
       })
     ).resolves.toBe(2);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id.toString() })
     ).resolves.toBe(1);
 
     await expect(
       Backend.deleteNodes({
         username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id, dummyAppData['file-nodes'][1]._id]
+        node_ids: [
+          dummyAppData['file-nodes'][0]._id.toString(),
+          dummyAppData['file-nodes'][1]._id.toString()
+        ]
       })
     ).resolves.toBeUndefined();
 
     await expect(
       Backend.deleteNodes({
         username: dummyAppData['meta-nodes'][0].owner,
-        node_ids: [dummyAppData['meta-nodes'][0]._id]
+        node_ids: [dummyAppData['meta-nodes'][0]._id.toString()]
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
         _id: {
-          $in: [dummyAppData['file-nodes'][0]._id, dummyAppData['file-nodes'][1]._id]
+          $in: [
+            dummyAppData['file-nodes'][0]._id.toString(),
+            dummyAppData['file-nodes'][1]._id.toString()
+          ]
         }
       })
     ).resolves.toBe(0);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id.toString() })
     ).resolves.toBe(0);
+  });
+
+  it('rejects if one or more of the node_ids is not a valid ObjectId', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.deleteNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: ['bad']
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+
+    await expect(
+      Backend.deleteNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: [dummyAppData['file-nodes'][0]._id.toString(), 'bad']
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
   });
 
   it('does not reject if one or more of the node_ids is not found', async () => {
@@ -1755,18 +2048,28 @@ describe('::deleteNodes', () => {
     const fileNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection('file-nodes');
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id.toString() })
     ).resolves.toBe(1);
 
     await expect(
       Backend.deleteNodes({
         username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id, new ObjectId()]
+        node_ids: [new ObjectId().toString()]
       })
     ).resolves.toBeUndefined();
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id })
+      Backend.deleteNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: [
+          dummyAppData['file-nodes'][0]._id.toString(),
+          new ObjectId().toString()
+        ]
+      })
+    ).resolves.toBeUndefined();
+
+    await expect(
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id.toString() })
     ).resolves.toBe(0);
   });
 
@@ -1778,17 +2081,20 @@ describe('::deleteNodes', () => {
     const metaNodeDb = db.collection('meta-nodes');
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]._id })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]._id.toString() })
     ).resolves.toBe(1);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id.toString() })
     ).resolves.toBe(1);
 
     await expect(
       Backend.deleteNodes({
         username: dummyAppData['file-nodes'][2].owner,
-        node_ids: [dummyAppData['file-nodes'][2]._id, dummyAppData['meta-nodes'][0]._id]
+        node_ids: [
+          dummyAppData['file-nodes'][2]._id.toString(),
+          dummyAppData['meta-nodes'][0]._id.toString()
+        ]
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ForbiddenAction() });
   });
@@ -1796,10 +2102,10 @@ describe('::deleteNodes', () => {
   it('deleted node_ids are removed from all MetaNode contents arrays', async () => {
     expect.hasAssertions();
 
-    const node_id = dummyAppData['file-nodes'][4]._id;
+    const node_id = dummyAppData['file-nodes'][4]._id.toString();
 
     const numInContentArrays = dummyAppData['meta-nodes'].filter(({ contents }) =>
-      contents.includes(node_id)
+      contents.includes(new ObjectId(node_id))
     ).length;
 
     expect(numInContentArrays).toBeGreaterThan(0);
