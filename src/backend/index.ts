@@ -573,19 +573,20 @@ export async function getNodes({
   }
 
   const nodeIds = normalizeNodeIds(node_ids);
+  const $match = {
+    _id: { $in: nodeIds },
+    $or: [{ owner: username }, { [`permissions.${username}`]: { $exists: true } }]
+  };
 
   const nodes = await db
     .collection('file-nodes')
     .aggregate<PublicNode>([
-      { $match: { _id: { $in: nodeIds }, owner: username } },
+      { $match },
       { $project: { ...publicFileNodeProjection, _id: true } },
       {
         $unionWith: {
           coll: 'meta-nodes',
-          pipeline: [
-            { $match: { _id: { $in: nodeIds }, owner: username } },
-            { $project: { ...publicMetaNodeProjection, _id: true } }
-          ]
+          pipeline: [{ $match }, { $project: { ...publicMetaNodeProjection, _id: true } }]
         }
       },
       { $sort: { _id: -1 } },
@@ -719,18 +720,20 @@ export async function updateNode({
     throw new ItemNotFoundError(username, 'user');
   }
 
+  const $match = {
+    _id: nodeId,
+    $or: [{ owner: username }, { [`permissions.${username}`]: 'edit' }]
+  };
+
   const node = await db
     .collection('file-nodes')
     .aggregate<PublicNode>([
-      { $match: { _id: nodeId, owner: username } },
+      { $match },
       { $project: { type: true } },
       {
         $unionWith: {
           coll: 'meta-nodes',
-          pipeline: [
-            { $match: { _id: nodeId, owner: username } },
-            { $project: { type: true } }
-          ]
+          pipeline: [{ $match }, { $project: { type: true } }]
         }
       }
     ])
