@@ -20,6 +20,7 @@ export function getSchemaConfig(): DbSchema {
             // ? https://stackoverflow.com/a/40914924/1367414
             createOptions: { collation: { locale: 'en', strength: 2 } },
             indices: [
+              { spec: 'key' },
               {
                 spec: 'username',
                 options: { unique: true }
@@ -46,6 +47,7 @@ export function getSchemaConfig(): DbSchema {
             indices: [
               { spec: 'owner' },
               { spec: 'name-lowercase' },
+              { spec: 'contents' },
               // ? Wildcard indices to index permissions object keys
               // ? https://www.mongodb.com/docs/manual/core/index-wildcard
               { spec: 'permissions.$**' }
@@ -223,7 +225,6 @@ export function toPublicNode(internalNode: InternalNode): PublicNode {
     owner: internalNode.owner,
     createdAt: internalNode.createdAt,
     name: internalNode.name,
-    'name-lowercase': internalNode['name-lowercase'],
     permissions: internalNode.permissions
   } as {
     [key in keyof PublicFileNode & keyof PublicMetaNode]:
@@ -261,3 +262,37 @@ export function toPublicUser(internalUser: InternalUser): PublicUser {
     salt: internalUser.salt
   };
 }
+
+export const publicUserProjection = {
+  _id: false,
+  user_id: { $toString: '$_id' },
+  username: true,
+  salt: true,
+  email: true
+} as const;
+
+export const publicFileNodeProjection = {
+  _id: false,
+  node_id: { $toString: '$_id' },
+  type: true,
+  owner: true,
+  createdAt: true,
+  modifiedAt: true,
+  name: true,
+  size: true,
+  text: true,
+  tags: true,
+  lock: true,
+  permissions: true
+} as const;
+
+export const publicMetaNodeProjection = {
+  _id: false,
+  node_id: { $toString: '$_id' },
+  type: true,
+  owner: true,
+  createdAt: true,
+  name: true,
+  contents: { $map: { input: '$contents', as: 'id', in: { $toString: '$$id' } } },
+  permissions: true
+} as const;

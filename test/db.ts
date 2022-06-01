@@ -83,7 +83,7 @@ export const dummyAppData: DummyAppData = {
       modifiedAt: generatedAt - 800,
       name: 'User1-File1',
       'name-lowercase': 'user1-file1',
-      size: 28,
+      size: 109,
       text: "NOW I GOT A FRONT ROW SEAT WATCH THE SYSTEM FALL!\n\nCause look who's in control!\n\nTELL ME HOW DID WE GET HERE?",
       tags: ['grandson', 'music'],
       lock: null,

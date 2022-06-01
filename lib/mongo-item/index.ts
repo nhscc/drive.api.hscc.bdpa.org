@@ -31,8 +31,8 @@ export type ItemExistsOptions = {
    */
   caseInsensitive?: boolean;
   /**
-   * When looking for an item matching `{ _id: id }`, where the property is
-   * `"_id"` is a string, `id` will be optimistically wrapped in a `new
+   * When looking for an item matching `{ _id: id }`, where the descriptor key
+   * is the string `"_id"`, `id` will be optimistically wrapped in a `new
    * ObjectId(id)` call. Set this to `false` to prevent this.
    *
    * @default true

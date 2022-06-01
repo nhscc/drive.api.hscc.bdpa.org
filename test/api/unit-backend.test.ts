@@ -8,8 +8,6 @@ import { withMockedEnv } from 'testverse/setup';
 import { toPublicNode, toPublicUser } from 'universe/backend/db';
 import { getEnv } from 'universe/backend/env';
 import { ErrorMessage } from 'universe/backend/error';
-import { toss } from 'toss-expression';
-import { TrialError } from 'named-app-errors';
 
 import * as Backend from 'universe/backend';
 
@@ -33,6 +31,24 @@ import type {
 setupMemoryServerOverride();
 useMockDateNow();
 
+// ? A primitive attempt to replicate MongoDB's sort by { _id: -1 }
+const sortNodes = (nodes: InternalNode[]) => {
+  return nodes
+    .slice()
+    .sort(
+      (a, b) =>
+        parseInt(b._id.toString().slice(-5), 16) -
+        parseInt(a._id.toString().slice(-5), 16)
+    );
+};
+
+const sortedNodes = sortNodes([
+  ...dummyAppData['file-nodes'],
+  ...dummyAppData['meta-nodes']
+]);
+
+const sortedUsers = dummyAppData.users.slice().reverse();
+
 describe('::getAllUsers', () => {
   it('does not crash when database is empty', async () => {
     expect.hasAssertions();
@@ -45,8 +61,8 @@ describe('::getAllUsers', () => {
   it('returns all users', async () => {
     expect.hasAssertions();
 
-    await expect(Backend.getAllUsers({ after: null })).resolves.toIncludeSameMembers(
-      dummyAppData.users.map(toPublicUser)
+    await expect(Backend.getAllUsers({ after: null })).resolves.toStrictEqual(
+      sortedUsers.map(toPublicUser)
     );
   });
 
@@ -58,23 +74,33 @@ describe('::getAllUsers', () => {
         expect([
           await Backend.getAllUsers({ after: null }),
           await Backend.getAllUsers({
-            after: dummyAppData.users.at(-1)?._id.toString() || toss(new TrialError())
+            after: sortedUsers[0]._id.toString()
           }),
           await Backend.getAllUsers({
-            after: dummyAppData.users.at(-2)?._id.toString() || toss(new TrialError())
+            after: sortedUsers[1]._id.toString()
           })
-        ]).toStrictEqual(
-          dummyAppData.users
-            .slice(-3)
-            .reverse()
-            .map((user) => [user])
-        );
+        ]).toStrictEqual(sortedUsers.slice(-3).map((user) => [toPublicUser(user)]));
       },
-      { RESULTS_PER_PAGE: '1' }
+      { RESULTS_PER_PAGE: '1' },
+      { replace: false }
     );
+  });
+
+  it('rejects if after user_id is not a valid ObjectId', async () => {
+    expect.hasAssertions();
 
     await expect(Backend.getAllUsers({ after: 'fake-oid' })).rejects.toMatchObject({
-      message: ErrorMessage.InvalidObjectId('after')
+      message: ErrorMessage.InvalidObjectId('fake-oid')
+    });
+  });
+
+  it('rejects if after user_id not found', async () => {
+    expect.hasAssertions();
+
+    const after = new ObjectId().toString();
+
+    await expect(Backend.getAllUsers({ after })).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound(after, 'user_id')
     });
   });
 });
@@ -90,9 +116,10 @@ describe('::getUser', () => {
 
   it('rejects if username not found', async () => {
     expect.hasAssertions();
+    const username = 'does-not-exist';
 
-    await expect(Backend.getUser({ username: 'does-not-exist' })).rejects.toMatchObject({
-      message: ErrorMessage.ItemNotFound('username')
+    await expect(Backend.getUser({ username })).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound(username, 'user')
     });
   });
 });
@@ -139,77 +166,61 @@ describe('::createUser', () => {
     const newUsers: [NewUser, string][] = [
       [undefined as unknown as NewUser, ErrorMessage.InvalidJSON()],
       ['string data' as NewUser, ErrorMessage.InvalidJSON()],
-      [{ data: 1 } as NewUser, ErrorMessage.UnknownField('data')],
-      [{ name: 'username' } as NewUser, ErrorMessage.UnknownField('name')],
-      [{} as NewUser, ErrorMessage.InvalidStringLength('username', minULen, maxULen)],
       [
-        { username: 'must be alphanumeric' },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
-      ],
-      [
-        { username: '#&*@^(#@(^$&*#' },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
-      ],
-      [
-        { username: null } as unknown as NewUser,
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
-      ],
-      [
-        { username: 'x'.repeat(minULen - 1) },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
-      ],
-      [
-        { username: 'x'.repeat(maxULen + 1) },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
-      ],
-      [
-        { username: 'x'.repeat(maxULen - 1) },
+        {} as NewUser,
         ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
       ],
       [
-        { username: 'x'.repeat(maxULen - 1), email: null } as unknown as NewUser,
+        { email: null } as unknown as NewUser,
         ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
       ],
       [
-        { username: 'x'.repeat(maxULen - 1), email: 'x'.repeat(minELen - 1) },
+        { email: 'x'.repeat(minELen - 1) },
         ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
       ],
       [
-        { username: 'x'.repeat(maxULen - 1), email: 'x'.repeat(maxELen + 1) },
+        { email: 'x'.repeat(maxELen + 1) },
         ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
       ],
       [
-        { username: 'x'.repeat(maxULen - 1), email: 'x'.repeat(maxELen - 1) },
+        { email: 'x'.repeat(maxELen) },
+        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+      ],
+      [
+        { email: 'valid@email.address' },
         ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
       ],
       [
         {
-          username: 'x'.repeat(maxULen - 1),
-          email: 'x'.repeat(maxELen - 1),
+          email: 'valid@email.address',
           salt: '0'.repeat(saltLen - 1)
         },
         ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
       ],
       [
         {
-          username: 'x'.repeat(maxULen - 1),
-          email: 'x'.repeat(maxELen - 1),
+          email: 'valid@email.address',
           salt: null
         } as unknown as NewUser,
         ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
       ],
       [
         {
-          username: 'x'.repeat(maxULen - 1),
-          email: 'x'.repeat(maxELen - 1),
+          email: 'valid@email.address',
+          salt: 'x'.repeat(saltLen)
+        },
+        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+      ],
+      [
+        {
+          email: 'valid@email.address',
           salt: '0'.repeat(saltLen)
         },
         ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
       ],
       [
         {
-          username: 'x'.repeat(maxULen - 1),
-          email: 'x'.repeat(maxELen - 1),
+          email: 'valid@email.address',
           salt: '0'.repeat(saltLen),
           key: '0'.repeat(keyLen - 1)
         },
@@ -217,8 +228,15 @@ describe('::createUser', () => {
       ],
       [
         {
-          username: 'x'.repeat(maxULen - 1),
-          email: 'x'.repeat(maxELen - 1),
+          email: 'valid@email.address',
+          salt: '0'.repeat(saltLen),
+          key: 'x'.repeat(keyLen)
+        },
+        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+      ],
+      [
+        {
+          email: 'valid@email.address',
           salt: '0'.repeat(saltLen),
           key: null
         } as unknown as NewUser,
@@ -226,8 +244,53 @@ describe('::createUser', () => {
       ],
       [
         {
+          username: 'must be alphanumeric',
+          email: 'valid@email.address',
+          salt: '0'.repeat(saltLen),
+          key: '0'.repeat(keyLen)
+        },
+        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+      ],
+      [
+        {
+          username: '#&*@^(#@(^$&*#',
+          email: 'valid@email.address',
+          salt: '0'.repeat(saltLen),
+          key: '0'.repeat(keyLen)
+        },
+        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+      ],
+      [
+        {
+          username: null,
+          email: 'valid@email.address',
+          salt: '0'.repeat(saltLen),
+          key: '0'.repeat(keyLen)
+        } as unknown as NewUser,
+        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+      ],
+      [
+        {
+          username: 'x'.repeat(minULen - 1),
+          email: 'valid@email.address',
+          salt: '0'.repeat(saltLen),
+          key: '0'.repeat(keyLen)
+        },
+        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+      ],
+      [
+        {
+          username: 'x'.repeat(maxULen + 1),
+          email: 'valid@email.address',
+          salt: '0'.repeat(saltLen),
+          key: '0'.repeat(keyLen)
+        },
+        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+      ],
+      [
+        {
           username: 'x'.repeat(maxULen - 1),
-          email: 'x'.repeat(maxELen - 1),
+          email: 'valid@email.address',
           salt: '0'.repeat(saltLen),
           key: '0'.repeat(keyLen),
           user_id: 1
@@ -329,7 +392,20 @@ describe('::updateUser', () => {
           salt: '0'.repeat(getEnv().USER_SALT_LENGTH)
         }
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound('username') });
+    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound('fake-user', 'user') });
+  });
+
+  it('rejects when attempting to update a user to a duplicate email', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.updateUser({
+        username: dummyAppData.users[1].username,
+        data: {
+          email: dummyAppData.users[0].email
+        }
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.DuplicateFieldValue('email') });
   });
 
   it('rejects if request body is invalid or contains properties that violates limits', async () => {
@@ -345,7 +421,6 @@ describe('::updateUser', () => {
     const patchUsers: [PatchUser, string][] = [
       [undefined as unknown as PatchUser, ErrorMessage.InvalidJSON()],
       ['string data' as PatchUser, ErrorMessage.InvalidJSON()],
-      [{ data: 1 } as PatchUser, ErrorMessage.UnknownField('data')],
       [
         { email: '' },
         ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
@@ -359,11 +434,19 @@ describe('::updateUser', () => {
         ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
       ],
       [
+        { email: 'x'.repeat(maxELen) },
+        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+      ],
+      [
         { salt: '' },
         ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
       ],
       [
         { salt: '0'.repeat(saltLen - 1) },
+        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+      ],
+      [
+        { salt: 'x'.repeat(saltLen) },
         ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
       ],
       [{ key: '' }, ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')],
@@ -372,8 +455,14 @@ describe('::updateUser', () => {
         ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
       ],
       [
+        { key: 'x'.repeat(keyLen) },
+        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+      ],
+      [{ data: 1 } as NewUser, ErrorMessage.UnknownField('data')],
+      [{ name: 'username' } as NewUser, ErrorMessage.UnknownField('name')],
+      [
         {
-          email: 'x'.repeat(maxELen - 1),
+          email: 'valid@email.address',
           salt: '0'.repeat(saltLen),
           key: '0'.repeat(keyLen),
           username: 'new-username'
@@ -399,7 +488,7 @@ describe('::deleteUser', () => {
     const usersDb = (await getDb({ name: 'hscc-api-drive' })).collection('users');
 
     await expect(
-      usersDb.countDocuments({ _id: dummyAppData.users[0]._id.toString() })
+      usersDb.countDocuments({ _id: dummyAppData.users[0]._id })
     ).resolves.toBe(1);
 
     await expect(
@@ -407,7 +496,7 @@ describe('::deleteUser', () => {
     ).resolves.toBeUndefined();
 
     await expect(
-      usersDb.countDocuments({ _id: dummyAppData.users[0]._id.toString() })
+      usersDb.countDocuments({ _id: dummyAppData.users[0]._id })
     ).resolves.toBe(0);
   });
 
@@ -416,7 +505,9 @@ describe('::deleteUser', () => {
 
     await expect(
       Backend.deleteUser({ username: 'does-not-exist' })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound('username') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
   });
 
   it('deleted users are removed from all permissions objects', async () => {
@@ -491,7 +582,7 @@ describe('::getNodes', () => {
       testNodes.map(([username, nodes]) =>
         expect(
           Backend.getNodes({ username, node_ids: nodes.map((n) => n._id.toString()) })
-        ).resolves.toIncludeSameMembers(nodes.map(toPublicNode))
+        ).resolves.toStrictEqual(sortNodes(nodes).map(toPublicNode))
       )
     );
   });
@@ -504,14 +595,14 @@ describe('::getNodes', () => {
         username: dummyAppData['file-nodes'][0].owner,
         node_ids: ['bad']
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
 
     await expect(
       Backend.getNodes({
         username: dummyAppData['file-nodes'][0].owner,
         node_ids: [dummyAppData['file-nodes'][0]._id.toString(), 'bad']
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
   });
 
   it('rejects if one or more node_ids not found', async () => {
@@ -535,6 +626,19 @@ describe('::getNodes', () => {
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
   });
 
+  it('rejects if the username is not found', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.getNodes({
+        username: 'does-not-exist',
+        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
+  });
+
   it('rejects if node_id not owned by username', async () => {
     expect.hasAssertions();
 
@@ -546,6 +650,24 @@ describe('::getNodes', () => {
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
   });
 
+  it('does not reject if node_id not owned when user has view/edit permission', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.getNodes({
+        username: 'User2',
+        node_ids: [dummyAppData['file-nodes'][3]._id.toString()]
+      })
+    ).resolves.toStrictEqual([toPublicNode(dummyAppData['file-nodes'][3])]);
+
+    await expect(
+      Backend.getNodes({
+        username: 'User2',
+        node_ids: [dummyAppData['meta-nodes'][1]._id.toString()]
+      })
+    ).resolves.toStrictEqual([toPublicNode(dummyAppData['meta-nodes'][1])]);
+  });
+
   it('does not crash when database is empty', async () => {
     expect.hasAssertions();
 
@@ -553,7 +675,6 @@ describe('::getNodes', () => {
 
     await db.collection('file-nodes').deleteMany({});
     await db.collection('meta-nodes').deleteMany({});
-    await db.collection('users').deleteMany({});
 
     await expect(
       Backend.getNodes({
@@ -561,6 +682,17 @@ describe('::getNodes', () => {
         node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
+
+    await db.collection('users').deleteMany({});
+
+    await expect(
+      Backend.getNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound(dummyAppData['file-nodes'][0].owner, 'user')
+    });
   });
 
   it('rejects if too many node_ids requested', async () => {
@@ -571,23 +703,21 @@ describe('::getNodes', () => {
         await expect(
           Backend.getNodes({
             username: 'User1',
-            node_ids: [new ObjectId().toString(), new ObjectId().toString()]
+            node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(
+              () => new ObjectId().toString()
+            )
           })
         ).rejects.toMatchObject({
           message: ErrorMessage.TooManyItemsRequested('node_ids')
         });
       },
-      { RESULTS_PER_PAGE: '1' }
+      { RESULTS_PER_PAGE: '1' },
+      { replace: false }
     );
   });
 });
 
 describe('::searchNodes', () => {
-  const sortedNodes = [
-    ...dummyAppData['file-nodes'].sort((a, b) => b.modifiedAt - a.modifiedAt),
-    ...dummyAppData['meta-nodes'].sort((a, b) => b.createdAt - a.createdAt)
-  ];
-
   const getNodesOwnedBy = (username: Username) => {
     return sortedNodes.filter((n) => n.owner == username);
   };
@@ -608,29 +738,42 @@ describe('::searchNodes', () => {
           getNodesOwnedBy(dummyAppData.users[2].username).slice(0, 4).map(toPublicNode)
         );
       },
-      { RESULTS_PER_PAGE: '4' }
+      { RESULTS_PER_PAGE: '4' },
+      { replace: false }
     );
   });
 
   it('only returns nodes owned by the user', async () => {
     expect.hasAssertions();
 
-    await withMockedEnv(
-      async () => {
-        await expect(
-          Backend.searchNodes({
-            username: dummyAppData.users[1].username,
-            after: null,
-            match: { tags: ['music'] },
-            regexMatch: {}
-          })
-        ).resolves.toStrictEqual(
-          getNodesOwnedBy(dummyAppData.users[1].username)
-            .filter((n) => n.type == 'file' && n.tags.includes('music'))
-            .map(toPublicNode)
-        );
-      },
-      { RESULTS_PER_PAGE: '4' }
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[1].username,
+        after: null,
+        match: { tags: ['music'] },
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[1].username)
+        .filter((n) => n.type == 'file' && n.tags.includes('music'))
+        .map(toPublicNode)
+    );
+  });
+
+  it('also returns nodes not owned when user has view/edit permission', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[1].username,
+        after: null,
+        match: { owner: dummyAppData.users[2].username },
+        regexMatch: { [`permissions.${dummyAppData.users[1].username}`]: 'view|edit' }
+      })
+    ).resolves.toStrictEqual(
+      getNodesOwnedBy(dummyAppData.users[2].username)
+        .filter((n) => !!n.permissions[dummyAppData.users[1].username])
+        .map(toPublicNode)
     );
   });
 
@@ -688,8 +831,13 @@ describe('::searchNodes', () => {
           })
         ).resolves.toStrictEqual([]);
       },
-      { RESULTS_PER_PAGE: '1' }
+      { RESULTS_PER_PAGE: '1' },
+      { replace: false }
     );
+  });
+
+  it('rejects if after node_id is not a valid ObjectId', async () => {
+    expect.hasAssertions();
 
     await expect(
       Backend.searchNodes({
@@ -699,7 +847,37 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).rejects.toMatchObject({
-      message: ErrorMessage.InvalidObjectId('after')
+      message: ErrorMessage.InvalidObjectId('fake-oid')
+    });
+  });
+
+  it('rejects if after node_id not found', async () => {
+    expect.hasAssertions();
+
+    const after = new ObjectId().toString();
+
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[0].username,
+        after,
+        match: {},
+        regexMatch: {}
+      })
+    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound(after, 'node_id') });
+  });
+
+  it('rejects if the username is not found', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.searchNodes({
+        username: 'does-not-exist',
+        after: null,
+        match: {},
+        regexMatch: {}
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
     });
   });
 
@@ -724,7 +902,8 @@ describe('::searchNodes', () => {
           })
         ).resolves.toStrictEqual([]);
       },
-      { RESULTS_PER_PAGE: '4' }
+      { RESULTS_PER_PAGE: '4' },
+      { replace: false }
     );
   });
 
@@ -1151,7 +1330,7 @@ describe('::createNode', () => {
       type: 'file',
       name: 'My New File',
       text: "You'll take only seconds to draw me in.",
-      tags: ['muse', 'darkshines', 'origin', 'symmetry', 'music'],
+      tags: ['muse', 'darkshines', 'ORIGIN', 'origin', 'music'],
       lock: null,
       permissions: {}
     };
@@ -1160,20 +1339,31 @@ describe('::createNode', () => {
       await getDb({ name: 'hscc-api-drive' })
     ).collection<InternalFileNode>('file-nodes');
 
-    await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(0);
+    await expect(
+      metaNodesDb.countDocuments({
+        name: newNode.name,
+        'name-lowercase': newNode.name.toLowerCase()
+      })
+    ).resolves.toBe(0);
 
     await expect(
       Backend.createNode({ username: dummyAppData.users[0].username, data: newNode })
     ).resolves.toStrictEqual<PublicFileNode>({
       node_id: expect.any(String),
       ...newNode,
+      tags: Array.from(new Set(newNode.tags.map((tag) => tag.toLowerCase()))),
       owner: dummyAppData.users[0].username,
       createdAt: Date.now(),
       modifiedAt: Date.now(),
       size: newNode.text.length
     });
 
-    await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(1);
+    await expect(
+      metaNodesDb.countDocuments({
+        name: newNode.name,
+        'name-lowercase': newNode.name.toLowerCase()
+      })
+    ).resolves.toBe(1);
   });
 
   it('creates and returns a new symlink node', async () => {
@@ -1210,7 +1400,10 @@ describe('::createNode', () => {
     const newNode: Required<NewMetaNode> = {
       type: 'directory',
       name: 'New Directory',
-      contents: [],
+      contents: [
+        dummyAppData['file-nodes'][0]._id.toString(),
+        dummyAppData['file-nodes'][0]._id.toString()
+      ],
       permissions: {}
     };
 
@@ -1225,11 +1418,30 @@ describe('::createNode', () => {
     ).resolves.toStrictEqual<PublicMetaNode>({
       node_id: expect.any(String),
       ...newNode,
+      contents: [dummyAppData['file-nodes'][0]._id.toString()],
       owner: dummyAppData.users[0].username,
       createdAt: Date.now()
     });
 
     await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(1);
+  });
+
+  it('rejects if the username is not found', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.createNode({
+        username: 'does-not-exist',
+        data: {
+          type: 'directory',
+          name: 'New Directory',
+          contents: [],
+          permissions: {}
+        }
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
   });
 
   it('rejects if request body is invalid or contains properties that violates limits', async () => {
@@ -1247,10 +1459,11 @@ describe('::createNode', () => {
       MAX_NODE_TEXT_LENGTH_BYTES: maxNodeTextBytes
     } = getEnv();
 
+    const knownNewId = new ObjectId().toString();
+
     const newNodes: [NewNode, string][] = [
       [undefined as unknown as NewNode, ErrorMessage.InvalidJSON()],
       ['string data' as NewNode, ErrorMessage.InvalidJSON()],
-      [{ data: 1 } as NewNode, ErrorMessage.UnknownField('data')],
       [{ type: null } as unknown as NewNode, ErrorMessage.InvalidFieldValue('type')],
       [
         { type: 'bad-type' } as unknown as NewNode,
@@ -1265,47 +1478,158 @@ describe('::createNode', () => {
         ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string')
       ],
       [
-        { type: 'file', name: 'x', text: null } as unknown as NewNode,
-        ErrorMessage.InvalidStringLength('text', 1, maxNodeTextBytes, 'bytes')
+        {
+          type: 'symlink',
+          name: 'x',
+          permissions: null
+        } as unknown as NewNode,
+        ErrorMessage.InvalidFieldValue('permissions')
       ],
       [
-        { type: 'file', name: 'x', text: 'x'.repeat(maxNodeTextBytes + 1) },
-        ErrorMessage.InvalidStringLength('text', 1, maxNodeTextBytes, 'bytes')
+        {
+          type: 'directory',
+          name: 'x',
+          permissions: ['yes']
+        } as unknown as NewNode,
+        ErrorMessage.InvalidFieldValue('permissions')
       ],
       [
-        { type: 'file', name: 'x', text: 'x', tags: null } as unknown as NewNode,
+        {
+          type: 'symlink',
+          name: 'x',
+          permissions: { 'user-does-not-exist': 'edit' }
+        },
+        ErrorMessage.ItemNotFound('user-does-not-exist', 'user (permissions)')
+      ],
+      [
+        {
+          type: 'directory',
+          name: 'x',
+          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
+        } as unknown as NewNode,
+        ErrorMessage.InvalidObjectKeyValue('permissions')
+      ],
+      [
+        {
+          type: 'symlink',
+          name: 'x',
+          permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
+            NonNullable<NewNode['permissions']>
+          >((o) => {
+            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
+            return o;
+          }, {})
+        },
+        ErrorMessage.TooManyItemsRequested('permissions')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: ['yes']
+        } as unknown as NewNode,
+        ErrorMessage.InvalidFieldValue('permissions')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: { 'user-does-not-exist': 'edit' }
+        },
+        ErrorMessage.ItemNotFound('user-does-not-exist', 'user (permissions)')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
+        } as unknown as NewNode,
+        ErrorMessage.InvalidObjectKeyValue('permissions')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
+            NonNullable<NewNode['permissions']>
+          >((o) => {
+            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
+            return o;
+          }, {})
+        },
+        ErrorMessage.TooManyItemsRequested('permissions')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: { public: 'edit' }
+        },
+        ErrorMessage.InvalidObjectKeyValue('permissions')
+      ],
+      [
+        {
+          type: 'symlink',
+          name: 'x',
+          permissions: { public: 'view' }
+        },
+        ErrorMessage.InvalidObjectKeyValue('permissions')
+      ],
+      [
+        {
+          type: 'directory',
+          name: 'x',
+          permissions: { public: 'view' }
+        },
+        ErrorMessage.InvalidObjectKeyValue('permissions')
+      ],
+      [
+        { type: 'file', name: 'x', permissions: {}, text: null } as unknown as NewNode,
+        ErrorMessage.InvalidStringLength('text', 0, maxNodeTextBytes, 'bytes')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: { public: 'view' },
+          text: 'x'.repeat(maxNodeTextBytes + 1)
+        },
+        ErrorMessage.InvalidStringLength('text', 0, maxNodeTextBytes, 'bytes')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: {},
+          text: 'x',
+          tags: null
+        } as unknown as NewNode,
         ErrorMessage.InvalidFieldValue('tags')
       ],
       [
-        { type: 'file', name: 'x', text: 'x', tags: [1] } as unknown as NewNode,
-        ErrorMessage.InvalidFieldValue('tags')
-      ],
-      [
-        { type: 'file', name: 'x', text: 'x', tags: ['grandson', 'grandson'] },
-        ErrorMessage.DuplicateSetMember('tags')
-      ],
-      [
-        { type: 'file', name: 'x', text: 'x', tags: ['grandson', 'GRANDSON'] },
-        ErrorMessage.DuplicateSetMember('tags')
-      ],
-      [
-        { type: 'file', name: 'x', text: 'x', tags: [''] },
+        {
+          type: 'file',
+          name: 'x',
+          permissions: {},
+          text: 'x',
+          tags: [1]
+        } as unknown as NewNode,
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTextBytes,
-          'bytes',
+          maxNodeTagLen,
+          'alphanumeric',
           false,
           true
         )
       ],
       [
-        { type: 'file', name: 'x', text: 'x', tags: ['x'.repeat(maxNodeTagLen + 1)] },
+        { type: 'file', name: 'x', permissions: {}, text: 'x', tags: [''] },
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTextBytes,
-          'bytes',
+          maxNodeTagLen,
+          'alphanumeric',
           false,
           true
         )
@@ -1314,6 +1638,24 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
+          permissions: {},
+          text: 'x',
+          tags: ['x'.repeat(maxNodeTagLen + 1)]
+        },
+        ErrorMessage.InvalidStringLength(
+          'tags',
+          1,
+          maxNodeTagLen,
+          'alphanumeric',
+          false,
+          true
+        )
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: {},
           text: 'x',
           tags: Array.from({ length: maxNodeTags + 1 }).map(() =>
             Math.random().toString(32).slice(2, 7)
@@ -1325,9 +1667,10 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
+          permissions: {},
           text: 'x',
           tags: [],
-          lock: { bad: 1 }
+          lock: 1
         } as unknown as NewNode,
         ErrorMessage.InvalidFieldValue('lock')
       ],
@@ -1335,6 +1678,7 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
+          permissions: {},
           text: 'x',
           tags: [],
           lock: {
@@ -1349,6 +1693,7 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
+          permissions: {},
           text: 'x',
           tags: [],
           lock: {
@@ -1363,10 +1708,26 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
+          permissions: {},
           text: 'x',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
+            user: null as unknown as string,
+            client: 'y'.repeat(maxLockClientLen - 1),
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen)
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: {},
+          text: '',
+          tags: [],
+          lock: {
+            user: 'x'.repeat(maxUsernameLen - 1),
             client: '',
             createdAt: Date.now()
           }
@@ -1377,10 +1738,26 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
-          text: 'x',
+          permissions: {},
+          text: '',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
+            user: 'x'.repeat(maxUsernameLen - 1),
+            client: null as unknown as string,
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: {},
+          text: '',
+          tags: [],
+          lock: {
+            user: 'x'.repeat(maxUsernameLen - 1),
             client: 'y'.repeat(maxLockClientLen + 1),
             createdAt: Date.now()
           }
@@ -1391,177 +1768,99 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
-          text: 'x',
+          permissions: {},
+          text: '',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
+            user: 'x'.repeat(maxUsernameLen - 1),
             client: 'y'.repeat(maxLockClientLen - 1)
           } as NodeLock
         },
-        ErrorMessage.InvalidFieldValue('lock')
+        ErrorMessage.InvalidFieldValue('lock.createdAt')
       ],
       [
         {
           type: 'file',
           name: 'x',
+          permissions: {},
           text: 'x',
           tags: [],
           lock: {
-            user: null,
-            client: 'y'.repeat(maxLockClientLen - 1),
-            createdAt: Date.now()
-          } as unknown as NodeLock
-        },
-        ErrorMessage.InvalidObjectKeyValue('lock')
-      ],
-      [
-        {
-          type: 'file',
-          name: 'x',
-          text: 'x',
-          tags: [],
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: null,
-            createdAt: Date.now()
-          } as unknown as NodeLock
-        },
-        ErrorMessage.InvalidObjectKeyValue('lock')
-      ],
-      [
-        {
-          type: 'file',
-          name: 'x',
-          text: 'x',
-          tags: [],
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
+            user: 'x'.repeat(maxUsernameLen - 1),
             client: 'y'.repeat(maxLockClientLen - 1),
             createdAt: null
           } as unknown as NodeLock
         },
+        ErrorMessage.InvalidFieldValue('lock.createdAt')
+      ],
+      [
+        {
+          type: 'file',
+          name: 'x',
+          permissions: {},
+          text: 'x',
+          tags: [],
+          lock: {
+            user: dummyAppData.users[0].username,
+            client: 'y'.repeat(maxLockClientLen - 1),
+            createdAt: Date.now(),
+            bad: 1
+          } as unknown as NodeLock
+        },
         ErrorMessage.InvalidObjectKeyValue('lock')
       ],
       [
         {
-          type: 'file',
+          type: 'symlink',
           name: 'x',
-          text: 'x',
-          tags: [],
-          lock: null,
-          permissions: ['yes']
+          permissions: {},
+          contents: null
         } as unknown as NewNode,
-        ErrorMessage.InvalidFieldValue('permissions')
-      ],
-      [
-        {
-          type: 'file',
-          name: 'x',
-          text: 'x',
-          tags: [],
-          lock: null,
-          permissions: { 'user-does-not-exist': 'edit' }
-        },
-        ErrorMessage.ItemNotFound('permissions username')
-      ],
-      [
-        {
-          type: 'file',
-          name: 'x',
-          text: 'x',
-          tags: [],
-          lock: null,
-          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
-        } as unknown as NewNode,
-        ErrorMessage.InvalidObjectKeyValue('permissions')
-      ],
-      [
-        {
-          type: 'file',
-          name: 'x',
-          text: 'x',
-          tags: [],
-          lock: null,
-          permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
-            NonNullable<NewNode['permissions']>
-          >((o) => {
-            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
-            return o;
-          }, {})
-        },
-        ErrorMessage.TooManyItemsRequested('permissions')
-      ],
-      [
-        { type: 'symlink', name: 'x', contents: null } as unknown as NewNode,
         ErrorMessage.InvalidFieldValue('contents')
       ],
       [
-        { type: 'directory', name: 'x', contents: [1] } as unknown as NewNode,
-        ErrorMessage.InvalidArrayValue('contents')
+        {
+          type: 'directory',
+          name: 'x',
+          permissions: {},
+          contents: [1]
+        } as unknown as NewNode,
+        ErrorMessage.InvalidArrayValue('contents', '1')
       ],
       [
-        { type: 'symlink', name: 'x', contents: ['bad'] },
-        ErrorMessage.InvalidArrayValue('contents')
+        { type: 'symlink', name: 'x', permissions: {}, contents: ['bad'] },
+        ErrorMessage.InvalidArrayValue('contents', 'bad')
+      ],
+      [
+        { type: 'directory', name: 'x', permissions: {}, contents: [knownNewId] },
+        ErrorMessage.ItemNotFound(knownNewId, 'node_id')
+      ],
+      [
+        { type: 'symlink', name: 'x', permissions: {}, contents: [knownNewId] },
+        ErrorMessage.ItemNotFound(knownNewId, 'node_id')
       ],
       [
         {
           type: 'directory',
           name: 'x',
+          permissions: {},
           contents: Array.from({ length: maxNodeContents + 1 }).map(() =>
-            new ObjectId().toString()
+            dummyAppData['file-nodes'][0]._id.toString()
           )
-        } as unknown as NewNode,
-        ErrorMessage.TooManyItemsRequested('contents')
-      ],
-      [
-        {
-          type: 'symlink',
-          name: 'x',
-          contents: [],
-          permissions: null
-        } as unknown as NewNode,
-        ErrorMessage.InvalidFieldValue('permissions')
-      ],
-      [
-        {
-          type: 'directory',
-          name: 'x',
-          contents: [],
-          permissions: ['yes']
-        } as unknown as NewNode,
-        ErrorMessage.InvalidFieldValue('permissions')
-      ],
-      [
-        {
-          type: 'symlink',
-          name: 'x',
-          contents: [],
-          permissions: { 'user-does-not-exist': 'edit' }
         },
-        ErrorMessage.ItemNotFound('permissions username')
-      ],
-      [
-        {
-          type: 'directory',
-          name: 'x',
-          contents: [],
-          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
-        } as unknown as NewNode,
-        ErrorMessage.InvalidObjectKeyValue('permissions')
+        ErrorMessage.TooManyItemsRequested('content node_ids')
       ],
       [
         {
           type: 'symlink',
           name: 'x',
-          contents: [],
-          permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
-            NonNullable<NewNode['permissions']>
-          >((o) => {
-            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
-            return o;
-          }, {})
+          contents: [
+            dummyAppData['file-nodes'][0]._id.toString(),
+            dummyAppData['file-nodes'][0]._id.toString()
+          ],
+          permissions: {}
         },
-        ErrorMessage.TooManyItemsRequested('permissions')
+        ErrorMessage.TooManyItemsRequested('content node_ids')
       ],
       [
         {
@@ -1593,7 +1892,7 @@ describe('::createNode', () => {
           name: 'user1-file1',
           text: 'Tell me how did we get here?',
           permissions: {},
-          contents: [new ObjectId().toString()]
+          contents: []
         } as NewNode,
         ErrorMessage.UnknownField('text')
       ],
@@ -1603,7 +1902,7 @@ describe('::createNode', () => {
           name: 'user1-file1',
           tags: ['grandson', 'music'],
           permissions: {},
-          contents: [new ObjectId().toString()]
+          contents: []
         } as NewNode,
         ErrorMessage.UnknownField('tags')
       ],
@@ -1613,9 +1912,19 @@ describe('::createNode', () => {
           name: 'user1-file1',
           lock: null,
           permissions: {},
-          contents: [new ObjectId().toString()]
+          contents: []
         } as NewNode,
         ErrorMessage.UnknownField('lock')
+      ],
+      [
+        {
+          type: 'symlink',
+          name: 'user1-file1',
+          permissions: {},
+          contents: [],
+          data: 1
+        } as NewNode,
+        ErrorMessage.UnknownField('data')
       ]
     ];
 
@@ -1642,21 +1951,23 @@ describe('::updateNode', () => {
 
     await expect(
       fileNodeDb.countDocuments({
-        owner: 'new-user'
+        _id: dummyAppData['file-nodes'][0]._id,
+        owner: dummyAppData['file-nodes'][0].owner
       })
-    ).resolves.toBe(0);
+    ).resolves.toBe(1);
 
     await expect(
       metaNodeDb.countDocuments({
-        owner: 'new-user'
+        _id: dummyAppData['meta-nodes'][0]._id,
+        owner: dummyAppData['meta-nodes'][0].owner
       })
-    ).resolves.toBe(0);
+    ).resolves.toBe(1);
 
     await expect(
       Backend.updateNode({
         username: dummyAppData['file-nodes'][0].owner,
         node_id: dummyAppData['file-nodes'][0]._id.toString(),
-        data: { owner: 'new-user' }
+        data: { owner: dummyAppData.users[2].username }
       })
     ).resolves.toBeUndefined();
 
@@ -1664,19 +1975,134 @@ describe('::updateNode', () => {
       Backend.updateNode({
         username: dummyAppData['meta-nodes'][0].owner,
         node_id: dummyAppData['meta-nodes'][0]._id.toString(),
-        data: { owner: 'new-user' }
+        data: { owner: dummyAppData.users[0].username }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
-        owner: 'new-user'
+        _id: dummyAppData['file-nodes'][0]._id,
+        owner: dummyAppData['file-nodes'][0].owner
       })
-    ).resolves.toBe(1);
+    ).resolves.toBe(0);
 
     await expect(
       metaNodeDb.countDocuments({
-        owner: 'new-user'
+        _id: dummyAppData['meta-nodes'][0]._id,
+        owner: dummyAppData['meta-nodes'][0].owner
+      })
+    ).resolves.toBe(0);
+  });
+
+  it('updates modifiedAt', async () => {
+    expect.hasAssertions();
+
+    const db = await getDb({ name: 'hscc-api-drive' });
+    const fileNodeDb = db.collection('file-nodes');
+
+    await expect(
+      fileNodeDb.countDocuments({
+        _id: dummyAppData['file-nodes'][0]._id,
+        modifiedAt: Date.now()
+      })
+    ).resolves.toBe(0);
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        data: { owner: dummyAppData.users[2].username }
+      })
+    ).resolves.toBeUndefined();
+
+    await expect(
+      fileNodeDb.countDocuments({
+        _id: dummyAppData['file-nodes'][0]._id,
+        modifiedAt: Date.now()
+      })
+    ).resolves.toBe(1);
+  });
+
+  it('treats tags as lowercase set', async () => {
+    expect.hasAssertions();
+
+    const db = await getDb({ name: 'hscc-api-drive' });
+    const fileNodeDb = db.collection('file-nodes');
+    const tags = ['TAG-1', 'tag-1', 'tag-2'];
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        data: { tags }
+      })
+    ).resolves.toBeUndefined();
+
+    await expect(
+      fileNodeDb.countDocuments({
+        _id: dummyAppData['file-nodes'][0]._id,
+        tags: Array.from(new Set(tags.map((tag) => tag.toLowerCase())))
+      })
+    ).resolves.toBe(1);
+  });
+
+  it('updates size', async () => {
+    expect.hasAssertions();
+
+    const db = await getDb({ name: 'hscc-api-drive' });
+    const fileNodeDb = db.collection('file-nodes');
+    const size = 4096;
+    const text = 'x'.repeat(size);
+
+    await expect(
+      fileNodeDb.countDocuments({
+        _id: dummyAppData['file-nodes'][0]._id,
+        size
+      })
+    ).resolves.toBe(0);
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        data: { text }
+      })
+    ).resolves.toBeUndefined();
+
+    await expect(
+      fileNodeDb.countDocuments({
+        _id: dummyAppData['file-nodes'][0]._id,
+        size
+      })
+    ).resolves.toBe(1);
+  });
+
+  it('updates name-lowercase', async () => {
+    expect.hasAssertions();
+
+    const db = await getDb({ name: 'hscc-api-drive' });
+    const fileNodeDb = db.collection('file-nodes');
+    const name = 'TEST-NAME';
+
+    await expect(
+      fileNodeDb.countDocuments({
+        _id: dummyAppData['file-nodes'][0]._id,
+        'name-lowercase': name.toLowerCase()
+      })
+    ).resolves.toBe(0);
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        data: { name }
+      })
+    ).resolves.toBeUndefined();
+
+    await expect(
+      fileNodeDb.countDocuments({
+        _id: dummyAppData['file-nodes'][0]._id,
+        'name-lowercase': name.toLowerCase()
       })
     ).resolves.toBe(1);
   });
@@ -1690,19 +2116,35 @@ describe('::updateNode', () => {
         node_id: 'bad',
         data: { owner: 'new-user' }
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
   });
 
   it('rejects if the node_id is not found', async () => {
     expect.hasAssertions();
 
+    const node_id = new ObjectId().toString();
+
     await expect(
       Backend.updateNode({
         username: dummyAppData['file-nodes'][0].owner,
-        node_id: new ObjectId().toString(),
+        node_id,
         data: { owner: 'new-user' }
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound('node_id') });
+    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound(node_id, 'node_id') });
+  });
+
+  it('rejects if the username is not found', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.updateNode({
+        username: 'does-not-exist',
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        data: { owner: 'new-user' }
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
   });
 
   it('rejects if node_id not owned by username', async () => {
@@ -1710,11 +2152,43 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: 'fake-user',
+        username: dummyAppData.users[2].username,
         node_id: dummyAppData['file-nodes'][0]._id.toString(),
         data: { owner: 'new-user' }
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ForbiddenAction() });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound(
+        dummyAppData['file-nodes'][0]._id.toString(),
+        'node_id'
+      )
+    });
+  });
+
+  it('does not reject if node_id not owned when user has edit (not view) permission', async () => {
+    expect.hasAssertions();
+
+    // ? Has edit perms
+    await expect(
+      Backend.updateNode({
+        username: 'User2',
+        node_id: dummyAppData['file-nodes'][3]._id.toString(),
+        data: { text: 'new text' }
+      })
+    ).resolves.toBeUndefined();
+
+    // ? Only has view perms
+    await expect(
+      Backend.updateNode({
+        username: 'User2',
+        node_id: dummyAppData['meta-nodes'][1]._id.toString(),
+        data: { name: 'new name' }
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound(
+        dummyAppData['meta-nodes'][1]._id.toString(),
+        'node_id'
+      )
+    });
   });
 
   it('rejects if request body is invalid or contains properties that violates limits', async () => {
@@ -1732,154 +2206,51 @@ describe('::updateNode', () => {
       MAX_NODE_TEXT_LENGTH_BYTES: maxNodeTextBytes
     } = getEnv();
 
-    const patchNodes: [PatchNode, string][] = [
-      [undefined as unknown as PatchNode, ErrorMessage.InvalidJSON()],
-      ['string data' as PatchNode, ErrorMessage.InvalidJSON()],
-      [{ data: 1 } as PatchNode, ErrorMessage.UnknownField('data')],
-      [{ owner: 'does-not-exist' }, ErrorMessage.ItemNotFound('owner')],
+    const knownNewId = new ObjectId().toString();
+    const knownFileNode = dummyAppData['file-nodes'][4];
+    const knownDirNode = dummyAppData['meta-nodes'][1];
+    const knownLinkNode = dummyAppData['meta-nodes'][2];
+
+    const patchNodes: [patch: PatchNode, error: string, node: InternalNode][] = [
+      [undefined as unknown as PatchNode, ErrorMessage.InvalidJSON(), knownFileNode],
+      ['string data' as PatchNode, ErrorMessage.InvalidJSON(), knownFileNode],
       [
         { name: '' },
-        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string')
+        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string'),
+        knownDirNode
       ],
       [
         { name: 'x'.repeat(maxNodeNameLen + 1) },
-        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string')
-      ],
-      [
-        { text: null } as unknown as PatchNode,
-        ErrorMessage.InvalidStringLength('text', 1, maxNodeTextBytes, 'bytes')
-      ],
-      [
-        { text: 'x'.repeat(maxNodeTextBytes + 1) },
-        ErrorMessage.InvalidStringLength('text', 1, maxNodeTextBytes, 'bytes')
-      ],
-      [{ tags: null } as PatchNode, ErrorMessage.InvalidFieldValue('tags')],
-      [{ tags: [1] } as PatchNode, ErrorMessage.InvalidFieldValue('tags')],
-      [{ tags: ['grandson', 'grandson'] }, ErrorMessage.DuplicateSetMember('tags')],
-      [{ tags: ['grandson', 'GRANDSON'] }, ErrorMessage.DuplicateSetMember('tags')],
-      [
-        { tags: [''] },
-        ErrorMessage.InvalidStringLength(
-          'tags',
-          1,
-          maxNodeTextBytes,
-          'bytes',
-          false,
-          true
-        )
-      ],
-      [
-        { tags: ['x'.repeat(maxNodeTagLen + 1)] },
-        ErrorMessage.InvalidStringLength(
-          'tags',
-          1,
-          maxNodeTextBytes,
-          'bytes',
-          false,
-          true
-        )
+        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string'),
+        knownLinkNode
       ],
       [
         {
-          tags: Array.from({ length: maxNodeTags + 1 }).map(() =>
-            Math.random().toString(32).slice(2, 7)
-          )
-        },
-        ErrorMessage.TooManyItemsRequested('tags')
-      ],
-      [{ lock: { bad: 1 } } as PatchNode, ErrorMessage.InvalidFieldValue('lock')],
-      [
-        {
-          lock: {
-            user: 'x'.repeat(minUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
-            createdAt: Date.now()
-          }
-        },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen)
+          permissions: null
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidFieldValue('permissions'),
+        knownLinkNode
       ],
       [
         {
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
-            createdAt: Date.now()
-          }
-        },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen)
+          permissions: ['yes']
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidFieldValue('permissions'),
+        knownDirNode
       ],
       [
         {
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: '',
-            createdAt: Date.now()
-          }
+          permissions: { 'user-does-not-exist': 'edit' }
         },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string')
-      ],
-      [
-        {
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: 'y'.repeat(maxLockClientLen + 1),
-            createdAt: Date.now()
-          }
-        },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string')
-      ],
-      [
-        {
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: 'y'.repeat(maxLockClientLen - 1)
-          } as NodeLock
-        },
-        ErrorMessage.InvalidFieldValue('lock')
-      ],
-      [
-        {
-          lock: {
-            user: null,
-            client: 'y'.repeat(maxLockClientLen - 1),
-            createdAt: Date.now()
-          } as unknown as NodeLock
-        },
-        ErrorMessage.InvalidObjectKeyValue('lock')
-      ],
-      [
-        {
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: null,
-            createdAt: Date.now()
-          } as unknown as NodeLock
-        },
-        ErrorMessage.InvalidObjectKeyValue('lock')
-      ],
-      [
-        {
-          lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
-            createdAt: null
-          } as unknown as NodeLock
-        },
-        ErrorMessage.InvalidObjectKeyValue('lock')
-      ],
-      [
-        { permissions: ['yes'] } as unknown as PatchNode,
-        ErrorMessage.InvalidFieldValue('permissions')
-      ],
-      [
-        { permissions: { 'user-does-not-exist': 'edit' } },
-        ErrorMessage.ItemNotFound('permissions username')
+        ErrorMessage.ItemNotFound('user-does-not-exist', 'user (permissions)'),
+        knownLinkNode
       ],
       [
         {
           permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
         } as unknown as PatchNode,
-        ErrorMessage.InvalidObjectKeyValue('permissions')
+        ErrorMessage.InvalidObjectKeyValue('permissions'),
+        knownDirNode
       ],
       [
         {
@@ -1890,81 +2261,342 @@ describe('::updateNode', () => {
             return o;
           }, {})
         },
-        ErrorMessage.TooManyItemsRequested('permissions')
+        ErrorMessage.TooManyItemsRequested('permissions'),
+        knownLinkNode
       ],
       [
-        { contents: null } as unknown as PatchNode,
-        ErrorMessage.InvalidFieldValue('contents')
+        {
+          permissions: ['yes']
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidFieldValue('permissions'),
+        knownFileNode
       ],
       [
-        { contents: [1] } as unknown as PatchNode,
-        ErrorMessage.InvalidArrayValue('contents')
+        {
+          permissions: { 'user-does-not-exist': 'edit' }
+        },
+        ErrorMessage.ItemNotFound('user-does-not-exist', 'user (permissions)'),
+        knownFileNode
       ],
       [
-        { contents: ['bad'] } as unknown as PatchNode,
-        ErrorMessage.InvalidArrayValue('contents')
+        {
+          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidObjectKeyValue('permissions'),
+        knownFileNode
+      ],
+      [
+        {
+          permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
+            NonNullable<PatchNode['permissions']>
+          >((o) => {
+            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
+            return o;
+          }, {})
+        },
+        ErrorMessage.TooManyItemsRequested('permissions'),
+        knownFileNode
+      ],
+      [
+        {
+          permissions: { public: 'edit' }
+        },
+        ErrorMessage.InvalidObjectKeyValue('permissions'),
+        knownFileNode
+      ],
+      [
+        {
+          permissions: { public: 'view' }
+        },
+        ErrorMessage.InvalidObjectKeyValue('permissions'),
+        knownLinkNode
+      ],
+      [
+        {
+          permissions: { public: 'view' }
+        },
+        ErrorMessage.InvalidObjectKeyValue('permissions'),
+        knownDirNode
+      ],
+      [
+        { text: null } as unknown as PatchNode,
+        ErrorMessage.InvalidStringLength('text', 0, maxNodeTextBytes, 'bytes'),
+        knownFileNode
+      ],
+      [
+        {
+          permissions: { public: 'view' },
+          text: 'x'.repeat(maxNodeTextBytes + 1)
+        },
+        ErrorMessage.InvalidStringLength('text', 0, maxNodeTextBytes, 'bytes'),
+        knownFileNode
+      ],
+      [
+        {
+          tags: null
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidFieldValue('tags'),
+        knownFileNode
+      ],
+      [
+        {
+          tags: [1]
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidStringLength(
+          'tags',
+          1,
+          maxNodeTagLen,
+          'alphanumeric',
+          false,
+          true
+        ),
+        knownFileNode
+      ],
+      [
+        { tags: [''] },
+        ErrorMessage.InvalidStringLength(
+          'tags',
+          1,
+          maxNodeTagLen,
+          'alphanumeric',
+          false,
+          true
+        ),
+        knownFileNode
+      ],
+      [
+        {
+          tags: ['x'.repeat(maxNodeTagLen + 1)]
+        },
+        ErrorMessage.InvalidStringLength(
+          'tags',
+          1,
+          maxNodeTagLen,
+          'alphanumeric',
+          false,
+          true
+        ),
+        knownFileNode
+      ],
+      [
+        {
+          tags: Array.from({ length: maxNodeTags + 1 }).map(() =>
+            Math.random().toString(32).slice(2, 7)
+          )
+        },
+        ErrorMessage.TooManyItemsRequested('tags'),
+        knownFileNode
+      ],
+      [
+        {
+          lock: 1
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidFieldValue('lock'),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: 'x'.repeat(minUsernameLen - 1),
+            client: 'y'.repeat(maxLockClientLen - 1),
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: 'x'.repeat(maxUsernameLen + 1),
+            client: 'y'.repeat(maxLockClientLen - 1),
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: null as unknown as string,
+            client: 'y'.repeat(maxLockClientLen - 1),
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen),
+        knownFileNode
+      ],
+      [
+        {
+          text: '',
+          lock: {
+            user: 'x'.repeat(maxUsernameLen - 1),
+            client: '',
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string'),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: 'x'.repeat(maxUsernameLen - 1),
+            client: null as unknown as string,
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string'),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: 'x'.repeat(maxUsernameLen - 1),
+            client: 'y'.repeat(maxLockClientLen + 1),
+            createdAt: Date.now()
+          }
+        },
+        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string'),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: 'x'.repeat(maxUsernameLen - 1),
+            client: 'y'.repeat(maxLockClientLen - 1)
+          } as NodeLock
+        },
+        ErrorMessage.InvalidFieldValue('lock.createdAt'),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: 'x'.repeat(maxUsernameLen - 1),
+            client: 'y'.repeat(maxLockClientLen - 1),
+            createdAt: null
+          } as unknown as NodeLock
+        },
+        ErrorMessage.InvalidFieldValue('lock.createdAt'),
+        knownFileNode
+      ],
+      [
+        {
+          lock: {
+            user: dummyAppData.users[0].username,
+            client: 'y'.repeat(maxLockClientLen - 1),
+            createdAt: Date.now(),
+            bad: 1
+          } as unknown as NodeLock
+        },
+        ErrorMessage.InvalidObjectKeyValue('lock'),
+        knownFileNode
+      ],
+      [
+        {
+          contents: null
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidFieldValue('contents'),
+        knownLinkNode
+      ],
+      [
+        {
+          contents: [1]
+        } as unknown as PatchNode,
+        ErrorMessage.InvalidArrayValue('contents', '1'),
+        knownDirNode
+      ],
+      [
+        { contents: ['bad'] },
+        ErrorMessage.InvalidArrayValue('contents', 'bad'),
+        knownLinkNode
+      ],
+      [
+        { contents: [knownNewId] },
+        ErrorMessage.ItemNotFound(knownNewId, 'node_id'),
+        knownDirNode
+      ],
+      [
+        { contents: [knownNewId] },
+        ErrorMessage.ItemNotFound(knownNewId, 'node_id'),
+        knownLinkNode
       ],
       [
         {
           contents: Array.from({ length: maxNodeContents + 1 }).map(() =>
-            new ObjectId().toString()
+            dummyAppData['file-nodes'][0]._id.toString()
           )
-        } as unknown as PatchNode,
-        ErrorMessage.TooManyItemsRequested('contents')
+        },
+        ErrorMessage.TooManyItemsRequested('content node_ids'),
+        knownDirNode
       ],
       [
         {
-          owner: 'User1',
-          name: 'user1-file1',
-          text: 'Tell me how did we get here?',
-          tags: ['grandson', 'music'],
-          lock: null,
-          permissions: {},
-          type: 'symlink'
+          contents: [
+            dummyAppData['meta-nodes'][0]._id.toString(),
+            dummyAppData['meta-nodes'][1]._id.toString()
+          ]
+        },
+        ErrorMessage.TooManyItemsRequested('content node_ids'),
+        dummyAppData['meta-nodes'][2]
+      ],
+      [
+        {
+          owner: 'user-does-not-exist'
         } as PatchNode,
-        ErrorMessage.UnknownField('type')
+        ErrorMessage.ItemNotFound('user-does-not-exist', 'user'),
+        knownFileNode
       ],
       [
         {
-          owner: 'User1',
-          name: 'user1-file1',
-          text: 'Tell me how did we get here?',
-          tags: ['grandson', 'music'],
-          lock: null,
-          permissions: {},
           contents: [new ObjectId().toString()]
         } as PatchNode,
-        ErrorMessage.UnknownField('contents')
+        ErrorMessage.UnknownField('contents'),
+        knownFileNode
+      ],
+      [
+        {
+          text: 'Tell me how did we get here?'
+        } as PatchNode,
+        ErrorMessage.UnknownField('text'),
+        knownLinkNode
+      ],
+      [
+        {
+          tags: ['grandson', 'music']
+        } as PatchNode,
+        ErrorMessage.UnknownField('tags'),
+        knownDirNode
+      ],
+      [
+        {
+          lock: null
+        } as PatchNode,
+        ErrorMessage.UnknownField('lock'),
+        knownLinkNode
+      ],
+      [
+        {
+          data: 1
+        } as PatchNode,
+        ErrorMessage.UnknownField('data'),
+        knownLinkNode
       ]
     ];
 
     await Promise.all(
-      patchNodes.map(([data, message]) =>
+      patchNodes.map(([data, message, node]) =>
         expect(
           Backend.updateNode({
-            username: dummyAppData['file-nodes'][0].owner,
-            node_id: dummyAppData['file-nodes'][0]._id.toString(),
+            username: node.owner,
+            node_id: node._id.toString(),
             data
           })
         ).rejects.toMatchObject({ message })
       )
     );
-
-    await expect(
-      Backend.updateNode({
-        username: dummyAppData['meta-nodes'][0].owner,
-        node_id: dummyAppData['meta-nodes'][0]._id.toString(),
-        data: {
-          owner: 'User1',
-          name: 'user1-file1',
-          text: 'Tell me how did we get here?',
-          tags: ['grandson', 'music'],
-          lock: null,
-          permissions: {},
-          contents: [new ObjectId().toString()]
-        }
-      })
-    ).rejects.toMatchObject({ message: ErrorMessage.UnknownField('text') });
   });
 });
 
@@ -1979,16 +2611,13 @@ describe('::deleteNodes', () => {
     await expect(
       fileNodeDb.countDocuments({
         _id: {
-          $in: [
-            dummyAppData['file-nodes'][0]._id.toString(),
-            dummyAppData['file-nodes'][1]._id.toString()
-          ]
+          $in: [dummyAppData['file-nodes'][0]._id, dummyAppData['file-nodes'][1]._id]
         }
       })
     ).resolves.toBe(2);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id.toString() })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
     ).resolves.toBe(1);
 
     await expect(
@@ -2011,16 +2640,13 @@ describe('::deleteNodes', () => {
     await expect(
       fileNodeDb.countDocuments({
         _id: {
-          $in: [
-            dummyAppData['file-nodes'][0]._id.toString(),
-            dummyAppData['file-nodes'][1]._id.toString()
-          ]
+          $in: [dummyAppData['file-nodes'][0]._id, dummyAppData['file-nodes'][1]._id]
         }
       })
     ).resolves.toBe(0);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id.toString() })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
     ).resolves.toBe(0);
   });
 
@@ -2032,14 +2658,42 @@ describe('::deleteNodes', () => {
         username: dummyAppData['file-nodes'][0].owner,
         node_ids: ['bad']
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
 
     await expect(
       Backend.deleteNodes({
         username: dummyAppData['file-nodes'][0].owner,
         node_ids: [dummyAppData['file-nodes'][0]._id.toString(), 'bad']
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('node_id') });
+    ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
+  });
+
+  it('rejects if too many node_ids requested', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.deleteNodes({
+        username: 'User1',
+        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(() =>
+          new ObjectId().toString()
+        )
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.TooManyItemsRequested('node_ids')
+    });
+  });
+
+  it('rejects if the username is not found', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.deleteNodes({
+        username: 'does-not-exist',
+        node_ids: []
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
   });
 
   it('does not reject if one or more of the node_ids is not found', async () => {
@@ -2048,7 +2702,7 @@ describe('::deleteNodes', () => {
     const fileNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection('file-nodes');
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id.toString() })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id })
     ).resolves.toBe(1);
 
     await expect(
@@ -2069,11 +2723,11 @@ describe('::deleteNodes', () => {
     ).resolves.toBeUndefined();
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id.toString() })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id })
     ).resolves.toBe(0);
   });
 
-  it('rejects if one or more of the node_ids is not owned by username', async () => {
+  it('does nothing to any node_ids not owned by username', async () => {
     expect.hasAssertions();
 
     const db = await getDb({ name: 'hscc-api-drive' });
@@ -2081,31 +2735,56 @@ describe('::deleteNodes', () => {
     const metaNodeDb = db.collection('meta-nodes');
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]._id.toString() })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]._id })
     ).resolves.toBe(1);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id.toString() })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
     ).resolves.toBe(1);
 
+    await Backend.deleteNodes({
+      username: dummyAppData['file-nodes'][2].owner,
+      node_ids: [
+        dummyAppData['file-nodes'][2]._id.toString(),
+        dummyAppData['meta-nodes'][0]._id.toString()
+      ]
+    });
+
     await expect(
-      Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][2].owner,
-        node_ids: [
-          dummyAppData['file-nodes'][2]._id.toString(),
-          dummyAppData['meta-nodes'][0]._id.toString()
-        ]
-      })
-    ).rejects.toMatchObject({ message: ErrorMessage.ForbiddenAction() });
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]._id })
+    ).resolves.toBe(0);
+
+    await expect(
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+    ).resolves.toBe(1);
+  });
+
+  it('does nothing to node_ids even when user has edit permissions', async () => {
+    expect.hasAssertions();
+
+    const metaNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection('meta-nodes');
+
+    await expect(
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]._id })
+    ).resolves.toBe(1);
+
+    await Backend.deleteNodes({
+      username: 'User2',
+      node_ids: [dummyAppData['meta-nodes'][1]._id.toString()]
+    });
+
+    await expect(
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]._id })
+    ).resolves.toBe(1);
   });
 
   it('deleted node_ids are removed from all MetaNode contents arrays', async () => {
     expect.hasAssertions();
 
-    const node_id = dummyAppData['file-nodes'][4]._id.toString();
+    const node_id = dummyAppData['file-nodes'][4]._id;
 
     const numInContentArrays = dummyAppData['meta-nodes'].filter(({ contents }) =>
-      contents.includes(new ObjectId(node_id))
+      contents.includes(node_id)
     ).length;
 
     expect(numInContentArrays).toBeGreaterThan(0);
@@ -2119,7 +2798,7 @@ describe('::deleteNodes', () => {
     await expect(
       Backend.deleteNodes({
         username: dummyAppData['file-nodes'][4].owner,
-        node_ids: [node_id]
+        node_ids: [node_id.toString()]
       })
     ).resolves.toBeUndefined();
 

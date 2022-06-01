@@ -10,6 +10,7 @@ import type { Environment } from 'multiverse/next-env';
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function getEnv<T extends Environment = Environment>() {
   const env = getDefaultEnv({
+    MAX_PARAMS_PER_REQUEST: Number(process.env.MAX_PARAMS_PER_REQUEST) || 0,
     MAX_SEARCHABLE_TAGS: Number(process.env.MAX_SEARCHABLE_TAGS) || 0,
     MAX_NODE_NAME_LENGTH: Number(process.env.MAX_NODE_NAME_LENGTH) || 0,
     MAX_USER_NAME_LENGTH: Number(process.env.MAX_USER_NAME_LENGTH) || 0,
@@ -31,6 +32,7 @@ export function getEnv<T extends Environment = Environment>() {
 
   (
     [
+      'MAX_PARAMS_PER_REQUEST',
       'MAX_SEARCHABLE_TAGS',
       'MAX_NODE_NAME_LENGTH',
       'MAX_USER_NAME_LENGTH',
