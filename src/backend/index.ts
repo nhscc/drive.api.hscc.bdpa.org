@@ -65,8 +65,8 @@ const matchableStrings = [
  * specially.
  */
 const regexMatchableStrings = [
-  'owner',
   'type',
+  'owner',
   'name-lowercase', // * Proxied from name
   'text'
 ];
@@ -639,6 +639,8 @@ export async function searchNodes({
     [specifier: string]: string;
   };
 }): Promise<PublicNode[]> {
+  const { MAX_SEARCHABLE_TAGS, RESULTS_PER_PAGE } = getEnv();
+
   // ? Derive the actual after_id
   const afterId: UserId | null = (() => {
     try {
@@ -667,13 +669,18 @@ export async function searchNodes({
     }
   });
 
-  // ? Validate username, after_id
+  // ? Validate username and after_id
 
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
-  const { MAX_SEARCHABLE_TAGS } = getEnv();
+  const fileNodes = db.collection('file-nodes');
+  const metaNodes = db.collection('meta-nodes');
 
-  if (afterId && !(await itemExists(users, afterId))) {
+  if (
+    afterId &&
+    !(await itemExists(fileNodes, afterId)) &&
+    !(await itemExists(metaNodes, afterId))
+  ) {
     throw new ItemNotFoundError(after, 'node_id');
   }
 
@@ -840,7 +847,7 @@ export async function searchNodes({
   });
 
   const $match = {
-    ...(after ? { _id: { $lt: after } } : {}),
+    ...(afterId ? { _id: { $lt: afterId } } : {}),
     ...match,
     $and: [
       { $or: [{ owner: username }, { [`permissions.${username}`]: { $exists: true } }] },
@@ -860,7 +867,7 @@ export async function searchNodes({
       }
     },
     { $sort: { _id: -1 } },
-    { $limit: getEnv().RESULTS_PER_PAGE },
+    { $limit: RESULTS_PER_PAGE },
     { $project: { _id: false } }
   ];
 

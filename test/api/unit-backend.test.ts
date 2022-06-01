@@ -25,7 +25,8 @@ import type {
   PublicMetaNode,
   PublicFileNode,
   InternalMetaNode,
-  InternalFileNode
+  InternalFileNode,
+  PublicNode
 } from 'universe/backend/db';
 
 setupMemoryServerOverride();
@@ -698,22 +699,16 @@ describe('::getNodes', () => {
   it('rejects if too many node_ids requested', async () => {
     expect.hasAssertions();
 
-    await withMockedEnv(
-      async () => {
-        await expect(
-          Backend.getNodes({
-            username: 'User1',
-            node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(
-              () => new ObjectId().toString()
-            )
-          })
-        ).rejects.toMatchObject({
-          message: ErrorMessage.TooManyItemsRequested('node_ids')
-        });
-      },
-      { RESULTS_PER_PAGE: '1' },
-      { replace: false }
-    );
+    await expect(
+      Backend.getNodes({
+        username: 'User1',
+        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(() =>
+          new ObjectId().toString()
+        )
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.TooManyItemsRequested('node_ids')
+    });
   });
 });
 
@@ -784,50 +779,27 @@ describe('::searchNodes', () => {
 
     await withMockedEnv(
       async () => {
-        const nodes = getOwnedAndSharedNodes(dummyAppData.users[2].username)
-          .slice(0, 4)
-          .map(toPublicNode);
+        let prevNode: PublicNode | null = null;
+        const nodes = getOwnedAndSharedNodes(dummyAppData.users[2].username).map(
+          toPublicNode
+        );
+
+        for (const node of nodes) {
+          await expect(
+            Backend.searchNodes({
+              username: dummyAppData.users[2].username,
+              after: prevNode ? prevNode.node_id : null,
+              match: {},
+              regexMatch: {}
+            })
+          ).resolves.toStrictEqual([node]);
+          prevNode = node;
+        }
 
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: null,
-            match: {},
-            regexMatch: {}
-          })
-        ).resolves.toStrictEqual([nodes[0]]);
-
-        await expect(
-          Backend.searchNodes({
-            username: dummyAppData.users[2].username,
-            after: nodes[0].node_id,
-            match: {},
-            regexMatch: {}
-          })
-        ).resolves.toStrictEqual([nodes[1]]);
-
-        await expect(
-          Backend.searchNodes({
-            username: dummyAppData.users[2].username,
-            after: nodes[1].node_id,
-            match: {},
-            regexMatch: {}
-          })
-        ).resolves.toStrictEqual([nodes[2]]);
-
-        await expect(
-          Backend.searchNodes({
-            username: dummyAppData.users[2].username,
-            after: nodes[2].node_id,
-            match: {},
-            regexMatch: {}
-          })
-        ).resolves.toStrictEqual([nodes[3]]);
-
-        await expect(
-          Backend.searchNodes({
-            username: dummyAppData.users[2].username,
-            after: nodes[3].node_id,
+            after: prevNode ? prevNode.node_id : null,
             match: {},
             regexMatch: {}
           })
@@ -1118,7 +1090,9 @@ describe('::searchNodes', () => {
         },
         regexMatch: {}
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.TooManyItemsRequested('tags') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.TooManyItemsRequested('searchable tags')
+    });
   });
 
   it('rejects when attempting to search using disallowed or unknown fields', async () => {
@@ -1139,12 +1113,15 @@ describe('::searchNodes', () => {
         { node_id: new ObjectId().toString() },
         ErrorMessage.UnknownSpecifier('node_id')
       ],
-      [{ owner: 'User1' }, {}, ErrorMessage.UnknownSpecifier('owner')],
-      [{}, { owner: 'User1' }, ErrorMessage.UnknownSpecifier('owner')],
       [{ lock: {} }, {}, ErrorMessage.UnknownSpecifier('lock')],
       [{}, { lock: '' }, ErrorMessage.UnknownSpecifier('lock')],
       [{ contents: '' }, {}, ErrorMessage.UnknownSpecifier('contents')],
-      [{}, { contents: '' }, ErrorMessage.UnknownSpecifier('contents')]
+      [{}, { contents: '' }, ErrorMessage.UnknownSpecifier('contents')],
+      [{ permissions: '' }, {}, ErrorMessage.UnknownPermissionsSpecifier()],
+      [{}, { permissions: '' }, ErrorMessage.UnknownPermissionsSpecifier()],
+      [{}, { createdAt: 'User1' }, ErrorMessage.UnknownSpecifier('createdAt')],
+      [{}, { modifiedAt: 'User1' }, ErrorMessage.UnknownSpecifier('modifiedAt')],
+      [{}, { size: 'User1' }, ErrorMessage.UnknownSpecifier('size')]
     ];
 
     await Promise.all(
@@ -1182,112 +1159,148 @@ describe('::searchNodes', () => {
         [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
       ],
       [
-        { type: 'dne' },
-        [
-          ErrorMessage.InvalidSpecifierValue('type'),
-          ErrorMessage.InvalidSpecifierValue('type')
-        ]
-      ],
-      [
         { bad: 'super-bad' },
         [ErrorMessage.UnknownSpecifier('bad'), ErrorMessage.UnknownSpecifier('bad')]
       ],
       [
         { createdAt: () => 'wtf' },
         [
-          ErrorMessage.InvalidSpecifierValue('createdAt'),
-          ErrorMessage.InvalidRegexString('createdAt')
+          ErrorMessage.InvalidSpecifierValueType(
+            'createdAt',
+            'a number, string, boolean, or sub-specifier object'
+          ),
+          ErrorMessage.UnknownSpecifier('createdAt')
         ]
       ],
       [
-        { size: [] },
+        { tags: 1 },
         [
-          ErrorMessage.InvalidSpecifierValue('size'),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.InvalidSpecifierValueType('tags', 'an array'),
+          ErrorMessage.UnknownSpecifier('tags')
         ]
       ],
       [
-        { size: { $in: [5] } },
+        {
+          tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map((_, ndx) =>
+            ndx.toString()
+          )
+        },
         [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.TooManyItemsRequested('searchable tags'),
+          ErrorMessage.UnknownSpecifier('tags')
         ]
       ],
       [
-        { size: { $or: { bad: 'or' } } },
+        { permissions: {} },
         [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.UnknownPermissionsSpecifier(),
+          ErrorMessage.UnknownPermissionsSpecifier()
         ]
       ],
       [
-        { size: { $or: [{ bad: 5 }, { $lte: 5 }] } },
+        { 'permissions.User1': 'view', 'permissions.User2': 'edit' },
         [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.TooManyItemsRequested('permissions specifiers'),
+          ErrorMessage.TooManyItemsRequested('permissions specifiers')
         ]
       ],
       [
-        { size: { $or: [{ $gt: 5 }, { $lte: 'bad' }] } },
+        { type: /nope/g },
         [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
-        ]
-      ],
-      [
-        { size: { $or: [{ $gt: 6 }, 'b'] } },
-        [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
-        ]
-      ],
-      [
-        { size: { $or: [{ $gt: 6 }, { $gt: 6, $lte: 5 }] } },
-        [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
-        ]
-      ],
-      [
-        { size: { $or: [{ $gt: 7 }, undefined] } },
-        [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
-        ]
-      ],
-      [
-        { size: { $or: [{}] } },
-        [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.InvalidSpecifierValueType(
+            'type',
+            'a number, string, boolean, or sub-specifier object'
+          ),
+          ErrorMessage.InvalidRegexString('type')
         ]
       ],
       [
         { size: {} },
         [
-          ErrorMessage.InvalidSpecifierValue('size'),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.InvalidSpecifierValueType('size', 'a non-empty object'),
+          ErrorMessage.UnknownSpecifier('size')
         ]
       ],
       [
-        { size: { $or: [] } },
+        { size: { $in: [5] } },
         [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.UnknownSpecifier('$in', true),
+          ErrorMessage.UnknownSpecifier('size')
         ]
       ],
       [
-        { size: { $or: [{ $gt: 5 }, { $gt: 5 }, { $gt: 5 }] } },
+        { size: { $lt: [5] } },
         [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.InvalidSpecifierValueType('$lt', 'a number', true),
+          ErrorMessage.UnknownSpecifier('size')
         ]
       ],
       [
-        { size: { $gte: 'bad' } },
+        { size: { $or: { $gt: 6 } } },
+        [ErrorMessage.InvalidOrSpecifier(), ErrorMessage.UnknownSpecifier('size')]
+      ],
+      [
+        { size: { $or: [{ $gt: 6 }, { $gt: 6 }, { $gt: 6 }] } },
+        [ErrorMessage.InvalidOrSpecifier(), ErrorMessage.UnknownSpecifier('size')]
+      ],
+      [
+        { size: { $or: ['b', { $gt: 6 }] } },
         [
-          ErrorMessage.InvalidSpecifierValue('size', true),
-          ErrorMessage.InvalidRegexString('size')
+          ErrorMessage.InvalidOrSpecifierNonObject(0),
+          ErrorMessage.UnknownSpecifier('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 6 }, 'b'] } },
+        [
+          ErrorMessage.InvalidOrSpecifierNonObject(1),
+          ErrorMessage.UnknownSpecifier('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 6 }, { $gt: 6, $lte: 5 }] } },
+        [
+          ErrorMessage.InvalidOrSpecifierBadLength(1),
+          ErrorMessage.UnknownSpecifier('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gt: 7 }, undefined] } },
+        [
+          ErrorMessage.InvalidOrSpecifierNonObject(1),
+          ErrorMessage.UnknownSpecifier('size')
+        ]
+      ],
+      [
+        { size: { $or: [{}] } },
+        [ErrorMessage.InvalidOrSpecifier(), ErrorMessage.UnknownSpecifier('size')]
+      ],
+      [
+        { size: { $or: [{}, {}] } },
+        [
+          ErrorMessage.InvalidSpecifierValueType('size', 'a non-empty object'),
+          ErrorMessage.UnknownSpecifier('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ bad: 1 }, { $gte: 5 }] } },
+        [
+          ErrorMessage.InvalidOrSpecifierInvalidKey(0, 'bad'),
+          ErrorMessage.UnknownSpecifier('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gte: 5 }, { bad: 1 }] } },
+        [
+          ErrorMessage.InvalidOrSpecifierInvalidKey(1, 'bad'),
+          ErrorMessage.UnknownSpecifier('size')
+        ]
+      ],
+      [
+        { size: { $or: [{ $gte: 'bad' }, { $gte: 5 }] } },
+        [
+          ErrorMessage.InvalidOrSpecifierInvalidValueType(0, '$gte'),
+          ErrorMessage.UnknownSpecifier('size')
         ]
       ]
     ];
