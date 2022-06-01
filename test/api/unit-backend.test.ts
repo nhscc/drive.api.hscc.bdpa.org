@@ -718,8 +718,8 @@ describe('::getNodes', () => {
 });
 
 describe('::searchNodes', () => {
-  const getNodesOwnedBy = (username: Username) => {
-    return sortedNodes.filter((n) => n.owner == username);
+  const getOwnedAndSharedNodes = (username: Username) => {
+    return sortedNodes.filter((n) => n.owner == username || !!n.permissions[username]);
   };
 
   it("returns all of a user's nodes if no query params given", async () => {
@@ -735,7 +735,9 @@ describe('::searchNodes', () => {
             regexMatch: {}
           })
         ).resolves.toStrictEqual(
-          getNodesOwnedBy(dummyAppData.users[2].username).slice(0, 4).map(toPublicNode)
+          getOwnedAndSharedNodes(dummyAppData.users[2].username)
+            .slice(0, 4)
+            .map(toPublicNode)
         );
       },
       { RESULTS_PER_PAGE: '4' },
@@ -750,12 +752,12 @@ describe('::searchNodes', () => {
       Backend.searchNodes({
         username: dummyAppData.users[1].username,
         after: null,
-        match: { tags: ['music'] },
+        match: { tags: ['darkshines'] },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[1].username)
-        .filter((n) => n.type == 'file' && n.tags.includes('music'))
+      getOwnedAndSharedNodes(dummyAppData.users[1].username)
+        .filter((n) => n.type == 'file' && n.tags.includes('darkshines'))
         .map(toPublicNode)
     );
   });
@@ -771,7 +773,7 @@ describe('::searchNodes', () => {
         regexMatch: { [`permissions.${dummyAppData.users[1].username}`]: 'view|edit' }
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[2].username)
+      getOwnedAndSharedNodes(dummyAppData.users[2].username)
         .filter((n) => !!n.permissions[dummyAppData.users[1].username])
         .map(toPublicNode)
     );
@@ -782,7 +784,7 @@ describe('::searchNodes', () => {
 
     await withMockedEnv(
       async () => {
-        const nodes = getNodesOwnedBy(dummyAppData.users[2].username)
+        const nodes = getOwnedAndSharedNodes(dummyAppData.users[2].username)
           .slice(0, 4)
           .map(toPublicNode);
 
@@ -891,20 +893,14 @@ describe('::searchNodes', () => {
     await fileNodeDb.deleteMany({});
     await metaNodeDb.deleteMany({});
 
-    await withMockedEnv(
-      async () => {
-        await expect(
-          Backend.searchNodes({
-            username: dummyAppData.users[2].username,
-            after: null,
-            match: {},
-            regexMatch: {}
-          })
-        ).resolves.toStrictEqual([]);
-      },
-      { RESULTS_PER_PAGE: '4' },
-      { replace: false }
-    );
+    await expect(
+      Backend.searchNodes({
+        username: dummyAppData.users[2].username,
+        after: null,
+        match: {},
+        regexMatch: {}
+      })
+    ).resolves.toStrictEqual([]);
   });
 
   it('returns expected nodes when using match and regexMatch simultaneously', async () => {
@@ -920,9 +916,9 @@ describe('::searchNodes', () => {
         regexMatch: { 'permissions.User2': 'view|edit' }
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[2].username).filter(
-        (n) => n.createdAt < Date.now() && regex.test(n.permissions?.User2)
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+        .filter((n) => n.createdAt < Date.now() && regex.test(n.permissions?.User2))
+        .map(toPublicNode)
     );
   });
 
@@ -937,9 +933,9 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[0].username).filter(
-        (n) => n.type == 'file' && n.tags.includes('music')
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+        .filter((n) => n.type == 'file' && n.tags.includes('music'))
+        .map(toPublicNode)
     );
 
     await expect(
@@ -950,9 +946,11 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[0].username).filter(
-        (n) => n.type == 'file' && n.tags.includes('music') && n.tags.includes('muse')
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+        .filter(
+          (n) => n.type == 'file' && (n.tags.includes('music') || n.tags.includes('muse'))
+        )
+        .map(toPublicNode)
     );
   });
 
@@ -967,9 +965,9 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[0].username).filter(
-        (n) => n['name-lowercase'] == 'user1-file1'
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+        .filter((n) => n['name-lowercase'] == 'user1-file1')
+        .map(toPublicNode)
     );
   });
 
@@ -984,9 +982,11 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[0].username).filter(
-        (n) => n.createdAt < Date.now() - 5000 && n.createdAt > Date.now() - 10000
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+        .filter(
+          (n) => n.createdAt < Date.now() - 5000 && n.createdAt > Date.now() - 10000
+        )
+        .map(toPublicNode)
     );
 
     await expect(
@@ -997,12 +997,14 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[0].username).filter(
-        (n) =>
-          n.type == 'file' &&
-          n.modifiedAt < Date.now() - 500 &&
-          n.modifiedAt > Date.now() - 1000
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+        .filter(
+          (n) =>
+            n.type == 'file' &&
+            n.modifiedAt < Date.now() - 500 &&
+            n.modifiedAt > Date.now() - 1000
+        )
+        .map(toPublicNode)
     );
   });
 
@@ -1017,9 +1019,9 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[2].username).filter(
-        (n) => n.createdAt < Date.now() - 10000
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+        .filter((n) => n.createdAt < Date.now() - 10000)
+        .map(toPublicNode)
     );
 
     await expect(
@@ -1030,9 +1032,9 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[2].username).filter(
-        (n) => n.createdAt <= Date.now() - 10000
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+        .filter((n) => n.createdAt <= Date.now() - 10000)
+        .map(toPublicNode)
     );
 
     await expect(
@@ -1043,9 +1045,9 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[2].username).filter(
-        (n) => n.createdAt > Date.now() - 10000
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+        .filter((n) => n.createdAt > Date.now() - 10000)
+        .map(toPublicNode)
     );
 
     await expect(
@@ -1056,9 +1058,9 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[2].username).filter(
-        (n) => n.createdAt >= Date.now() - 10000
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+        .filter((n) => n.createdAt >= Date.now() - 10000)
+        .map(toPublicNode)
     );
   });
 
@@ -1075,9 +1077,11 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[2].username).filter(
-        (n) => n.createdAt < Date.now() - 10000 || n.createdAt > Date.now() - 5000
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+        .filter(
+          (n) => n.createdAt < Date.now() - 10000 || n.createdAt > Date.now() - 5000
+        )
+        .map(toPublicNode)
     );
   });
 
@@ -1094,9 +1098,9 @@ describe('::searchNodes', () => {
         regexMatch: { text: '^cause look.*$' }
       })
     ).resolves.toStrictEqual(
-      getNodesOwnedBy(dummyAppData.users[0].username).filter(
-        (n) => n.type == 'file' && regex.test(n.text)
-      )
+      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+        .filter((n) => n.type == 'file' && regex.test(n.text))
+        .map(toPublicNode)
     );
   });
 
@@ -1128,19 +1132,19 @@ describe('::searchNodes', () => {
       [
         { node_id: new ObjectId().toString() },
         {},
-        ErrorMessage.InvalidSpecifier('node_id')
+        ErrorMessage.UnknownSpecifier('node_id')
       ],
       [
         {},
         { node_id: new ObjectId().toString() },
-        ErrorMessage.InvalidSpecifier('node_id')
+        ErrorMessage.UnknownSpecifier('node_id')
       ],
-      [{ owner: 'User1' }, {}, ErrorMessage.InvalidSpecifier('owner')],
-      [{}, { owner: 'User1' }, ErrorMessage.InvalidSpecifier('owner')],
-      [{ lock: {} }, {}, ErrorMessage.InvalidSpecifier('lock')],
-      [{}, { lock: '' }, ErrorMessage.InvalidSpecifier('lock')],
-      [{ contents: '' }, {}, ErrorMessage.InvalidSpecifier('contents')],
-      [{}, { contents: '' }, ErrorMessage.InvalidSpecifier('contents')]
+      [{ owner: 'User1' }, {}, ErrorMessage.UnknownSpecifier('owner')],
+      [{}, { owner: 'User1' }, ErrorMessage.UnknownSpecifier('owner')],
+      [{ lock: {} }, {}, ErrorMessage.UnknownSpecifier('lock')],
+      [{}, { lock: '' }, ErrorMessage.UnknownSpecifier('lock')],
+      [{ contents: '' }, {}, ErrorMessage.UnknownSpecifier('contents')],
+      [{}, { contents: '' }, ErrorMessage.UnknownSpecifier('contents')]
     ];
 
     await Promise.all(
@@ -1185,15 +1189,8 @@ describe('::searchNodes', () => {
         ]
       ],
       [
-        { type: 'directory', text: '' },
-        [
-          ErrorMessage.InvalidSpecifierCombination(),
-          ErrorMessage.InvalidSpecifierCombination()
-        ]
-      ],
-      [
         { bad: 'super-bad' },
-        [ErrorMessage.InvalidSpecifier('bad'), ErrorMessage.InvalidSpecifier('bad')]
+        [ErrorMessage.UnknownSpecifier('bad'), ErrorMessage.UnknownSpecifier('bad')]
       ],
       [
         { createdAt: () => 'wtf' },

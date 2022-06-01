@@ -8,7 +8,6 @@ import { ErrorMessage } from 'universe/backend/error';
 import { toss } from 'toss-expression';
 
 import {
-  NodeId,
   publicFileNodeProjection,
   publicMetaNodeProjection,
   publicUserProjection
@@ -39,27 +38,44 @@ import type {
 const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 const usernameRegex = /^[a-zA-Z0-9_-]+$/;
 const hexadecimalRegex = /^[a-fA-F0-9]+$/;
-const nodeNameRegex = /^[a-zA-Z0-9 _-]+$/;
 
 /**
- * Node properties that can be matched against with `searchNodes()`.
+ * Node properties that can be matched against with `searchNodes()` matchers.
+ * Proxied properties should be listed in their final form.
+ *
+ * Specifically does not include tags or permissions, which are handled
+ * specially.
  */
 const matchableStrings = [
+  'type',
   'owner',
-  'receiver',
   'createdAt',
-  'expiredAt',
-  'description',
-  'totalLikes',
-  'private',
-  'replyTo'
-] as const;
+  'modifiedAt',
+  'name-lowercase', // * Proxied from name
+  'size',
+  'text'
+];
+
+/**
+ * Node properties that can be matched against with `searchNodes()`
+ * regexMatchers. Must be string fields. Proxied properties should be listed in
+ * their final form.
+ *
+ * Specifically does not include tags or permissions, which are handled
+ * specially.
+ */
+const regexMatchableStrings = [
+  'owner',
+  'type',
+  'name-lowercase', // * Proxied from name
+  'text'
+];
 
 /**
  * Whitelisted MongoDB sub-matchers that can be used with `searchNodes()`, not
  * including the special "$or" sub-matcher.
  */
-const matchableSubStrings = ['$gt', '$lt', '$gte', '$lte'] as const;
+const matchableSubStrings = ['$gt', '$lt', '$gte', '$lte'];
 
 /**
  * Whitelisted MongoDB-esque sub-specifiers that can be used with
@@ -71,6 +87,7 @@ type SubSpecifierObject = {
 
 /**
  * Convert an array of node_id strings into a set of node_id ObjectIds.
+ * TODO: replace with ItemToObjectIds
  */
 const normalizeNodeIds = (ids: string[]) => {
   let node_id = '<uninitialized>';
@@ -87,7 +104,7 @@ const normalizeNodeIds = (ids: string[]) => {
 /**
  * Convert an array of strings into a set of proper node tags (still strings).
  */
-const normalizedTags = (tags: string[]) => {
+const normalizeTags = (tags: string[]) => {
   return Array.from(new Set(tags.map((tag) => tag.toLowerCase())));
 };
 
@@ -608,23 +625,247 @@ export async function searchNodes({
 }: {
   username: Username;
   after: string | null;
-  match:
-    | {
-        [specifier: string]:
-          | string
-          | number
-          | boolean
-          | SubSpecifierObject
-          | { $or: SubSpecifierObject[] };
-      }
-    | { tags: string[] }
-    | { permissions: Record<string, NodePermission> };
+  match: {
+    [specifier: string]:
+      | string
+      | string[]
+      | number
+      | boolean
+      | SubSpecifierObject
+      | { $or: SubSpecifierObject[] }
+      | Record<string, NodePermission>;
+  };
   regexMatch: {
     [specifier: string]: string;
   };
 }): Promise<PublicNode[]> {
-  void username, after, match, regexMatch;
-  return [];
+  // ? Derive the actual after_id
+  const afterId: UserId | null = (() => {
+    try {
+      return after ? new ObjectId(after) : null;
+    } catch {
+      throw new ValidationError(ErrorMessage.InvalidObjectId(after as string));
+    }
+  })();
+
+  // ? Initial matcher validation
+  if (!isPlainObject(match)) {
+    throw new ValidationError(ErrorMessage.InvalidMatcher('match'));
+  } else if (!isPlainObject(regexMatch)) {
+    throw new ValidationError(ErrorMessage.InvalidMatcher('regexMatch'));
+  }
+
+  // ? Handle aliasing/proxying
+  [regexMatch, match].forEach((matchSpec) => {
+    if (typeof matchSpec.name == 'string') {
+      matchSpec['name-lowercase'] = matchSpec.name.toLowerCase();
+      delete matchSpec.name;
+    }
+
+    if (Array.isArray(matchSpec.tags)) {
+      matchSpec.tags = normalizeTags(matchSpec.tags);
+    }
+  });
+
+  // ? Validate username, after_id
+
+  const db = await getDb({ name: 'hscc-api-drive' });
+  const users = db.collection<InternalUser>('users');
+  const { MAX_SEARCHABLE_TAGS } = getEnv();
+
+  if (afterId && !(await itemExists(users, afterId))) {
+    throw new ItemNotFoundError(after, 'node_id');
+  }
+
+  if (!(await itemExists(users, { key: 'username', id: username }))) {
+    throw new ItemNotFoundError(username, 'user');
+  }
+
+  // ? Validate the match object
+  let sawPermissionsSpecifier = false;
+  for (const [key, val] of Object.entries(match)) {
+    if (key == 'tags') {
+      if (!Array.isArray(val)) {
+        throw new ValidationError(
+          ErrorMessage.InvalidSpecifierValueType(key, 'an array')
+        );
+      }
+
+      if (val.length > MAX_SEARCHABLE_TAGS) {
+        throw new ValidationError(ErrorMessage.TooManyItemsRequested('searchable tags'));
+      }
+    } else if (key == 'permissions') {
+      throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
+    } else if (key.startsWith('permissions.')) {
+      if (sawPermissionsSpecifier) {
+        throw new ValidationError(
+          ErrorMessage.TooManyItemsRequested('permissions specifiers')
+        );
+      }
+      sawPermissionsSpecifier = true;
+    } else {
+      if (!matchableStrings.includes(key)) {
+        throw new ValidationError(ErrorMessage.UnknownSpecifier(key));
+      }
+
+      if (isPlainObject(val)) {
+        let valNotEmpty = false;
+
+        for (const [subkey, subval] of Object.entries(val)) {
+          if (subkey == '$or') {
+            if (!Array.isArray(subval) || subval.length != 2) {
+              throw new ValidationError(ErrorMessage.InvalidOrSpecifier());
+            }
+
+            if (
+              subval.every((sv, ndx) => {
+                if (!isPlainObject(sv)) {
+                  throw new ValidationError(
+                    ErrorMessage.InvalidOrSpecifierNonObject(ndx)
+                  );
+                }
+
+                const entries = Object.entries(sv);
+
+                if (!entries.length) return false;
+                if (entries.length != 1) {
+                  throw new ValidationError(
+                    ErrorMessage.InvalidOrSpecifierBadLength(ndx)
+                  );
+                }
+
+                entries.forEach(([k, v]) => {
+                  if (!matchableSubStrings.includes(k)) {
+                    throw new ValidationError(
+                      ErrorMessage.InvalidOrSpecifierInvalidKey(ndx, k)
+                    );
+                  }
+
+                  if (typeof v != 'number') {
+                    throw new ValidationError(
+                      ErrorMessage.InvalidOrSpecifierInvalidValueType(ndx, k)
+                    );
+                  }
+                });
+
+                return true;
+              })
+            ) {
+              valNotEmpty = true;
+            }
+          } else {
+            valNotEmpty = true;
+            if (!matchableSubStrings.includes(subkey)) {
+              throw new ValidationError(ErrorMessage.UnknownSpecifier(subkey, true));
+            }
+
+            if (typeof subval != 'number') {
+              throw new ValidationError(
+                ErrorMessage.InvalidSpecifierValueType(subkey, 'a number', true)
+              );
+            }
+          }
+        }
+
+        if (!valNotEmpty)
+          throw new ValidationError(
+            ErrorMessage.InvalidSpecifierValueType(key, 'a non-empty object')
+          );
+      } else if (val !== null && !['number', 'string', 'boolean'].includes(typeof val)) {
+        throw new ValidationError(
+          ErrorMessage.InvalidSpecifierValueType(
+            key,
+            'a number, string, boolean, or sub-specifier object'
+          )
+        );
+      }
+    }
+  }
+
+  // ? Validate the regexMatch object
+  for (const [key, val] of Object.entries(regexMatch)) {
+    if (key == 'permissions') {
+      throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
+    } else if (key.startsWith('permissions.')) {
+      if (sawPermissionsSpecifier) {
+        throw new ValidationError(
+          ErrorMessage.TooManyItemsRequested('permissions specifiers')
+        );
+      }
+      sawPermissionsSpecifier = true;
+    } else {
+      if (!regexMatchableStrings.includes(key)) {
+        throw new ValidationError(ErrorMessage.UnknownSpecifier(key));
+      }
+
+      if (!val || typeof val != 'string') {
+        throw new ValidationError(ErrorMessage.InvalidRegexString(key));
+      }
+    }
+  }
+
+  // ? Construct aggregation primitives
+
+  const finalRegexMatch = Object.entries(regexMatch).reduce((obj, [spec, val]) => {
+    obj[spec] = { $regex: val, $options: 'mi' };
+    return obj;
+  }, {} as Record<string, unknown>);
+
+  const orMatcher: { [key: string]: SubSpecifierObject }[] = [];
+  const tagsMatcher: { tags?: { $in: string[] } } = {};
+
+  // ? Special handling for tags matching
+  if (match.tags) {
+    tagsMatcher.tags = { $in: match.tags as string[] };
+    delete match.tags;
+  }
+
+  // ? Separate out the $or sub-specifiers for special treatment
+  Object.entries(match).forEach(([spec, val]) => {
+    if (isPlainObject(val)) {
+      const obj = val as { $or?: unknown };
+
+      if (obj.$or) {
+        (obj.$or as SubSpecifierObject[]).forEach((operand) =>
+          orMatcher.push({
+            [spec]: operand
+          })
+        );
+        delete obj.$or;
+      }
+
+      // ? Delete useless matchers if they've been emptied out
+      if (obj && !Object.keys(obj).length) delete match[spec];
+    }
+  });
+
+  const $match = {
+    ...(after ? { _id: { $lt: after } } : {}),
+    ...match,
+    $and: [
+      { $or: [{ owner: username }, { [`permissions.${username}`]: { $exists: true } }] },
+      ...(orMatcher.length ? [{ $or: orMatcher }] : [])
+    ],
+    ...tagsMatcher,
+    ...finalRegexMatch
+  };
+
+  const pipeline = [
+    { $match },
+    { $project: { ...publicFileNodeProjection, _id: true } },
+    {
+      $unionWith: {
+        coll: 'meta-nodes',
+        pipeline: [{ $match }, { $project: { ...publicMetaNodeProjection, _id: true } }]
+      }
+    },
+    { $sort: { _id: -1 } },
+    { $limit: getEnv().RESULTS_PER_PAGE },
+    { $project: { _id: false } }
+  ];
+
+  // ? Run the aggregation and return the result
+  return db.collection('file-nodes').aggregate<PublicNode>(pipeline).toArray();
 }
 
 export async function createNode({
@@ -665,7 +906,7 @@ export async function createNode({
       'name-lowercase': name.toLowerCase(),
       text,
       size: text.length,
-      tags: normalizedTags(tags),
+      tags: normalizeTags(tags),
       lock,
       permissions
     });
@@ -762,7 +1003,7 @@ export async function updateNode({
           ...(owner ? { owner } : {}),
           ...(name ? { name, 'name-lowercase': name.toLowerCase() } : {}),
           ...(text ? { text, size: text.length } : {}),
-          ...(tags ? { tags: normalizedTags(tags) } : {}),
+          ...(tags ? { tags: normalizeTags(tags) } : {}),
           ...(lock ? { lock } : {}),
           ...(permissions ? { permissions } : {})
         }

@@ -6,7 +6,6 @@ import { ErrorMessage as NamedErrorMessage } from 'named-app-errors';
 export const ErrorMessage = {
   ...NamedErrorMessage,
   TooManyItemsRequested: (itemsName: string) => `too many ${itemsName} requested`,
-  ForbiddenAction: () => 'you are not authorized to take this action',
   DuplicateFieldValue: (prop: string) => `an item with that "${prop}" already exists`,
   InvalidField: (prop: string) =>
     `the \`${prop}\` field is not allowed with this type of item`,
@@ -43,13 +42,24 @@ export const ErrorMessage = {
           }s (inclusive)`
         : `${min} ${syntax == 'bytes' ? 'byte' : 'character'} string`
     }${nullable ? ' or null' : ''}`,
+  InvalidObjectId: (id: string) => `invalid id "${id}"`,
   UnknownField: (prop: string) => `encountered unknown or illegal field \`${prop}\``,
-  InvalidSpecifier: (prop: string, sub = false) =>
-    `\`${prop}\`: invalid ${sub ? 'sub-' : ''}specifier`,
-  InvalidSpecifierValue: (prop: string, sub = false) =>
-    `\`${prop}\`: invalid ${sub ? 'sub-' : ''}specifier value`,
-  InvalidRegexString: (prop: string) => `\`${prop}\`: invalid regex value`,
-  InvalidMatcher: (prop: string) => `invalid \`${prop}\`: must be an object`,
-  InvalidSpecifierCombination: () => `invalid combination of specifiers`,
-  InvalidObjectId: (id: string) => `invalid id "${id}"`
+  UnknownSpecifier: (prop: string, sub = false) =>
+    `encountered unknown or illegal ${sub ? 'sub-' : ''}specifier \`${prop}\``,
+  UnknownPermissionsSpecifier: () =>
+    'encountered unknown specifier `permissions`. Did you mean to use `permissions.username-goes-here`?',
+  InvalidSpecifierValueType: (prop: string, type: string, sub = false) =>
+    `\`${prop}\` has invalid ${sub ? 'sub-' : ''}specifier value type (must be ${type})`,
+  InvalidRegexString: (prop: string) => `\`${prop}\` has invalid or illegal regex value`,
+  InvalidMatcher: (prop: string) => `invalid \`${prop}\`: must be object`,
+  InvalidOrSpecifier: () =>
+    'invalid "$or" sub-specifier: must be array with exactly two elements',
+  InvalidOrSpecifierNonObject: (index: number) =>
+    `invalid "$or" sub-specifier at index ${index}: all array elements must be objects`,
+  InvalidOrSpecifierBadLength: (index: number) =>
+    `invalid "$or" sub-specifier at index ${index}: only one sub-specifier allowed per array element`,
+  InvalidOrSpecifierInvalidKey: (index: number, key: string) =>
+    `invalid "$or" sub-specifier at index ${index}: invalid sub-key "${key}"`,
+  InvalidOrSpecifierInvalidValueType: (index: number, key: string) =>
+    `invalid "$or" sub-specifier at index ${index}: sub-key "${key}" has invalid value type (must be number)`
 };
