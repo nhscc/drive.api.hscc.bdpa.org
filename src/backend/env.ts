@@ -10,22 +10,22 @@ import type { Environment } from 'multiverse/next-env';
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function getEnv<T extends Environment = Environment>() {
   const env = getDefaultEnv({
-    MAX_PARAMS_PER_REQUEST: Number(process.env.MAX_PARAMS_PER_REQUEST) || 0,
-    MAX_SEARCHABLE_TAGS: Number(process.env.MAX_SEARCHABLE_TAGS) || 0,
-    MAX_NODE_NAME_LENGTH: Number(process.env.MAX_NODE_NAME_LENGTH) || 0,
-    MAX_USER_NAME_LENGTH: Number(process.env.MAX_USER_NAME_LENGTH) || 0,
-    MAX_USER_EMAIL_LENGTH: Number(process.env.MAX_USER_EMAIL_LENGTH) || 0,
-    MIN_USER_NAME_LENGTH: Number(process.env.MIN_USER_NAME_LENGTH) || 0,
-    MIN_USER_EMAIL_LENGTH: Number(process.env.MIN_USER_EMAIL_LENGTH) || 0,
-    USER_SALT_LENGTH: Number(process.env.USER_SALT_LENGTH) || 0,
-    USER_KEY_LENGTH: Number(process.env.USER_KEY_LENGTH) || 0,
-    MAX_LOCK_CLIENT_LENGTH: Number(process.env.MAX_LOCK_CLIENT_LENGTH) || 0,
-    MAX_NODE_TAGS: Number(process.env.MAX_NODE_TAGS) || 0,
-    MAX_NODE_TAG_LENGTH: Number(process.env.MAX_NODE_TAG_LENGTH) || 0,
-    MAX_NODE_PERMISSIONS: Number(process.env.MAX_NODE_PERMISSIONS) || 0,
-    MAX_NODE_CONTENTS: Number(process.env.MAX_NODE_CONTENTS) || 0,
+    MAX_PARAMS_PER_REQUEST: Number(process.env.MAX_PARAMS_PER_REQUEST) || 100,
+    MAX_SEARCHABLE_TAGS: Number(process.env.MAX_SEARCHABLE_TAGS) || 10,
+    MIN_USER_NAME_LENGTH: Number(process.env.MIN_USER_NAME_LENGTH) || 4,
+    MAX_USER_NAME_LENGTH: Number(process.env.MAX_USER_NAME_LENGTH) || 25,
+    MIN_USER_EMAIL_LENGTH: Number(process.env.MIN_USER_EMAIL_LENGTH) || 4,
+    MAX_USER_EMAIL_LENGTH: Number(process.env.MAX_USER_EMAIL_LENGTH) || 75,
+    USER_SALT_LENGTH: Number(process.env.USER_SALT_LENGTH) || 32,
+    USER_KEY_LENGTH: Number(process.env.USER_KEY_LENGTH) || 128,
+    MAX_LOCK_CLIENT_LENGTH: Number(process.env.MAX_LOCK_CLIENT_LENGTH) || 25,
+    MAX_NODE_NAME_LENGTH: Number(process.env.MAX_NODE_NAME_LENGTH) || 50,
+    MAX_NODE_TAGS: Number(process.env.MAX_NODE_TAGS) || 5,
+    MAX_NODE_TAG_LENGTH: Number(process.env.MAX_NODE_TAG_LENGTH) || 25,
+    MAX_NODE_PERMISSIONS: Number(process.env.MAX_NODE_PERMISSIONS) || 10,
+    MAX_NODE_CONTENTS: Number(process.env.MAX_NODE_CONTENTS) || 10,
     MAX_NODE_TEXT_LENGTH_BYTES:
-      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 0
+      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10240
   });
 
   // TODO: retire all of the following logic when expect-env is created. Also,
