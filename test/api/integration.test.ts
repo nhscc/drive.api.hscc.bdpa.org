@@ -11,7 +11,10 @@ import { api } from 'testverse/fixtures';
 
 import type { TestResultset, TestResult } from 'testverse/fixtures/integration';
 
-setupMemoryServerOverride();
+setupMemoryServerOverride({
+  // ? Ensure all tests share the same database state
+  defer: true
+});
 
 const withMockedEnv = mockEnvFactory(
   { OVERRIDE_EXPECT_ENV: 'force-check' },
@@ -96,7 +99,8 @@ getFixtures(api).forEach(
       !subject ||
       !handler ||
       !method ||
-      (!invisible && (!response || typeof response.status != 'number'));
+      (!invisible &&
+        (!response || !['number', 'function'].includes(typeof response.status)));
 
     // eslint-disable-next-line jest/prefer-expect-assertions
     it(`${shouldSkip ? '<SKIPPED> ' : ''}${
@@ -142,8 +146,9 @@ getFixtures(api).forEach(
           await testApiHandler({
             handler: handler || toss(new GuruMeditationError()),
             params: requestParams,
-            requestPatcher: (req) =>
-              (req.headers.Authorization = `bearer ${DUMMY_BEARER_TOKEN}`),
+            requestPatcher: (req) => {
+              req.headers.authorization = `bearer ${DUMMY_BEARER_TOKEN}`;
+            },
             test: async ({ fetch }) => {
               const res = await fetch({
                 method: method,
