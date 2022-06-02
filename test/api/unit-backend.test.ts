@@ -4,10 +4,10 @@ import { useMockDateNow } from 'multiverse/mongo-common';
 import { getDb } from 'multiverse/mongo-schema';
 import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { dummyAppData } from 'testverse/db';
-import { withMockedEnv } from 'testverse/setup';
+import { mockEnvFactory } from 'testverse/setup';
 import { toPublicNode, toPublicUser } from 'universe/backend/db';
 import { getEnv } from 'universe/backend/env';
-import { ErrorMessage } from 'universe/backend/error';
+import { ErrorMessage } from 'universe/error';
 
 import * as Backend from 'universe/backend';
 
@@ -31,6 +31,8 @@ import type {
 
 setupMemoryServerOverride();
 useMockDateNow();
+
+const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
 
 // ? A primitive attempt to replicate MongoDB's sort by { _id: -1 }
 const sortNodes = (nodes: InternalNode[]) => {
@@ -82,8 +84,7 @@ describe('::getAllUsers', () => {
           })
         ]).toStrictEqual(sortedUsers.slice(-3).map((user) => [toPublicUser(user)]));
       },
-      { RESULTS_PER_PAGE: '1' },
-      { replace: false }
+      { RESULTS_PER_PAGE: '1' }
     );
   });
 
@@ -563,6 +564,22 @@ describe('::authAppUser', () => {
       Backend.authAppUser({ username: 'User1', key: 'bad' })
     ).resolves.toBeFalse();
   });
+
+  it('returns false if application-level key is empty, null, or undefined', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.authAppUser({ username: 'User1', key: '' })
+    ).resolves.toBeFalse();
+
+    await expect(
+      Backend.authAppUser({ username: 'User1', key: null as unknown as string })
+    ).resolves.toBeFalse();
+
+    await expect(
+      Backend.authAppUser({ username: 'User1', key: undefined as unknown as string })
+    ).resolves.toBeFalse();
+  });
 });
 
 describe('::getNodes', () => {
@@ -735,8 +752,7 @@ describe('::searchNodes', () => {
             .map(toPublicNode)
         );
       },
-      { RESULTS_PER_PAGE: '4' },
-      { replace: false }
+      { RESULTS_PER_PAGE: '4' }
     );
   });
 
@@ -805,8 +821,7 @@ describe('::searchNodes', () => {
           })
         ).resolves.toStrictEqual([]);
       },
-      { RESULTS_PER_PAGE: '1' },
-      { replace: false }
+      { RESULTS_PER_PAGE: '1' }
     );
   });
 

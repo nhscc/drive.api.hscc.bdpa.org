@@ -1,10 +1,14 @@
 import { MongoServerError, ObjectId } from 'mongodb';
-import { ItemNotFoundError, ItemsNotFoundError, ValidationError } from 'named-app-errors';
+import {
+  ItemNotFoundError,
+  ItemsNotFoundError,
+  ValidationError,
+  ErrorMessage
+} from 'universe/error';
 import { isPlainObject } from 'is-plain-object';
 import { getDb } from 'multiverse/mongo-schema';
 import { itemExists } from 'multiverse/mongo-item';
 import { getEnv } from 'universe/backend/env';
-import { ErrorMessage } from 'universe/backend/error';
 import { toss } from 'toss-expression';
 
 import {
@@ -125,7 +129,7 @@ const validateUsername = (username: unknown) => {
  */
 const validateUserData = (
   data: NewUser | PatchUser,
-  { required } = { required: false }
+  { required }: { required: boolean }
 ) => {
   if (!isPlainObject(data)) {
     throw new ValidationError(ErrorMessage.InvalidJSON());
@@ -566,8 +570,11 @@ export async function authAppUser({
   username: Username;
   key: string;
 }): Promise<boolean> {
+  if (!key) return false;
+
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
+
   return !!(await users.countDocuments({ username, key }));
 }
 

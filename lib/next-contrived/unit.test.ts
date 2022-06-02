@@ -63,7 +63,10 @@ describe('::isDueForContrivedError', () => {
       },
       { REQUESTS_PER_CONTRIVED_ERROR: '5' }
     );
+  });
 
+  it('middleware disabled when REQUESTS_PER_CONTRIVED_ERROR=0', async () => {
+    expect.hasAssertions();
     await withMockedEnv(
       () => {
         expect(isDueForContrivedError()).toBeFalse();

@@ -2,117 +2,21 @@
 import { testApiHandler } from 'next-test-api-route-handler';
 import { get as dotPath } from 'dot-prop';
 import { toss } from 'toss-expression';
-import { GuruMeditationError } from 'universe/backend/error';
+import { GuruMeditationError } from 'universe/error';
 import { mockEnvFactory } from 'testverse/setup';
-import { setupTestDb } from 'testverse/db';
-import { getFixtures } from 'testverse/integration.fixtures';
-import { BANNED_KEY, DUMMY_KEY } from 'universe/backend';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import { getFixtures } from 'testverse/fixtures/integration';
+import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
+import { api } from 'testverse/fixtures';
 
-import EndpointMemes, { config as ConfigMemes } from 'universe/pages/api/v1/memes';
-import EndpointUsers, { config as ConfigUsers } from 'universe/pages/api/v1/users';
-import EndpointInfo, { config as ConfigInfo } from 'universe/pages/api/v1/info';
+import type { TestResultset, TestResult } from 'testverse/fixtures/integration';
 
-import EndpointMemesIds, {
-  config as ConfigMemesIds
-} from 'universe/pages/api/v1/memes/[...meme_ids]';
+setupMemoryServerOverride();
 
-import EndpointMemesSearch, {
-  config as ConfigMemesSearch
-} from 'universe/pages/api/v1/memes/search';
-
-import EndpointMemesIdLikes, {
-  config as ConfigMemesIdLikes
-} from 'universe/pages/api/v1/memes/[meme_id]/likes';
-
-import EndpointMemesIdLikesId, {
-  config as ConfigMemesIdLikesId
-} from 'universe/pages/api/v1/memes/[meme_id]/likes/[user_id]';
-
-import EndpointUsersId, {
-  config as ConfigUsersId
-} from 'universe/pages/api/v1/users/[user_id]';
-
-import EndpointUsersIdFriends, {
-  config as ConfigUsersIdFriends
-} from 'universe/pages/api/v1/users/[user_id]/friends';
-
-import EndpointUsersIdFriendsId, {
-  config as ConfigUsersIdFriendsId
-} from 'universe/pages/api/v1/users/[user_id]/friends/[friend_id]';
-
-import EndpointUsersIdLiked, {
-  config as ConfigUsersIdLiked
-} from 'universe/pages/api/v1/users/[user_id]/liked';
-
-import EndpointUsersIdLikedId, {
-  config as ConfigUsersIdLikedId
-} from 'universe/pages/api/v1/users/[user_id]/liked/[meme_id]';
-
-import EndpointUsersIdRequestsType, {
-  config as ConfigUsersIdRequestsType
-} from 'universe/pages/api/v1/users/[user_id]/requests/[request_type]';
-
-import EndpointUsersIdRequestsTypeId, {
-  config as ConfigUsersIdRequestsTypeId
-} from 'universe/pages/api/v1/users/[user_id]/requests/[request_type]/[target_id]';
-
-import type {
-  NextApiHandlerMixin,
-  TestResultset,
-  TestResult
-} from 'testverse/integration.fixtures';
-
-// ? Setup and hydrate the in-memory mongo instance (we're gonna need it)
-setupTestDb(true);
-
-const api = {
-  info: EndpointInfo as NextApiHandlerMixin,
-  memes: EndpointMemes as NextApiHandlerMixin,
-  memesIds: EndpointMemesIds as NextApiHandlerMixin,
-  memesSearch: EndpointMemesSearch as NextApiHandlerMixin,
-  memesIdLikes: EndpointMemesIdLikes as NextApiHandlerMixin,
-  memesIdLikesId: EndpointMemesIdLikesId as NextApiHandlerMixin,
-  users: EndpointUsers as NextApiHandlerMixin,
-  usersId: EndpointUsersId as NextApiHandlerMixin,
-  usersIdLiked: EndpointUsersIdLiked as NextApiHandlerMixin,
-  usersIdLikedId: EndpointUsersIdLikedId as NextApiHandlerMixin,
-  usersIdFriends: EndpointUsersIdFriends as NextApiHandlerMixin,
-  usersIdFriendsId: EndpointUsersIdFriendsId as NextApiHandlerMixin,
-  usersIdRequestsType: EndpointUsersIdRequestsType as NextApiHandlerMixin,
-  usersIdRequestsTypeId: EndpointUsersIdRequestsTypeId as NextApiHandlerMixin
-};
-
-api.users.config = ConfigUsers;
-api.usersId.config = ConfigUsersId;
-api.usersIdLiked.config = ConfigUsersIdLiked;
-api.usersIdLikedId.config = ConfigUsersIdLikedId;
-api.usersIdFriends.config = ConfigUsersIdFriends;
-api.usersIdFriendsId.config = ConfigUsersIdFriendsId;
-api.usersIdRequestsType.config = ConfigUsersIdRequestsType;
-api.usersIdRequestsTypeId.config = ConfigUsersIdRequestsTypeId;
-api.memes.config = ConfigMemes;
-api.memesIds.config = ConfigMemesIds;
-api.memesSearch.config = ConfigMemesSearch;
-api.memesIdLikes.config = ConfigMemesIdLikes;
-api.memesIdLikesId.config = ConfigMemesIdLikesId;
-api.info.config = ConfigInfo;
-
-api.users.url = '/users';
-api.usersId.url = '/users/:user_id';
-api.usersIdLiked.url = '/users/:user_id/liked';
-api.usersIdLikedId.url = '/users/:user_id/liked/:meme_id';
-api.usersIdFriends.url = '/users/:user_id/friends';
-api.usersIdFriendsId.url = '/users/:user_id/friends/:friend_id';
-api.usersIdRequestsType.url = '/users/:user_id/requests/:request_type';
-api.usersIdRequestsTypeId.url = '/users/:user_id/requests/:request_type/:target_id';
-api.memes.url = '/memes';
-api.memesIds.url = '/memes/:meme_id1/:meme_id2/.../:meme_idN';
-api.memesSearch.url = '/memes/search';
-api.memesIdLikes.url = '/memes/:meme_id/likes';
-api.memesIdLikesId.url = '/memes/:meme_id/likes/:user_id';
-api.info.url = '/info';
-
-const withMockedEnv = mockEnvFactory({}, { replace: false });
+const withMockedEnv = mockEnvFactory(
+  { OVERRIDE_EXPECT_ENV: 'force-check' },
+  { replace: false }
+);
 
 // ? Memory of the results of past fixture runs.
 const memory: TestResultset = [
@@ -127,8 +31,8 @@ memory.idMap = {};
 let lastRunSuccess = true;
 
 describe('generic correctness tests', () => {
-  Object.values(api).forEach((endpoint) => {
-    it(`${endpoint.url} fails on bad authentication`, async () => {
+  [...Object.values(api.v1), ...Object.values(api.v2)].forEach((endpoint) => {
+    it(`${endpoint.uri} fails on bad authentication`, async () => {
       expect.hasAssertions();
 
       await withMockedEnv(
@@ -141,13 +45,13 @@ describe('generic correctness tests', () => {
           });
         },
         {
-          REQUESTS_PER_CONTRIVED_ERROR: '10',
+          REQUESTS_PER_CONTRIVED_ERROR: '0',
           IGNORE_RATE_LIMITS: 'true'
         }
       );
     });
 
-    it(`${endpoint.url} fails if rate limited`, async () => {
+    it(`${endpoint.uri} fails if rate limited`, async () => {
       expect.hasAssertions();
 
       await withMockedEnv(
@@ -156,13 +60,15 @@ describe('generic correctness tests', () => {
             handler: endpoint,
             test: async ({ fetch }) => {
               await expect(
-                fetch({ headers: { key: BANNED_KEY } }).then((r) => r.status)
+                fetch({
+                  headers: { Authorization: `bearer ${BANNED_BEARER_TOKEN}` }
+                }).then((r) => r.status)
               ).resolves.toBe(429);
             }
           });
         },
         {
-          REQUESTS_PER_CONTRIVED_ERROR: '10',
+          REQUESTS_PER_CONTRIVED_ERROR: '0',
           IGNORE_RATE_LIMITS: 'false'
         }
       );
@@ -195,7 +101,7 @@ getFixtures(api).forEach(
     // eslint-disable-next-line jest/prefer-expect-assertions
     it(`${shouldSkip ? '<SKIPPED> ' : ''}${
       displayIndex <= 0 ? '###' : '#' + displayIndex
-    } ${method ? '[' + method + '] ' : ''}${handler?.url ? handler.url + ' ' : ''}${
+    } ${method ? '[' + method + '] ' : ''}${handler?.uri ? handler.uri + ' ' : ''}${
       subject || ''
     }`, async () => {
       if (shouldSkip || (!lastRunSuccess && process.env.FAIL_FAST)) {
@@ -236,7 +142,8 @@ getFixtures(api).forEach(
           await testApiHandler({
             handler: handler || toss(new GuruMeditationError()),
             params: requestParams,
-            requestPatcher: (req) => (req.headers.key = DUMMY_KEY),
+            requestPatcher: (req) =>
+              (req.headers.Authorization = `bearer ${DUMMY_BEARER_TOKEN}`),
             test: async ({ fetch }) => {
               const res = await fetch({
                 method: method,

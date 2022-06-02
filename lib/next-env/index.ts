@@ -1,6 +1,7 @@
 import { parse as parseAsBytes } from 'bytes';
 import { isServer } from 'is-server-side';
 import { InvalidEnvironmentError } from 'named-app-errors';
+import { toss } from 'toss-expression';
 import { validHttpMethods } from '@xunnamius/types';
 import { debugFactory } from 'multiverse/debug-extended';
 
@@ -23,11 +24,23 @@ export const envToArray = (envVal: string) => {
 
 export type Environment = Record<string, Primitive | Primitive[]>;
 
+type OverrideEnvExpect = 'force-check' | 'force-no-check' | undefined;
+
 /**
  * Returns an object representing the current runtime environment.
  */
 export function getEnv<T extends Environment>(customizedEnv?: T) {
   const env = {
+    OVERRIDE_EXPECT_ENV:
+      process.env.OVERRIDE_EXPECT_ENV == 'force-check' ||
+      process.env.OVERRIDE_EXPECT_ENV == 'force-no-check' ||
+      process.env.OVERRIDE_EXPECT_ENV === undefined
+        ? (process.env.OVERRIDE_EXPECT_ENV as OverrideEnvExpect)
+        : toss(
+            new InvalidEnvironmentError(
+              'OVERRIDE_EXPECT_ENV must have value "force-check", "force-no-check", or undefined'
+            )
+          ),
     NODE_ENV:
       process.env.APP_ENV || process.env.NODE_ENV || process.env.BABEL_ENV || 'unknown',
     MONGODB_URI: process.env.MONGODB_URI || '',
@@ -83,9 +96,13 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
   debug(env);
 
   // TODO: retire all of the following logic when expect-env is created. Also,
-  // TODO: expect-env should have the ability to skip runs on certain NODE_ENV.
+  // TODO: expect-env should have the ability to skip runs on certain NODE_ENV
+  // TODO: unless OVERRIDE_EXPECT_ENV is properly defined.
   /* istanbul ignore next */
-  if (env.NODE_ENV != 'test') {
+  if (
+    (env.NODE_ENV != 'test' && env.OVERRIDE_EXPECT_ENV != 'force-no-check') ||
+    env.OVERRIDE_EXPECT_ENV == 'force-check'
+  ) {
     const errors = [];
     const envIsGtZero = (name: keyof typeof env) => {
       if (

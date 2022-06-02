@@ -38,6 +38,7 @@ import contriveError, {
  * Implemented` response. This can be used to to stub out endpoints and their
  * middleware for later implementation.
  */
+/* istanbul ignore next */
 const withMiddleware = middlewareFactory<
   LogRequestOptions &
     CheckVersionOptions &

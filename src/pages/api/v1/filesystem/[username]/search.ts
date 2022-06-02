@@ -1,48 +1,47 @@
-import { sendHttpOk } from 'multiverse/next-respond';
-import { searchMemes } from 'universe/backend';
-import { wrapHandler } from 'universe/backend/middleware';
-import { ValidationError } from 'universe/backend/error';
-import { ObjectId } from 'mongodb';
-
-import type { NextApiResponse, NextApiRequest } from 'next';
-import type { MemeId } from 'types/global';
+import { withMiddleware } from 'universe/backend/middleware';
+import { searchNodes } from 'universe/backend';
+import { sendHttpOk } from 'multiverse/next-api-respond';
+import { ValidationError, ErrorMessage } from 'universe/error';
 
 // ? This is a NextJS special "config" export
 export { defaultConfig as config } from 'universe/backend/api';
 
-export default async function (req: NextApiRequest, res: NextApiResponse) {
-  await wrapHandler(
-    async ({ req, res }) => {
-      let after: MemeId | null | undefined = undefined;
-      let match: Record<string, unknown> | undefined = undefined;
-      let regexMatch: Record<string, unknown> | undefined = undefined;
+export default withMiddleware(
+  async (req, res) => {
+    const username = req.query.username.toString();
 
+    const match = (() => {
       try {
-        after = req.query.after ? new ObjectId(req.query.after.toString()) : null;
+        return JSON.parse((req.query.match || '{}').toString());
       } catch {
-        throw new ValidationError(`invalid meme_id "${req.query.after.toString()}"`);
+        throw new ValidationError(ErrorMessage.InvalidMatcher('match'));
       }
+    })();
 
+    const regexMatch = (() => {
       try {
-        match = JSON.parse((req.query.match || '{}').toString());
-        regexMatch = JSON.parse((req.query.regexMatch || '{}').toString());
-      } catch (e) {
-        throw new ValidationError(`bad match or regexMatch: ${e}`);
+        return JSON.parse((req.query.regexMatch || '{}').toString());
+      } catch {
+        throw new ValidationError(ErrorMessage.InvalidMatcher('regexMatch'));
       }
+    })();
 
-      if (match && regexMatch) {
-        // * GET
-        sendHttpOk(res, {
-          memes: await searchMemes({
-            after,
-            // @ts-expect-error: validation is handled
-            match,
-            // @ts-expect-error: validation is handled
-            regexMatch
-          })
-        });
-      }
-    },
-    { req, res, methods: ['GET'], apiVersion: 1 }
-  );
-}
+    const nodes = await searchNodes({
+      after: req.query.after?.toString(),
+      username,
+      match,
+      regexMatch
+    });
+
+    // * GET
+    sendHttpOk(res, { nodes: nodes.filter((node) => node.owner == username) });
+  },
+  {
+    options: {
+      allowedMethods: ['GET'],
+      requiresAuth: true,
+      enableContrivedErrors: true,
+      apiVersion: '1'
+    }
+  }
+);

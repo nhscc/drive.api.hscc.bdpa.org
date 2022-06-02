@@ -1,6 +1,6 @@
 import { parse as parseAsBytes } from 'bytes';
 import { getEnv as getDefaultEnv } from 'multiverse/next-env';
-import { InvalidEnvironmentError } from 'named-app-errors';
+import { InvalidEnvironmentError } from 'universe/error';
 
 import type { Environment } from 'multiverse/next-env';
 
@@ -28,44 +28,55 @@ export function getEnv<T extends Environment = Environment>() {
       parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 0
   });
 
-  const errors: string[] = [];
+  // TODO: retire all of the following logic when expect-env is created. Also,
+  // TODO: expect-env should have the ability to skip runs on certain NODE_ENV
+  // TODO: unless OVERRIDE_EXPECT_ENV is properly defined.
+  /* istanbul ignore next */
+  if (
+    (env.NODE_ENV != 'test' && env.OVERRIDE_EXPECT_ENV != 'force-no-check') ||
+    env.OVERRIDE_EXPECT_ENV == 'force-check'
+  ) {
+    const errors: string[] = [];
 
-  (
-    [
-      'MAX_PARAMS_PER_REQUEST',
-      'MAX_SEARCHABLE_TAGS',
-      'MAX_NODE_NAME_LENGTH',
-      'MAX_USER_NAME_LENGTH',
-      'MAX_USER_EMAIL_LENGTH',
-      'MIN_USER_EMAIL_LENGTH',
-      'USER_SALT_LENGTH',
-      'USER_KEY_LENGTH',
-      'MAX_LOCK_CLIENT_LENGTH',
-      'MAX_NODE_TAGS',
-      'MAX_NODE_TAG_LENGTH',
-      'MAX_NODE_PERMISSIONS',
-      'MAX_NODE_CONTENTS',
-      'MAX_NODE_TEXT_LENGTH_BYTES'
-    ] as (keyof typeof env)[]
-  ).forEach((name) => {
-    const value = env[name];
-    if (!value || value <= 0) {
-      errors.push(`bad ${name}, saw "${env[name]}" (expected a non-negative number)`);
+    (
+      [
+        'MAX_PARAMS_PER_REQUEST',
+        'MAX_SEARCHABLE_TAGS',
+        'MAX_NODE_NAME_LENGTH',
+        'MAX_USER_NAME_LENGTH',
+        'MAX_USER_EMAIL_LENGTH',
+        'MIN_USER_EMAIL_LENGTH',
+        'USER_SALT_LENGTH',
+        'USER_KEY_LENGTH',
+        'MAX_LOCK_CLIENT_LENGTH',
+        'MAX_NODE_TAGS',
+        'MAX_NODE_TAG_LENGTH',
+        'MAX_NODE_PERMISSIONS',
+        'MAX_NODE_CONTENTS',
+        'MAX_NODE_TEXT_LENGTH_BYTES'
+      ] as (keyof typeof env)[]
+    ).forEach((name) => {
+      const value = env[name];
+      if (!value || value <= 0) {
+        errors.push(`bad ${name}, saw "${env[name]}" (expected a non-negative number)`);
+      }
+    });
+
+    if (env.MIN_USER_NAME_LENGTH >= env.MAX_USER_NAME_LENGTH) {
+      errors.push('MIN_USER_NAME_LENGTH must be strictly less than MAX_USER_NAME_LENGTH');
     }
-  });
 
-  if (env.MIN_USER_NAME_LENGTH >= env.MAX_USER_NAME_LENGTH) {
-    errors.push('MIN_USER_NAME_LENGTH must be strictly less than MAX_USER_NAME_LENGTH');
-  }
+    if (env.MIN_USER_EMAIL_LENGTH >= env.MAX_USER_EMAIL_LENGTH) {
+      errors.push(
+        'MIN_USER_EMAIL_LENGTH must be strictly less than MAX_USER_EMAIL_LENGTH'
+      );
+    }
 
-  if (env.MIN_USER_EMAIL_LENGTH >= env.MAX_USER_EMAIL_LENGTH) {
-    errors.push('MIN_USER_EMAIL_LENGTH must be strictly less than MAX_USER_EMAIL_LENGTH');
-  }
-
-  // TODO: make it easier to reuse error code from getDefaultEnv. Or is it
-  // TODO: obsoleted by expect-env package? Either way, factor this logic out!
-  if (errors.length) {
-    throw new InvalidEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
+    // TODO: make it easier to reuse error code from getDefaultEnv. Or is it
+    // TODO: obsoleted by expect-env package? Either way, factor this logic out!
+    if (errors.length) {
+      throw new InvalidEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
+    }
   }
 
   return env as typeof env & T;

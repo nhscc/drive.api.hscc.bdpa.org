@@ -60,9 +60,7 @@ it('becomes verbose when no DEBUG environment variable and NODE_ENV is not test'
     await withMockedEnv(importPruneData, {
       DEBUG: undefined,
       NODE_ENV: 'something-else',
-      MONGODB_URI: 'some-uri',
-      RESULTS_PER_PAGE: '5',
-      MAX_CONTENT_LENGTH_BYTES: '100kb'
+      OVERRIDE_EXPECT_ENV: 'force-no-check'
     });
 
     expect(infoSpy).toBeCalledWith(expect.stringContaining('execution complete'));

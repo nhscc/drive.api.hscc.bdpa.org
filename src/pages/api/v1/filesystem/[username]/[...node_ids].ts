@@ -1,45 +1,41 @@
-import { wrapHandler } from 'universe/backend/middleware';
-import { getMemes, updateMemes } from 'universe/backend';
-import { itemToObjectId } from 'universe/backend/db';
-import { sendHttpOk } from 'multiverse/next-respond';
-import { NotFoundError, ValidationError } from 'universe/backend/error';
-
-import type { NextApiResponse, NextApiRequest } from 'next';
-import type { MemeId } from 'types/global';
+import { withMiddleware } from 'universe/backend/middleware';
+import { getNodes, updateNode, deleteNodes } from 'universe/backend';
+import { sendHttpOk } from 'multiverse/next-api-respond';
 
 // ? This is a NextJS special "config" export
 export { defaultConfig as config } from 'universe/backend/api';
 
-export default async function (req: NextApiRequest, res: NextApiResponse) {
-  await wrapHandler(
-    async ({ req, res }) => {
-      let meme_ids: MemeId[] | undefined = undefined;
-
-      try {
-        meme_ids = itemToObjectId(
-          Array.from(new Set<string>(req.query.meme_ids as string[]))
-        );
-      } catch {
-        throw new ValidationError('invalid meme_id(s)');
-      }
-
-      if (req.method == 'GET') {
-        const memes = await getMemes({ meme_ids });
-
-        if (memes.length != meme_ids.length) {
-          throw new NotFoundError('duplicate meme_id(s)');
-        } else sendHttpOk(res, { memes });
-      } else {
-        // * PUT
-        await updateMemes({ meme_ids, data: req.body });
-        sendHttpOk(res);
-      }
-    },
-    {
-      req,
-      res,
-      methods: ['GET', 'PUT'],
-      apiVersion: 1
+export default withMiddleware(
+  async (req, res) => {
+    if (req.method == 'GET') {
+      sendHttpOk(res, {
+        nodes: await getNodes({
+          username: req.query.username.toString(),
+          node_ids: [req.query.node_ids].flat()
+        })
+      });
+    } else if (req.method == 'DELETE') {
+      await deleteNodes({
+        username: req.query.username.toString(),
+        node_ids: [req.query.node_ids].flat()
+      });
+      sendHttpOk(res);
+    } // * PUT
+    else {
+      await updateNode({
+        username: req.query.username.toString(),
+        node_id: [req.query.node_ids].flat()[0],
+        data: req.body
+      });
+      sendHttpOk(res);
     }
-  );
-}
+  },
+  {
+    options: {
+      allowedMethods: ['GET', 'PUT', 'DELETE'],
+      requiresAuth: true,
+      enableContrivedErrors: true,
+      apiVersion: '1'
+    }
+  }
+);
