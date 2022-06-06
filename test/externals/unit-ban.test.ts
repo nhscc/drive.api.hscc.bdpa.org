@@ -187,9 +187,10 @@ it('rate limits with respect to invocation interval', async () => {
   await (await getRateLimitsCollection()).deleteMany({});
 
   const requestLogDb = await getRequestLogCollection();
-  const requestLogEntry = await requestLogDb.find().limit(1).next();
 
-  if (!requestLogEntry) throw new GuruMeditationError('No request-log entry found?!');
+  if (!(await requestLogDb.countDocuments({}))) {
+    throw new GuruMeditationError('No request-log entry found?!');
+  }
 
   const now = ((_now: number) => _now - (_now % 5000) - 2000)(generatedAt);
 
