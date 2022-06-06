@@ -27,6 +27,9 @@ export type Middleware<
  * case that an options argument is omitted when calling `withMiddleware`. So,
  * to be safe, all custom middleware context options should be declared as
  * optional (i.e. `{ myOpt?: aType }` instead of `{ myOpt: aType })`.
+ *
+ * Middleware should default to the most restrictive configuration possible if
+ * its respective options are missing.
  */
 export type MiddlewareContext<
   Options extends Record<string, unknown> = Record<string, unknown>
