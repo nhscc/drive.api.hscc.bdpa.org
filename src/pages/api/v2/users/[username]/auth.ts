@@ -29,7 +29,7 @@ export default withMiddleware(
   },
   {
     options: {
-      methods: ['POST'],
+      allowedMethods: ['POST'],
       requiresAuth: true,
       enableContrivedErrors: true,
       apiVersion: '2'

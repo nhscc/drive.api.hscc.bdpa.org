@@ -22,7 +22,7 @@ export default withMiddleware(
   },
   {
     options: {
-      methods: ['GET', 'DELETE', 'PUT'],
+      allowedMethods: ['GET', 'DELETE', 'PUT'],
       requiresAuth: true,
       enableContrivedErrors: true,
       apiVersion: '1'
