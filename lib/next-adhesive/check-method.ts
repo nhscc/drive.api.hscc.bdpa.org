@@ -28,8 +28,8 @@ export default async function (
   if (
     !req.method ||
     getEnv().DISALLOWED_METHODS.includes(req.method) ||
-    (context.options.allowedMethods &&
-      !context.options.allowedMethods.includes(req.method as ValidHttpMethod))
+    !context.options.allowedMethods ||
+    !context.options.allowedMethods.includes(req.method as ValidHttpMethod)
   ) {
     debug(`request failed: unrecognized or disallowed method "${req.method}"`);
     sendHttpBadMethod(res);

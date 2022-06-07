@@ -5,16 +5,16 @@ import checkMethod, { Options } from 'multiverse/next-adhesive/check-method';
 
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
 
-it('is a noop by default', async () => {
+it('is restrictive by default', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
     handler: wrapHandler(withMiddleware<Options>(noopHandler, { use: [checkMethod] })),
     test: async ({ fetch }) => {
-      expect((await fetch({ method: 'GET' })).status).toBe(200);
-      expect((await fetch({ method: 'POST' })).status).toBe(200);
-      expect((await fetch({ method: 'PUT' })).status).toBe(200);
-      expect((await fetch({ method: 'DELETE' })).status).toBe(200);
+      expect((await fetch({ method: 'GET' })).status).toBe(405);
+      expect((await fetch({ method: 'POST' })).status).toBe(405);
+      expect((await fetch({ method: 'PUT' })).status).toBe(405);
+      expect((await fetch({ method: 'DELETE' })).status).toBe(405);
     }
   });
 });
@@ -57,7 +57,10 @@ it('sends 405 when encountering globally disallowed methods', async () => {
     async () => {
       await testApiHandler({
         handler: wrapHandler(
-          withMiddleware<Options>(noopHandler, { use: [checkMethod] })
+          withMiddleware<Options>(noopHandler, {
+            use: [checkMethod],
+            options: { allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'] }
+          })
         ),
         test: async ({ fetch }) => {
           expect((await fetch({ method: 'GET' })).status).toBe(200);
@@ -78,7 +81,10 @@ it('ignores spacing when parsing DISALLOWED_METHODS', async () => {
     async () => {
       await testApiHandler({
         handler: wrapHandler(
-          withMiddleware<Options>(noopHandler, { use: [checkMethod] })
+          withMiddleware<Options>(noopHandler, {
+            use: [checkMethod],
+            options: { allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'] }
+          })
         ),
         test: async ({ fetch }) => {
           expect((await fetch({ method: 'GET' })).status).toBe(405);

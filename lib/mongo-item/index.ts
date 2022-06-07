@@ -93,16 +93,17 @@ export async function itemExists<T>(
     id = new ObjectId(id);
   }
 
-  const result = collection.find({
-    [idProperty]: id,
-    ...(excludeIdProperty ? { [excludeIdProperty]: { $ne: excludeId } } : {})
-  } as unknown as Parameters<typeof collection.find>[0]);
-
-  if (options?.caseInsensitive) {
-    result.collation({ locale: 'en', strength: 2 });
-  }
-
-  return (await result.count()) != 0;
+  return (
+    (await collection.countDocuments(
+      {
+        [idProperty]: id,
+        ...(excludeIdProperty ? { [excludeIdProperty]: { $ne: excludeId } } : {})
+      } as unknown as Parameters<typeof collection.countDocuments>[0],
+      {
+        ...(options?.caseInsensitive ? { collation: { locale: 'en', strength: 2 } } : {})
+      }
+    )) != 0
+  );
 }
 
 /**

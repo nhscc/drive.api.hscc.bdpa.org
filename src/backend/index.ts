@@ -502,6 +502,7 @@ export async function updateUser({
   username: Username;
   data: PatchUser;
 }): Promise<void> {
+  if (data && !Object.keys(data).length) return;
   validateUserData(data, { required: false });
 
   const { email, key, salt, ...rest } = data as Required<PatchUser>;
@@ -529,7 +530,7 @@ export async function updateUser({
     );
 
     if (!result.modifiedCount) {
-      throw new ValidationError(ErrorMessage.ItemNotFound(username, 'user'));
+      throw new ItemNotFoundError(username, 'user');
     }
   } catch (e) {
     if (e instanceof MongoServerError && e.code == 11000) {
@@ -550,7 +551,7 @@ export async function deleteUser({ username }: { username: Username }): Promise<
   const result = await users.deleteOne({ username });
 
   if (!result.deletedCount) {
-    throw new ValidationError(ErrorMessage.ItemNotFound(username, 'user'));
+    throw new ItemNotFoundError(username, 'user');
   }
 
   await Promise.all(
@@ -958,6 +959,8 @@ export async function updateNode({
   node_id: string;
   data: PatchNode;
 }): Promise<void> {
+  if (data && !Object.keys(data).length) return;
+
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
   const fileNodes = db.collection<InternalFileNode>('file-nodes');
@@ -995,7 +998,7 @@ export async function updateNode({
     .next();
 
   if (!node) {
-    throw new ValidationError(ErrorMessage.ItemNotFound(node_id, 'node_id'));
+    throw new ItemNotFoundError(node_id, 'node_id');
   }
 
   await validateNodeData(data, { type: node.type });

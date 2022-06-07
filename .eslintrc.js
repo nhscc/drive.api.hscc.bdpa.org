@@ -23,7 +23,6 @@ module.exports = {
       experimentalObjectRestSpread: true,
       jsx: true
     },
-    extraFileExtensions: ['.mjs', '.cjs'],
     project: 'tsconfig.eslint.json'
   },
   env: {
