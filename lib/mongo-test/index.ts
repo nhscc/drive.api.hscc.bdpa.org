@@ -132,7 +132,12 @@ export function setupMemoryServerOverride(params?: {
   // ? real mongodb instance (super bad!!!)
   let errored = false;
 
-  const port = (getEnv().DEBUG_INSPECTING && getEnv().MONGODB_MS_PORT) || undefined;
+  const port: number | undefined =
+    // * https://stackoverflow.com/a/67445850/1367414
+    ((getEnv().DEBUG_INSPECTING || inspector.url() !== undefined) &&
+      getEnv().MONGODB_MS_PORT) ||
+    undefined;
+
   debug(`using ${port ? `port ${port}` : 'random port'} for mongo memory server`);
 
   // * The in-memory server is not started until it's needed later on
