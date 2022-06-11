@@ -10,6 +10,11 @@ import type { Primitive } from 'type-fest';
 
 const debug = debugFactory('next-env:env');
 
+// * NOTE: next-env does not invoke dotenv or load any .env files for you,
+// * you'll have to do that manually. For Next.js apps, this is the desired
+// * behavior since environment variables are defined as secrets. Further note
+// * that Webpack and Jest configurations are setup to load .env files for you.
+
 /**
  * This method takes an environment variable value (string), removes illegal
  * characters, and then splits the string by its commas, returning the resulting
@@ -30,6 +35,11 @@ type OverrideEnvExpect = 'force-check' | 'force-no-check' | undefined;
  * Returns an object representing the current runtime environment.
  */
 export function getEnv<T extends Environment>(customizedEnv?: T) {
+  debug(`environment definitions (resolved as NODE_ENV) listed in order of precedence:`);
+  debug(`APP_ENV: ${process.env.APP_ENV ?? '(undefined)'}`);
+  debug(`NODE_ENV: ${process.env.NODE_ENV ?? '(undefined)'}`);
+  debug(`BABEL_ENV: ${process.env.BABEL_ENV ?? '(undefined)'}`);
+
   const env = {
     OVERRIDE_EXPECT_ENV:
       process.env.OVERRIDE_EXPECT_ENV == 'force-check' ||
@@ -93,7 +103,15 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
     ...customizedEnv
   };
 
+  debug('resolved env vars:');
   debug(env);
+
+  // TODO: when the following logic is retired, consider renaming this package
+  // TODO: to `@xunnamius/env` or something similar since it's not next-specific
+
+  // TODO: when in production, perhaps these checks should only be run once?
+  // TODO: Maybe this entire module should be cached? How does that work with
+  // TODO: downstream getEnv decorators (like `universe/env`)?
 
   // TODO: retire all of the following logic when expect-env is created. Also,
   // TODO: expect-env should have the ability to skip runs on certain NODE_ENV
