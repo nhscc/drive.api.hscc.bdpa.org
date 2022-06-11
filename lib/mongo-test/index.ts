@@ -3,6 +3,7 @@ import { getEnv } from 'multiverse/next-env';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { InvalidConfigurationError, TrialError } from 'named-app-errors';
 import { debugFactory } from 'multiverse/debug-extended';
+import inspector from 'inspector';
 
 import {
   getSchemaConfig,
@@ -143,9 +144,10 @@ export function setupMemoryServerOverride(params?: {
   // * The in-memory server is not started until it's needed later on
   const server = new MongoMemoryServer({
     instance: {
-      port,
-      // ? Latest mongo versions error without this line
-      args: ['--enableMajorityReadConcern=0']
+      port
+      // ? MongoDB errors WITHOUT this line as of version 4.x
+      // ? However, MongoDB errors WITH this line as of version 5.x 🙃
+      // args: ['--enableMajorityReadConcern=0']
     }
   });
 
