@@ -35,9 +35,9 @@ try {
   nodeEnv = forceEnv || nodeEnv;
   sanitizedEnv = parsedEnv;
   debug(`NODE_ENV: ${nodeEnv}`);
-  debug('sanitized env: %O', sanitizedEnv);
+  debug('sanitized .env vars: %O', sanitizedEnv);
 } catch (e) {
-  debug(`env support disabled; reason: ${e}`);
+  debug(`.env support disabled; reason: ${e}`);
 }
 
 debug('sanitized process env: %O', sanitizedProcessEnv);

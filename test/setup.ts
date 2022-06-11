@@ -32,9 +32,9 @@ let env = {};
 try {
   require('fs').accessSync('.env');
   env = require('dotenv').config().parsed;
-  debug('new env vars: %O', env);
+  debug('.env vars: %O', env);
 } catch (e) {
-  debug(`env support disabled; reason: ${e}`);
+  debug(`.env support disabled; reason: ${e}`);
 }
 
 verifyEnvironment();
