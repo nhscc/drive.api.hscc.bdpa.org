@@ -129,9 +129,9 @@ export async function getToken({
 }
 
 /**
- * Checks if a token can be derived from the Authorization header using the
- * well-known "auth" MongoDB collection. Does not throw on invalid/missing
- * headers.
+ * Checks if a token can be derived from the Authorization header by matching
+ * against the well-known "auth" MongoDB collection. Does not throw on
+ * invalid/missing headers.
  */
 export async function isValidAuthHeader({
   header,

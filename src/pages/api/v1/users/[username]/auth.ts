@@ -15,7 +15,7 @@ export { defaultConfig as config } from 'universe/backend/api';
 // TODO:    If expired, server responds with HTTP 410 GONE and terminates
 // TODO: 4. Server computes PBKDF(fresh salt, stored key) and compares
 // TODO: 5. Server responds to POST with 200 on success, 403 on error
-// TODO: 6. After response is sent, close connection & then prune expired salts
+// TODO: 6. After response is sent, close connection & maybe prune expired salts
 
 export default withMiddleware(
   async (req, res) => {
