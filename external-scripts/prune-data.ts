@@ -1,6 +1,6 @@
 import { debugNamespace as namespace } from 'universe/constants';
 import { getEnv } from 'universe/backend/env';
-import { AppError, InvalidEnvironmentError } from 'named-app-errors';
+import { AppError, InvalidAppEnvironmentError } from 'named-app-errors';
 import { getDb } from 'multiverse/mongo-schema';
 import { toss } from 'toss-expression';
 import { debugFactory } from 'multiverse/debug-extended';
@@ -26,13 +26,17 @@ const getCollectionLimits = (env: ReturnType<typeof getEnv>) => {
       env.PRUNE_DATA_MAX_LOGS && env.PRUNE_DATA_MAX_LOGS > 0
         ? env.PRUNE_DATA_MAX_LOGS
         : toss(
-            new InvalidEnvironmentError('PRUNE_DATA_MAX_LOGS must be greater than zero')
+            new InvalidAppEnvironmentError(
+              'PRUNE_DATA_MAX_LOGS must be greater than zero'
+            )
           ),
     'limited-log':
       env.PRUNE_DATA_MAX_BANNED && env.PRUNE_DATA_MAX_BANNED > 0
         ? env.PRUNE_DATA_MAX_BANNED
         : toss(
-            new InvalidEnvironmentError('PRUNE_DATA_MAX_BANNED must be greater than zero')
+            new InvalidAppEnvironmentError(
+              'PRUNE_DATA_MAX_BANNED must be greater than zero'
+            )
           )
   };
 

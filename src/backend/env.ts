@@ -1,6 +1,6 @@
 import { parse as parseAsBytes } from 'bytes';
 import { getEnv as getDefaultEnv } from 'multiverse/next-env';
-import { InvalidEnvironmentError } from 'universe/error';
+import { InvalidAppEnvironmentError } from 'universe/error';
 
 import type { Environment } from 'multiverse/next-env';
 
@@ -75,7 +75,7 @@ export function getEnv<T extends Environment = Environment>() {
     // TODO: make it easier to reuse error code from getDefaultEnv. Or is it
     // TODO: obsoleted by expect-env package? Either way, factor this logic out!
     if (errors.length) {
-      throw new InvalidEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
+      throw new InvalidAppEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
     }
   }
 

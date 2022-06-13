@@ -7,8 +7,7 @@ import {
   NotFoundError,
   AuthError,
   AppError,
-  InvalidEnvironmentError,
-  InvalidConfigurationError
+  AppValidationError
 } from 'named-app-errors';
 
 import {
@@ -100,13 +99,10 @@ export default async function (
     sendHttpError(res, {
       error: 'sanity check failed: please report exactly what you did just now!'
     });
-  } else if (
-    error instanceof InvalidEnvironmentError ||
-    error instanceof InvalidConfigurationError
-  ) {
+  } else if (error instanceof AppValidationError) {
     // eslint-disable-next-line no-console
     console.error(
-      `error - server-side validation failure on request: ${req.url}\n`,
+      `error - server-side validation exception on request: ${req.url}\n`,
       error
     );
     sendHttpError(res, errorJson);

@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb';
-import { InvalidConfigurationError } from 'named-app-errors';
+import { InvalidAppConfigurationError } from 'named-app-errors';
 import { getEnv } from 'multiverse/next-env';
 import { debugFactory } from 'multiverse/debug-extended';
 
@@ -78,7 +78,7 @@ export async function getSchemaConfig(): Promise<DbSchema> {
         `failed to import getSchemaConfig from "configverse/get-schema-config": ${e}`
       );
 
-      throw new InvalidConfigurationError(
+      throw new InvalidAppConfigurationError(
         'could not resolve mongodb schema configuration: failed to import getSchemaConfig from "configverse/get-schema-config". Did you forget to register "configverse/get-schema-config" as an import alias/path?'
       );
     }
@@ -135,7 +135,7 @@ export async function getNameFromAlias(alias: string) {
   }
 
   if (!schema.databases[nameActual]?.collections) {
-    throw new InvalidConfigurationError(
+    throw new InvalidAppConfigurationError(
       `database "${nameActual}" is not defined in schema`
     );
   }

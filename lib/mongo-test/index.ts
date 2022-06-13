@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 import { getEnv } from 'multiverse/next-env';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { InvalidConfigurationError, TrialError } from 'named-app-errors';
+import { InvalidAppConfigurationError, TrialError } from 'named-app-errors';
 import { debugFactory } from 'multiverse/debug-extended';
 import inspector from 'inspector';
 
@@ -64,7 +64,7 @@ export async function getDummyData(): Promise<DummyData> {
   } catch (e) {
     debug.warn(`failed to import getDummyData from "configverse/get-dummy-data": ${e}`);
 
-    throw new InvalidConfigurationError(
+    throw new InvalidAppConfigurationError(
       'could not resolve mongodb dummy data: failed to import getDummyData from "configverse/get-dummy-data". Did you forget to register "configverse/get-dummy-data" as an import alias/path?'
     );
   }
@@ -88,7 +88,7 @@ export async function hydrateDb({
   const dummyData = (await getDummyData())[nameActual];
 
   if (!dummyData) {
-    throw new InvalidConfigurationError(
+    throw new InvalidAppConfigurationError(
       `dummy data for database "${nameActual}" does not exist`
     );
   }
@@ -101,7 +101,7 @@ export async function hydrateDb({
     Object.entries(dummyData).map(([colName, colSchema]) => {
       if (colName != '_generatedAt') {
         if (!collectionNames.includes(colName)) {
-          throw new InvalidConfigurationError(
+          throw new InvalidAppConfigurationError(
             `collection "${nameActual}.${colName}" referenced in dummy data is not defined in source db schema`
           );
         }

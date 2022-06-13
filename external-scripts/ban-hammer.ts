@@ -1,6 +1,6 @@
 import { debugNamespace as namespace } from 'universe/constants';
 import { getEnv } from 'universe/backend/env';
-import { AppError, InvalidEnvironmentError } from 'named-app-errors';
+import { AppError, InvalidAppEnvironmentError } from 'named-app-errors';
 import { getDb } from 'multiverse/mongo-schema';
 import { debugFactory } from 'multiverse/debug-extended';
 
@@ -13,6 +13,8 @@ const debug = debugFactory(debugNamespace);
 // eslint-disable-next-line no-console
 log.log = console.info.bind(console);
 
+console.log(getEnv().DEBUG);
+console.log(getEnv().NODE_ENV);
 if (!getEnv().DEBUG && getEnv().NODE_ENV != 'test') {
   debugFactory.enable(`${debugNamespace},${debugNamespace}:*`);
   debug.enabled = false;
@@ -33,31 +35,31 @@ const invoked = async () => {
     } = getEnv();
 
     if (!calledEverySeconds || !(Number(calledEverySeconds) > 0)) {
-      throw new InvalidEnvironmentError(
+      throw new InvalidAppEnvironmentError(
         'BAN_HAMMER_WILL_BE_CALLED_EVERY_SECONDS must be greater than zero'
       );
     }
 
     if (!maxRequestsPerWindow || !(Number(maxRequestsPerWindow) > 0)) {
-      throw new InvalidEnvironmentError(
+      throw new InvalidAppEnvironmentError(
         'BAN_HAMMER_MAX_REQUESTS_PER_WINDOW must be greater than zero'
       );
     }
 
     if (!resolutionWindowSeconds || !(Number(resolutionWindowSeconds) > 0)) {
-      throw new InvalidEnvironmentError(
+      throw new InvalidAppEnvironmentError(
         'BAN_HAMMER_RESOLUTION_WINDOW_SECONDS must be greater than zero'
       );
     }
 
     if (!defaultBanTimeMinutes || !(Number(defaultBanTimeMinutes) > 0)) {
-      throw new InvalidEnvironmentError(
+      throw new InvalidAppEnvironmentError(
         'BAN_HAMMER_DEFAULT_BAN_TIME_MINUTES must be greater than zero'
       );
     }
 
     if (!punishMultiplier || !(Number(punishMultiplier) > 0)) {
-      throw new InvalidEnvironmentError(
+      throw new InvalidAppEnvironmentError(
         'BAN_HAMMER_RECIDIVISM_PUNISH_MULTIPLIER must be greater than zero'
       );
     }

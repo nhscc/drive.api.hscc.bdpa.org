@@ -1,6 +1,6 @@
 import { parse as parseAsBytes } from 'bytes';
 import { isServer } from 'is-server-side';
-import { InvalidEnvironmentError } from 'named-app-errors';
+import { InvalidAppEnvironmentError } from 'named-app-errors';
 import { toss } from 'toss-expression';
 import { validHttpMethods } from '@xunnamius/types';
 import { debugFactory } from 'multiverse/debug-extended';
@@ -47,7 +47,7 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
       process.env.OVERRIDE_EXPECT_ENV === undefined
         ? (process.env.OVERRIDE_EXPECT_ENV as OverrideEnvExpect)
         : toss(
-            new InvalidEnvironmentError(
+            new InvalidAppEnvironmentError(
               'OVERRIDE_EXPECT_ENV must have value "force-check", "force-no-check", or undefined'
             )
           ),
@@ -161,7 +161,7 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
     }
 
     if (errors.length) {
-      throw new InvalidEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
+      throw new InvalidAppEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
     }
   }
 
