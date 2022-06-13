@@ -289,7 +289,8 @@ it('does not replace longer bans with shorter bans', async () => {
   await (
     await getRateLimitsCollection()
   ).updateMany({ ip: { $ne: '5.6.7.8' } }, { $set: { until: 9998784552826 } });
-  await importBanHammer();
+
+  await withMockedEnv(importBanHammer);
 
   let saw = 0;
   (await getRateLimitUntils()).forEach((u) => u.until == 9998784552826 && saw++);
@@ -305,7 +306,8 @@ it('deletes outdated entries outside the punishment period', async () => {
   await (
     await getRateLimitsCollection()
   ).updateMany({ ip: '5.6.7.8' }, { $set: { until: 0 } });
-  await importBanHammer();
+
+  await withMockedEnv(importBanHammer);
 
   await expect(getRateLimits()).resolves.toIncludeSameMembers([
     { ip: '1.2.3.4' },
