@@ -29,8 +29,8 @@ it('sends correct HTTP error codes when certain errors occur', async () => {
   const factory = itemFactory<[AppError | string, number]>([
     [new ValidationError(), 400],
     [new ValidationError(''), 400], // ! Edge case for code coverage
-    [new InvalidEnvironmentError(), 400],
-    [new InvalidConfigurationError(), 400],
+    [new InvalidEnvironmentError(), 500],
+    [new InvalidConfigurationError(), 500],
     [new InvalidItemError(), 400],
     [new InvalidSecretError(), 400],
     [new AuthError(), 403],

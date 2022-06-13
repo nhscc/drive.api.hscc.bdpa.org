@@ -6,7 +6,9 @@ import {
   ValidationError,
   NotFoundError,
   AuthError,
-  AppError
+  AppError,
+  InvalidEnvironmentError,
+  InvalidConfigurationError
 } from 'named-app-errors';
 
 import {
@@ -98,6 +100,16 @@ export default async function (
     sendHttpError(res, {
       error: 'sanity check failed: please report exactly what you did just now!'
     });
+  } else if (
+    error instanceof InvalidEnvironmentError ||
+    error instanceof InvalidConfigurationError
+  ) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `error - server-side validation failure on request: ${req.url}\n`,
+      error
+    );
+    sendHttpError(res, errorJson);
   } else if (error instanceof ValidationError) {
     sendHttpBadRequest(res, errorJson);
   } else if (error instanceof AuthError) {
@@ -108,9 +120,11 @@ export default async function (
     sendNotImplementedError(res);
   } else if (error instanceof AppError) {
     // eslint-disable-next-line no-console
-    console.error(`error - exception on request: ${req.url}\n`, error);
+    console.error(`error - named exception on request: ${req.url}\n`, error);
     sendHttpError(res, errorJson);
   } else {
+    // eslint-disable-next-line no-console
+    console.error(`error - unnamed exception on request: ${req.url}\n`, error);
     sendHttpError(res);
   }
 }
