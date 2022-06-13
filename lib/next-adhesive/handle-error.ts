@@ -15,7 +15,7 @@ import {
   sendHttpNotFound,
   sendHttpUnauthorized,
   sendHttpBadRequest,
-  sendNotImplementedError
+  sendNotImplemented
 } from 'multiverse/next-api-respond';
 
 import type { JsonError } from '@xunnamius/types';
@@ -113,7 +113,7 @@ export default async function (
   } else if (error instanceof NotFoundError) {
     sendHttpNotFound(res, errorJson);
   } else if (error instanceof NotImplementedError) {
-    sendNotImplementedError(res);
+    sendNotImplemented(res);
   } else if (error instanceof AppError) {
     // eslint-disable-next-line no-console
     console.error(`error - named exception on request: ${req.url}\n`, error);

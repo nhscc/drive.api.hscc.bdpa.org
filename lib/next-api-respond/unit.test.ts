@@ -12,7 +12,7 @@ import {
   sendHttpTooLarge,
   sendHttpUnauthenticated,
   sendHttpUnauthorized,
-  sendNotImplementedError
+  sendNotImplemented
 } from 'multiverse/next-api-respond';
 import { testApiHandler } from 'next-test-api-route-handler';
 
@@ -460,13 +460,13 @@ describe('::sendHttpBadMethod', () => {
     });
   });
 
-  describe('::sendNotImplementedError', () => {
+  describe('::sendNotImplemented', () => {
     it('sends appropriate response given arguments', async () => {
       expect.hasAssertions();
 
       await testApiHandler({
         handler: (_, res) => {
-          sendNotImplementedError(res);
+          sendNotImplemented(res);
         },
         test: async ({ fetch }) => {
           const res = await fetch();
@@ -480,7 +480,7 @@ describe('::sendHttpBadMethod', () => {
 
       await testApiHandler({
         handler: (_, res) => {
-          sendNotImplementedError(res, { json: 'data' });
+          sendNotImplemented(res, { json: 'data' });
         },
         test: async ({ fetch }) => {
           const res = await fetch();

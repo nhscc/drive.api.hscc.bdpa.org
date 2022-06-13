@@ -1,5 +1,5 @@
 import { toss } from 'toss-expression';
-import { sendNotImplementedError } from 'multiverse/next-api-respond';
+import { sendNotImplemented } from 'multiverse/next-api-respond';
 import { debugFactory } from 'multiverse/debug-extended';
 
 import type { Debugger } from 'multiverse/debug-extended';
@@ -259,7 +259,7 @@ export function withMiddleware<
 
       if (!res.writableEnded && !res.headersSent) {
         debug('response was not sent: sending "not implemented" error');
-        sendNotImplementedError(res);
+        sendNotImplemented(res);
       }
 
       debug('-- done --');

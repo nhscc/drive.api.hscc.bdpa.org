@@ -165,7 +165,7 @@ export function sendHttpError(
  * Sends an HTTP 501 "not implemented" response with optional `responseJson`
  * data.
  */
-export function sendNotImplementedError(
+export function sendNotImplemented(
   res: NextApiResponse,
   responseJson?: Record<string, unknown>
 ) {
