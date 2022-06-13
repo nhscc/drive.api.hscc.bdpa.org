@@ -13,8 +13,6 @@ const debug = debugFactory(debugNamespace);
 // eslint-disable-next-line no-console
 log.log = console.info.bind(console);
 
-console.log(getEnv().DEBUG);
-console.log(getEnv().NODE_ENV);
 if (!getEnv().DEBUG && getEnv().NODE_ENV != 'test') {
   debugFactory.enable(`${debugNamespace},${debugNamespace}:*`);
   debug.enabled = false;
