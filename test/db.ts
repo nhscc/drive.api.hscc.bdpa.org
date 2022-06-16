@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { getCommonDummyData, generatedAt } from 'multiverse/mongo-common';
+import { getCommonDummyData, mockDateNowMs } from 'multiverse/mongo-common';
 
 import type { DummyData } from 'multiverse/mongo-test';
 import type {
@@ -34,7 +34,7 @@ const knownSymlinkId = new ObjectId();
  * Test data for the application database.
  */
 export const dummyAppData: DummyAppData = {
-  _generatedAt: generatedAt,
+  _generatedAt: mockDateNowMs,
   // ! Order matters in unit and integration tests, so APPEND ONLY
   users: [
     // ? Dummy users' passwords are the same as their usernames
@@ -65,8 +65,8 @@ export const dummyAppData: DummyAppData = {
       _id: new ObjectId(),
       type: 'file',
       owner: 'User1',
-      createdAt: generatedAt - 10000,
-      modifiedAt: generatedAt - 1000,
+      createdAt: mockDateNowMs - 10000,
+      modifiedAt: mockDateNowMs - 1000,
       name: 'user1-file1',
       'name-lowercase': 'user1-file1',
       size: 28,
@@ -79,8 +79,8 @@ export const dummyAppData: DummyAppData = {
       _id: new ObjectId(),
       type: 'file',
       owner: 'User1',
-      createdAt: generatedAt - 8000,
-      modifiedAt: generatedAt - 800,
+      createdAt: mockDateNowMs - 8000,
+      modifiedAt: mockDateNowMs - 800,
       name: 'User1-File1',
       'name-lowercase': 'user1-file1',
       size: 109,
@@ -93,8 +93,8 @@ export const dummyAppData: DummyAppData = {
       _id: new ObjectId(),
       type: 'file',
       owner: 'User2',
-      createdAt: generatedAt - 150000,
-      modifiedAt: generatedAt - 50000,
+      createdAt: mockDateNowMs - 150000,
+      modifiedAt: mockDateNowMs - 50000,
       name: 'user2-file2',
       'name-lowercase': 'user2-file2',
       size: 39,
@@ -103,7 +103,7 @@ export const dummyAppData: DummyAppData = {
       lock: {
         user: 'User2',
         client: 'F951YAClN2',
-        createdAt: generatedAt - 50000
+        createdAt: mockDateNowMs - 50000
       },
       permissions: {}
     },
@@ -111,8 +111,8 @@ export const dummyAppData: DummyAppData = {
       _id: knownFileId1,
       type: 'file',
       owner: 'User3',
-      createdAt: generatedAt - 10000,
-      modifiedAt: generatedAt - 1000,
+      createdAt: mockDateNowMs - 10000,
+      modifiedAt: mockDateNowMs - 1000,
       name: 'USER3-FILE3',
       'name-lowercase': 'user3-file3',
       size: 28,
@@ -128,8 +128,8 @@ export const dummyAppData: DummyAppData = {
       _id: knownFileId2,
       type: 'file',
       owner: 'User3',
-      createdAt: generatedAt - 20000,
-      modifiedAt: generatedAt - 5432,
+      createdAt: mockDateNowMs - 20000,
+      modifiedAt: mockDateNowMs - 5432,
       name: 'user-3-file-4',
       'name-lowercase': 'user-3-file-4',
       size: 39,
@@ -146,7 +146,7 @@ export const dummyAppData: DummyAppData = {
       _id: new ObjectId(),
       type: 'directory',
       owner: 'User3',
-      createdAt: generatedAt - 200000,
+      createdAt: mockDateNowMs - 200000,
       name: 'My Music',
       'name-lowercase': 'my music',
       contents: [knownFolderId, knownFileId1, knownSymlinkId],
@@ -158,7 +158,7 @@ export const dummyAppData: DummyAppData = {
       _id: knownFolderId,
       type: 'directory',
       owner: 'User3',
-      createdAt: generatedAt - 15000,
+      createdAt: mockDateNowMs - 15000,
       name: 'tv show music',
       'name-lowercase': 'tv show music',
       contents: [knownFileId2],
@@ -170,7 +170,7 @@ export const dummyAppData: DummyAppData = {
       _id: knownSymlinkId,
       type: 'symlink',
       owner: 'User3',
-      createdAt: generatedAt - 4859,
+      createdAt: mockDateNowMs - 4859,
       name: 'HisDarkMaterials-Symlink',
       'name-lowercase': 'hisdarkmaterials-symlink',
       contents: [knownFileId2],
