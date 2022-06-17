@@ -71,8 +71,8 @@ export async function getDummyData(): Promise<DummyData> {
 }
 
 /**
- * Fill an initialized database with data. You should call `initializeDb` before
- * calling this function.
+ * Fill an initialized database with data. You should call {@link initializeDb}
+ * before calling this function.
  */
 export async function hydrateDb({
   name
@@ -213,7 +213,7 @@ export function setupMemoryServerOverride(params?: {
 
   afterAll(async () => {
     await closeClient();
-    await server.stop(true);
+    await server.stop({ force: true });
   });
 
   return { reinitializeServer };
