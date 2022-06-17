@@ -11,7 +11,7 @@ export default withMiddleware(
     sendHttpOk(res, {
       node: await createNode({
         username: req.query.username.toString(),
-        data: req.body
+        data: { permissions: {}, ...req.body }
       })
     });
   },

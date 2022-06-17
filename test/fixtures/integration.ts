@@ -632,7 +632,7 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       }
     },
     {
-      subject: 'update target node',
+      subject: 'update target node name and lock',
       handler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
@@ -647,9 +647,21 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
           client: 'abc123',
           user: dummyAppData.users[2].username,
           createdAt: Date.now()
-        } as NodeLock,
-        permissions: { 'the-hill': 'view' }
+        } as NodeLock
       },
+      response: { status: 200 }
+    },
+    {
+      subject: 'update target node permissions (v2)',
+      handler: api.v2.usersUsernameFilesystemNodeId,
+      method: 'PUT',
+      params: ({ getResultAt }) => {
+        return {
+          username: dummyAppData.users[2].username,
+          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0].node_id]
+        };
+      },
+      body: { permissions: { 'the-hill': 'view' } },
       response: { status: 200 }
     },
     {
@@ -785,12 +797,9 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       params: { username: 'the-hill' },
       response: { status: 200, json: { nodes: [] } }
     },
-
-    // TODO
-
     {
       id: 'node-1',
-      subject: 'create file node #1 owned by baracko (the-hill has view perms)',
+      subject: 'create file node #1 (v1) owned by baracko (the-hill has view perms)',
       handler: api.v1.filesystemUsername,
       method: 'POST',
       params: { username: 'baracko' },
@@ -803,9 +812,6 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
           client: 'abc123',
           user: dummyAppData.users[2].username,
           createdAt: Date.now()
-        },
-        permissions: {
-          'the-hill': 'view'
         }
       } as NewFileNode,
       response: {
@@ -826,16 +832,14 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
               user: dummyAppData.users[2].username,
               createdAt: Date.now()
             },
-            permissions: {
-              'the-hill': 'view'
-            }
+            permissions: {}
           } as PublicFileNode
         }
       }
     },
     {
       id: 'node-2',
-      subject: 'create file node #2 owned by baracko (the-hill has edit perms)',
+      subject: 'create file node #2 (v2) owned by baracko (the-hill has edit perms)',
       handler: api.v2.usersUsernameFilesystem,
       method: 'POST',
       params: { username: 'baracko' },
@@ -873,6 +877,19 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       }
     },
     {
+      subject: 'add permissions to file node #1 for the-hill as baracko',
+      handler: api.v2.usersUsernameFilesystemNodeId,
+      method: 'PUT',
+      params: ({ getResultAt }) => {
+        return {
+          username: 'baracko',
+          node_ids: [getResultAt<string>('node-1', 'node.node_id')]
+        };
+      },
+      body: { permissions: { 'the-hill': 'view' } },
+      response: { status: 200 }
+    },
+    {
       subject: 'attempt to edit file node #1 as the-hill',
       handler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
@@ -907,7 +924,6 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       body: {
         type: 'symlink',
         name: 'broken symlink',
-        permissions: {},
         contents: [dummyAppData['meta-nodes'][0]._id.toString()]
       } as NewMetaNode,
       response: {
@@ -918,8 +934,8 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
             createdAt: expect.any(Number),
             type: 'symlink',
             name: 'broken symlink',
-            permissions: {},
             node_id: expect.any(String),
+            permissions: {},
             contents: [dummyAppData['meta-nodes'][0]._id.toString()]
           }
         }
@@ -953,7 +969,6 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       body: {
         type: 'symlink',
         name: 'empty symlink',
-        permissions: {},
         contents: []
       } as NewMetaNode,
       response: {
@@ -1119,7 +1134,11 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
                 name: 'NODE NUMBER 2!',
                 permissions: { 'the-hill': 'edit' }
               },
-              getResultAt('node-1', 'node')
+              {
+                ...getResultAt<PublicFileNode>('node-1', 'node'),
+                modifiedAt: expect.any(Number),
+                permissions: { 'the-hill': 'view' }
+              }
             ]
           };
         }
@@ -1141,7 +1160,13 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
         status: 200,
         json: (_json, { getResultAt }) => {
           return {
-            nodes: [getResultAt('node-1', 'node')]
+            nodes: [
+              {
+                ...getResultAt<PublicFileNode>('node-1', 'node'),
+                modifiedAt: expect.any(Number),
+                permissions: { 'the-hill': 'view' }
+              }
+            ]
           };
         }
       }
@@ -1201,7 +1226,11 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
                 name: 'NODE NUMBER 2!',
                 permissions: { 'the-hill': 'edit' }
               },
-              getResultAt<PublicFileNode>('node-1', 'node')
+              {
+                ...getResultAt<PublicFileNode>('node-1', 'node'),
+                modifiedAt: expect.any(Number),
+                permissions: { 'the-hill': 'view' }
+              }
             ]
           };
         }
@@ -1231,7 +1260,11 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
                 name: 'NODE NUMBER 2!',
                 permissions: { 'the-hill': 'edit' }
               },
-              getResultAt<PublicFileNode>('node-1', 'node')
+              {
+                ...getResultAt<PublicFileNode>('node-1', 'node'),
+                modifiedAt: expect.any(Number),
+                permissions: { 'the-hill': 'view' }
+              }
             ]
           };
         }
