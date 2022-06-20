@@ -5,6 +5,25 @@ import checkMethod, { Options } from 'multiverse/next-adhesive/check-method';
 
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
 
+it('sends 200 for allowed methods', async () => {
+  expect.hasAssertions();
+
+  await testApiHandler({
+    handler: wrapHandler(
+      withMiddleware<Options>(noopHandler, {
+        use: [checkMethod],
+        options: { allowedMethods: ['GET', 'DELETE', 'POST', 'PUT'] }
+      })
+    ),
+    test: async ({ fetch }) => {
+      expect((await fetch({ method: 'GET' })).status).toBe(200);
+      expect((await fetch({ method: 'POST' })).status).toBe(200);
+      expect((await fetch({ method: 'PUT' })).status).toBe(200);
+      expect((await fetch({ method: 'DELETE' })).status).toBe(200);
+    }
+  });
+});
+
 it('is restrictive by default', async () => {
   expect.hasAssertions();
 
