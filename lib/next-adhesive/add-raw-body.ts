@@ -4,6 +4,7 @@ import { debugFactory } from 'multiverse/debug-extended';
 import { parse } from 'content-type';
 import getRawBody, { RawBodyError } from 'raw-body';
 import querystring from 'node:querystring';
+import { isError } from '@xunnamius/types';
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
@@ -14,7 +15,7 @@ const debug = debugFactory('next-adhesive:add-raw-body');
 const defaultRequestBodySizeLimit = '1mb';
 
 const isRawBodyError = (e: unknown): e is RawBodyError => {
-  return typeof (e as RawBodyError).type == 'string';
+  return isError(e) && typeof (e as RawBodyError).type == 'string';
 };
 
 /**
