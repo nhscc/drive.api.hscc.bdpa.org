@@ -81,11 +81,17 @@ export default async function (
     } else {
       debug('authentication check succeeded: client is authenticated');
 
-      if (typeof context.options.requiresAuth != 'boolean') {
-        debug(`authorization check required: ${context.options.requiresAuth}`);
+      const constraints =
+        context.options.requiresAuth !== true
+          ? context.options.requiresAuth?.constraints
+          : undefined;
+
+      if (constraints) {
+        debug(`authorization check required: ${constraints}`);
 
         const { authorized, error: authorizationError } = await authorizeHeader({
-          header
+          header,
+          constraints
         });
 
         if (!authorized || authorizationError) {
