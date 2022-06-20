@@ -41,6 +41,26 @@ it('is restrictive by default', async () => {
   });
 });
 
+it('allows all (even empty) Content-Type header if set to "any"', async () => {
+  expect.hasAssertions();
+
+  await testApiHandler({
+    handler: wrapHandler(
+      withMiddleware<Options>(noopHandler, {
+        use: [checkContentType],
+        options: { allowedContentTypes: 'any' }
+      })
+    ),
+    test: async ({ fetch }) => {
+      expect((await fetch({ headers: { 'content-type': 'a/b' } })).status).toBe(200);
+
+      expect((await fetch({ headers: { 'content-type': 'c' } })).status).toBe(200);
+
+      expect((await fetch()).status).toBe(200);
+    }
+  });
+});
+
 it('sends 400 when Content-Type header is not specified', async () => {
   expect.hasAssertions();
 
