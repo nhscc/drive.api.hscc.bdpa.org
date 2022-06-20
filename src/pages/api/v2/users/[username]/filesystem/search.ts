@@ -35,11 +35,6 @@ export default withMiddleware(
     });
   },
   {
-    options: {
-      allowedMethods: ['GET'],
-      requiresAuth: true,
-      enableContrivedErrors: true,
-      apiVersion: '2'
-    }
+    options: { allowedMethods: ['GET'], apiVersion: '2' }
   }
 );

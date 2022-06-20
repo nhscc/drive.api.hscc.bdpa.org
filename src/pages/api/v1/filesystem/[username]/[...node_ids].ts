@@ -31,11 +31,6 @@ export default withMiddleware(
     }
   },
   {
-    options: {
-      allowedMethods: ['GET', 'PUT', 'DELETE'],
-      requiresAuth: true,
-      enableContrivedErrors: true,
-      apiVersion: '1'
-    }
+    options: { allowedMethods: ['GET', 'PUT', 'DELETE'], apiVersion: '1' }
   }
 );

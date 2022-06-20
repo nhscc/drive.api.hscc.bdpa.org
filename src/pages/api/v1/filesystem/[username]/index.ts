@@ -16,11 +16,6 @@ export default withMiddleware(
     });
   },
   {
-    options: {
-      allowedMethods: ['POST'],
-      requiresAuth: true,
-      enableContrivedErrors: true,
-      apiVersion: '1'
-    }
+    options: { allowedMethods: ['POST'], apiVersion: '1' }
   }
 );

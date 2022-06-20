@@ -28,11 +28,6 @@ export default withMiddleware(
       : sendHttpUnauthorized(res);
   },
   {
-    options: {
-      allowedMethods: ['POST'],
-      requiresAuth: true,
-      enableContrivedErrors: true,
-      apiVersion: '1'
-    }
+    options: { allowedMethods: ['POST'], apiVersion: '1' }
   }
 );

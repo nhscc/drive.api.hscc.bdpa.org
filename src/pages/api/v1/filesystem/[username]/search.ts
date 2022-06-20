@@ -37,11 +37,6 @@ export default withMiddleware(
     sendHttpOk(res, { nodes: nodes.filter((node) => node.owner == username) });
   },
   {
-    options: {
-      allowedMethods: ['GET'],
-      requiresAuth: true,
-      enableContrivedErrors: true,
-      apiVersion: '1'
-    }
+    options: { allowedMethods: ['GET'], apiVersion: '1' }
   }
 );

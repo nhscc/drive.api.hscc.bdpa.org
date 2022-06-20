@@ -15,11 +15,6 @@ export default withMiddleware(
     } else sendHttpOk(res, { user: await createUser({ data: req.body }) });
   },
   {
-    options: {
-      allowedMethods: ['GET', 'POST'],
-      requiresAuth: true,
-      enableContrivedErrors: true,
-      apiVersion: '2'
-    }
+    options: { allowedMethods: ['GET', 'POST'], apiVersion: '2' }
   }
 );
