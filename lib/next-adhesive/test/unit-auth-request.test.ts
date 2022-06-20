@@ -1,16 +1,18 @@
 import { testApiHandler } from 'next-test-api-route-handler';
 import { asMockedFunction } from '@xunnamius/jest-types';
-import { isValidAuthHeader } from 'multiverse/next-auth';
+import { authenticateHeader, authorizeHeader } from 'multiverse/next-auth';
 import { noopHandler, wrapHandler } from 'testverse/setup';
 import { withMiddleware } from 'multiverse/next-api-glue';
 import authRequest, { Options } from 'multiverse/next-adhesive/auth-request';
 
 jest.mock('multiverse/next-auth');
 
-const mockIsValidAuthHeader = asMockedFunction(isValidAuthHeader);
+const mockAuthenticateHeader = asMockedFunction(authenticateHeader);
+const mockAuthorizeHeader = asMockedFunction(authorizeHeader);
 
 beforeEach(() => {
-  mockIsValidAuthHeader.mockReturnValue(Promise.resolve({ valid: false }));
+  mockAuthenticateHeader.mockReturnValue(Promise.resolve({ authenticated: false }));
+  mockAuthorizeHeader.mockReturnValue(Promise.resolve({ authorized: false }));
 });
 
 it('is a noop by default', async () => {
@@ -57,7 +59,7 @@ it('sends 401 on requests with bad auth when auth required', async () => {
 it('does not send 401 on requests with good auth', async () => {
   expect.hasAssertions();
 
-  mockIsValidAuthHeader.mockReturnValue(Promise.resolve({ valid: true }));
+  mockAuthenticateHeader.mockReturnValue(Promise.resolve({ valid: true }));
 
   await testApiHandler({
     handler: wrapHandler(
@@ -75,7 +77,7 @@ it('does not send 401 on requests with good auth', async () => {
 it('sends 401 if request is missing auth header', async () => {
   expect.hasAssertions();
 
-  mockIsValidAuthHeader.mockReturnValue(Promise.resolve({ valid: false }));
+  mockAuthenticateHeader.mockReturnValue(Promise.resolve({ valid: false }));
 
   await testApiHandler({
     handler: wrapHandler(
@@ -96,4 +98,8 @@ it('sends 401 if request is missing auth header', async () => {
     ),
     test: async ({ fetch }) => expect((await fetch()).status).toBe(200)
   });
+});
+
+it('allows multiple different auth entries of various schemes to coexist', async () => {
+  expect.hasAssertions();
 });
