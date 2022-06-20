@@ -16,7 +16,8 @@ export type Options = {
 };
 
 /**
- * Rejects requests using a disallowed method.
+ * Rejects requests that are either using a disallowed method or not using an
+ * allowed method.
  */
 export default async function (
   req: NextApiRequest,
