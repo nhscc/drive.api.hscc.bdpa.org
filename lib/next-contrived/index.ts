@@ -30,7 +30,9 @@ export function isDueForContrivedError() {
       return true;
     }
   } else {
-    debug(`middleware disabled (cause: REQUESTS_PER_CONTRIVED_ERROR=${reqPerErr})`);
+    debug(
+      `skipped contrived error check (cause: REQUESTS_PER_CONTRIVED_ERROR=${reqPerErr})`
+    );
   }
 
   return false;
