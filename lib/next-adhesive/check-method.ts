@@ -31,7 +31,9 @@ export default async function (
     !context.options.allowedMethods ||
     !context.options.allowedMethods.includes(req.method as ValidHttpMethod)
   ) {
-    debug(`request failed: unrecognized or disallowed method "${req.method}"`);
+    debug(`method check failed: unrecognized or disallowed method "${req.method}"`);
     sendHttpBadMethod(res);
+  } else {
+    debug(`method check succeeded: method "${req.method}" is allowed`);
   }
 }

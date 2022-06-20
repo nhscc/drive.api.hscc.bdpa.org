@@ -21,13 +21,19 @@ export type Options = {
 export default async function (req: NextApiRequest, res: NextApiResponse) {
   debug('entered middleware runtime');
 
-  const { isLimited, retryAfter } = await clientIsRateLimited(req);
-
-  if (!getEnv().IGNORE_RATE_LIMITS && isLimited) {
-    debug('request was rate-limited');
-    sendHttpRateLimited(res, { retryAfter });
-  } else if (getEnv().LOCKOUT_ALL_CLIENTS) {
-    debug('request authentication failed: all clients locked out');
+  if (getEnv().LOCKOUT_ALL_CLIENTS) {
+    debug('rate-limit check failed: all clients locked out');
     sendHttpUnauthenticated(res);
+  } else if (getEnv().IGNORE_RATE_LIMITS) {
+    debug('skipped rate-limit check');
+  } else {
+    const { isLimited, retryAfter } = await clientIsRateLimited(req);
+
+    if (isLimited) {
+      debug('rate-limit check failed: client is rate-limited');
+      sendHttpRateLimited(res, { retryAfter });
+    } else {
+      debug('rate-limit check succeeded: client not rate-limited');
+    }
   }
 }
