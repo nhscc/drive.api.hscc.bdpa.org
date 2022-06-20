@@ -153,7 +153,7 @@ describe('::createUser', () => {
     ).resolves.toBe(1);
   });
 
-  it('rejects if request body is invalid or contains properties that violates limits', async () => {
+  it('rejects if data is invalid or contains properties that violates limits', async () => {
     expect.hasAssertions();
 
     const {
@@ -410,7 +410,7 @@ describe('::updateUser', () => {
     ).rejects.toMatchObject({ message: ErrorMessage.DuplicateFieldValue('email') });
   });
 
-  it('rejects if request body is invalid or contains properties that violates limits', async () => {
+  it('rejects if data is invalid or contains properties that violates limits', async () => {
     expect.hasAssertions();
 
     const {
@@ -1469,7 +1469,7 @@ describe('::createNode', () => {
     });
   });
 
-  it('rejects if request body is invalid or contains properties that violates limits', async () => {
+  it('rejects if data is invalid or contains properties that violates limits', async () => {
     expect.hasAssertions();
 
     const {
@@ -2216,7 +2216,7 @@ describe('::updateNode', () => {
     });
   });
 
-  it('rejects if request body is invalid or contains properties that violates limits', async () => {
+  it('rejects if data is invalid or contains properties that violates limits', async () => {
     expect.hasAssertions();
 
     const {
