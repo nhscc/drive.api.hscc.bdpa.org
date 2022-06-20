@@ -22,6 +22,10 @@ import checkMethod, {
   Options as CheckMethodOptions
 } from 'multiverse/next-adhesive/check-method';
 
+import checkContentType, {
+  Options as CheckContentTypeOptions
+} from 'multiverse/next-adhesive/check-content-type';
+
 import handleError, {
   Options as HandleErrorOptions
 } from 'multiverse/next-adhesive/handle-error';
@@ -46,6 +50,7 @@ const withMiddleware = middlewareFactory<
     AuthRequestOptions &
     LimitRequestOptions &
     CheckMethodOptions &
+    CheckContentTypeOptions &
     HandleErrorOptions &
     ContriveErrorOptions
 >({
@@ -56,9 +61,15 @@ const withMiddleware = middlewareFactory<
     authRequest,
     limitRequest,
     checkMethod,
+    checkContentType,
     contriveError
   ],
-  useOnError: [handleError]
+  useOnError: [handleError],
+  options: {
+    allowedContentTypes: ['application/json'],
+    requiresAuth: true,
+    enableContrivedErrors: true
+  }
 });
 
 export { withMiddleware };
