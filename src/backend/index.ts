@@ -128,10 +128,10 @@ const validateUsername = (username: unknown) => {
  * Validate a new or patch user data object.
  */
 const validateUserData = (
-  data: NewUser | PatchUser,
+  data: NewUser | PatchUser | undefined,
   { required }: { required: boolean }
 ) => {
-  if (!isPlainObject(data)) {
+  if (!data || !isPlainObject(data)) {
     throw new ValidationError(ErrorMessage.InvalidJSON());
   }
 
@@ -189,10 +189,10 @@ const validateUserData = (
  * instance where all fields are optional.
  */
 const validateNodeData = async (
-  data: NewNode | PatchNode,
+  data: NewNode | PatchNode | undefined,
   { type }: { type: NonNullable<NewNode['type']> | null }
 ) => {
-  if (!isPlainObject(data)) {
+  if (!data || !isPlainObject(data)) {
     throw new ValidationError(ErrorMessage.InvalidJSON());
   }
 
