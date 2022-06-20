@@ -1095,3 +1095,7 @@ describe('::deleteEntry', () => {
     );
   });
 });
+
+it('allows multiple different auth entries of various schemes to coexist', async () => {
+  expect.hasAssertions();
+});
