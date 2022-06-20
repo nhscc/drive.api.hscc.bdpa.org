@@ -58,3 +58,15 @@ export async function clientIsRateLimited(req: NextApiRequest) {
     ) as UnixEpochMs
   };
 }
+
+/**
+ * Removes a rate limit on a client matched against either `ip`, `header`, or
+ * both. Matching against both removes rate limits that match either criterion.
+ */
+export async function removeRateLimit({
+  data
+}: {
+  data: { ip?: string; header?: string } | undefined;
+}) {
+  // TODO
+}

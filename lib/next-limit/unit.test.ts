@@ -133,3 +133,19 @@ describe('::clientIsRateLimited', () => {
     });
   });
 });
+
+describe('::removeRateLimit', () => {
+  it('removes an active rate limit by ip or header (case-insensitive)', async () => {
+    expect.hasAssertions();
+  });
+
+  it('rejects if no active rate limit was found', async () => {
+    // TODO: only removes active rate limits, but not inactive ones. If a client
+    // TODO: gets banned more tha once, they still get the increased penalty
+    expect.hasAssertions();
+  });
+
+  it('rejects if passed invalid data', async () => {
+    expect.hasAssertions();
+  });
+});
