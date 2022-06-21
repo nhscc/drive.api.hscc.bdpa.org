@@ -2,6 +2,7 @@ import { useMockDateNow, dummyRootData } from 'multiverse/mongo-common';
 import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { getDb } from 'multiverse/mongo-schema';
 import { ObjectId } from 'mongodb';
+import { asMockedFunction } from '@xunnamius/jest-types';
 import { randomUUID } from 'node:crypto';
 
 import {
@@ -21,16 +22,22 @@ import {
   isNewAuthEntry,
   getOwnerEntries,
   deleteEntry,
-  createEntry,
+  createEntry
+} from 'multiverse/next-auth';
+
+import * as NextAuthSpyTarget from 'multiverse/next-auth';
+
+import type {
+  AuthScheme,
+  AuthAttribute,
+  TokenAttributes,
   AuthConstraint,
   TargetToken,
   InternalAuthEntry,
   PublicAuthEntry
 } from 'multiverse/next-auth';
 
-import type { AuthScheme, AuthAttribute, TokenAttributes } from 'multiverse/next-auth';
-
-import { asMockedFunction } from '@xunnamius/jest-types';
+import type { WithoutId } from 'mongodb';
 
 setupMemoryServerOverride();
 useMockDateNow();
@@ -1098,4 +1105,132 @@ describe('::deleteEntry', () => {
 
 it('allows multiple different auth entries of various schemes to coexist', async () => {
   expect.hasAssertions();
+
+  mockRandomUUID.mockImplementation(jest.requireActual('node:crypto').randomUUID);
+
+  const uuid = randomUUID();
+  const authDb = (await getDb({ name: 'root' })).collection('auth');
+
+  mutableAuthSchemes.push('new-scheme-1');
+  mutableAuthSchemes.push('new-scheme-2');
+
+  const newEntryRed: WithoutId<InternalAuthEntry> = {
+    attributes: {
+      owner: 'owner-red',
+      isGlobalAdmin: false,
+      createdAt: Date.now()
+    } as TokenAttributes,
+    scheme: 'new-scheme-1' as AuthScheme,
+    token: { id1: uuid.slice(0, 32), id2: uuid.slice(32) }
+  };
+
+  const newEntryBlue: WithoutId<InternalAuthEntry> = {
+    attributes: { owner: 'owner-blue', isGlobalAdmin: true },
+    scheme: 'new-scheme-2' as AuthScheme,
+    token: {
+      uuid,
+      salt: uuid.slice(0, 3),
+      granter: { key: `${uuid.slice(0, 3)}-${uuid}` }
+    }
+  };
+
+  const actual_deriveSchemeAndToken = deriveSchemeAndToken;
+
+  jest
+    .spyOn(NextAuthSpyTarget, 'deriveSchemeAndToken')
+    .mockImplementation(async function ({
+      authString,
+      authData
+    }: {
+      authString?: string;
+      authData?: TargetToken;
+    }): Promise<NextAuthSpyTarget.Token> {
+      let ret: NextAuthSpyTarget.Token | undefined;
+
+      if (
+        authString?.startsWith('new-scheme-1') ||
+        authData?.scheme?.startsWith('new-scheme-1')
+      ) {
+        ret = {
+          scheme: 'new-scheme-1' as AuthScheme,
+          token: { id1: uuid.slice(0, 32), id2: uuid.slice(32) }
+        };
+      } else if (
+        authString?.startsWith('new-scheme-2') ||
+        authData?.scheme?.startsWith('new-scheme-2')
+      ) {
+        ret = {
+          scheme: 'new-scheme-2' as AuthScheme,
+          token: {
+            uuid,
+            salt: uuid.slice(0, 3),
+            granter: { key: `${uuid.slice(0, 3)}-${uuid}` }
+          }
+        };
+      } else {
+        // eslint-disable-next-line prefer-rest-params
+        ret = await actual_deriveSchemeAndToken(arguments[0]);
+      }
+
+      return Promise.resolve(ret);
+    } as typeof deriveSchemeAndToken);
+
+  jest.spyOn(NextAuthSpyTarget, 'isTokenAttributes').mockReturnValue(true);
+
+  const newEntry1 = await createEntry({ entry: { attributes: { owner: 'owner-1' } } });
+  const newEntry2 = await createEntry({
+    entry: { attributes: { owner: 'owner-2', isGlobalAdmin: true } }
+  });
+
+  // * Pseudo-createEntry calls
+  await authDb.insertOne(newEntryRed);
+  await authDb.insertOne(newEntryBlue);
+
+  await expect(
+    authenticateHeader({ header: `${newEntry1.scheme} ${newEntry1.token.bearer}` })
+  ).resolves.toStrictEqual({ authenticated: true });
+
+  await expect(
+    authenticateHeader({ header: `${newEntry2.scheme} ${newEntry2.token.bearer}` })
+  ).resolves.toStrictEqual({ authenticated: true });
+
+  await expect(
+    authenticateHeader({ header: `${newEntryRed.scheme} ${newEntryRed.token.id1}` })
+  ).resolves.toStrictEqual({ authenticated: true });
+
+  await expect(
+    authenticateHeader({ header: `${newEntryBlue.scheme} ${newEntryBlue.token.uuid}` })
+  ).resolves.toStrictEqual({ authenticated: true });
+
+  await expect(
+    authenticateHeader({ header: `${newEntry1.scheme} ${newEntryBlue.token.uuid}` })
+  ).resolves.toStrictEqual({ authenticated: false });
+
+  await expect(
+    authorizeHeader({
+      header: `${newEntry1.scheme} ${newEntry1.token.bearer}`,
+      constraints: 'isGlobalAdmin'
+    })
+  ).resolves.toStrictEqual({ authorized: false, error: expect.any(String) });
+
+  await expect(
+    authorizeHeader({
+      header: `${newEntry2.scheme} ${newEntry2.token.bearer}`,
+      constraints: 'isGlobalAdmin'
+    })
+  ).resolves.toStrictEqual({ authorized: true });
+
+  await expect(
+    authorizeHeader({
+      header: `${newEntryRed.scheme} ${newEntryRed.token.id1}`,
+      constraints: 'isGlobalAdmin'
+    })
+  ).resolves.toStrictEqual({ authorized: false, error: expect.any(String) });
+
+  await expect(
+    authorizeHeader({
+      header: `${newEntryBlue.scheme} ${newEntryBlue.token.uuid}`,
+      constraints: 'isGlobalAdmin'
+    })
+  ).resolves.toStrictEqual({ authorized: true });
 });
