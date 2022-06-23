@@ -113,6 +113,7 @@ export const dummyRootData: DummyRootData = {
     resStatusCode: 200
   })),
   'limited-log': [
+    // ! Must maintain order or various unit tests will fail
     { _id: new ObjectId(), ip: '1.2.3.4', until: mockDateNowMs + 1000 * 60 * 15 },
     { _id: new ObjectId(), ip: '5.6.7.8', until: mockDateNowMs + 1000 * 60 * 15 },
     {
