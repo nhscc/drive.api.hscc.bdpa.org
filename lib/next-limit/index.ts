@@ -1,10 +1,11 @@
 import { getDb } from 'multiverse/mongo-schema';
 import { getEnv } from 'multiverse/next-env';
 import { getClientIp } from 'request-ip';
+import { ValidationError } from 'universe/error';
 
 import type { NextApiRequest } from 'next';
 import type { UnixEpochMs } from '@xunnamius/types';
-import type { WithId, WithoutId } from 'mongodb';
+import type { UpdateResult, WithId, WithoutId } from 'mongodb';
 
 /**
  * The shape of an entry in the well-known "limited log" collection.
@@ -12,13 +13,13 @@ import type { WithId, WithoutId } from 'mongodb';
 export type InternalLimitedLogEntry = WithId<
   | {
       until: UnixEpochMs;
-      ip: string | null;
+      ip: string;
       header?: never;
     }
   | {
       until: UnixEpochMs;
       ip?: never;
-      header: string | null;
+      header: string;
     }
 >;
 
@@ -62,11 +63,40 @@ export async function clientIsRateLimited(req: NextApiRequest) {
 /**
  * Removes a rate limit on a client matched against either `ip`, `header`, or
  * both. Matching against both removes rate limits that match either criterion.
+ *
+ * @returns The number of rate limits removed.
  */
 export async function removeRateLimit({
-  data
+  entry
 }: {
-  data: { ip?: string; header?: string } | undefined;
+  entry: { ip?: string; header?: string } | undefined;
 }) {
-  // TODO
+  if (entry) {
+    const { ip, header } = entry;
+
+    if (ip !== undefined || header !== undefined) {
+      if (ip !== undefined && (typeof ip != 'string' || !ip)) {
+        throw new ValidationError('ip must be a non-empty string');
+      }
+
+      if (header !== undefined && (typeof header != 'string' || !header)) {
+        throw new ValidationError('header must be a non-empty string');
+      }
+
+      const now = Date.now();
+      const result = (await (await getDb({ name: 'root' }))
+        .collection<InternalLimitedLogEntry>('limited-log')
+        .updateMany(
+          {
+            $or: [...(ip ? [{ ip }] : []), ...(header ? [{ header }] : [])],
+            until: { $gt: now } // ? Skip the recently unbanned
+          },
+          { $set: { until: now } }
+        )) as UpdateResult;
+
+      return result.modifiedCount;
+    }
+  }
+
+  throw new ValidationError('must provide either an ip or a header');
 }
