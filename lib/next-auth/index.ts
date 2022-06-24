@@ -603,12 +603,12 @@ export async function getOwnerEntries({
    */
   owner?: TokenAttributes['owner'];
 }): Promise<PublicAuthEntry[]> {
-  if (isTokenAttributes({ owner })) {
+  if (owner === undefined || isTokenAttributes({ owner })) {
     return (await getDb({ name: 'root' }))
       .collection<InternalAuthEntry>('auth')
       .find<PublicAuthEntry>(
         // * Query is covered by the index
-        { 'attributes.owner': owner },
+        owner ? { 'attributes.owner': owner } : {},
         { projection: { _id: false } }
       )
       .toArray();
