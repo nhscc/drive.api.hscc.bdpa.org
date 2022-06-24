@@ -45,8 +45,11 @@ export const ErrorMessage = {
   UnknownPermissionsSpecifier: () =>
     'encountered unknown specifier `permissions`. Did you mean to use `permissions.username-goes-here`?',
   InvalidSpecifierValueType: (prop: string, type: string, sub = false) =>
-    `\`${prop}\` has invalid ${sub ? 'sub-' : ''}specifier value type (must be ${type})`,
-  InvalidRegexString: (prop: string) => `\`${prop}\` has invalid or illegal regex value`,
+    `\`${prop}\` has invalid ${
+      sub ? 'sub-' : ''
+    }specifier value type (must be ${type})`,
+  InvalidRegexString: (prop: string) =>
+    `\`${prop}\` has invalid or illegal regex value`,
   InvalidMatcher: (prop: string) => `invalid \`${prop}\`: must be object`,
   InvalidOrSpecifier: () =>
     'invalid "$or" sub-specifier: must be array with exactly two elements',

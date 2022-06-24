@@ -23,7 +23,8 @@ beforeEach(() => {
   mockedFetchResultJson = { hello: 'world!' };
   mockedFetchResult.ok = true;
   mockedFetchResult.status = 200;
-  mockedFetchResult.headers = new Map() as unknown as typeof mockedFetchResult['headers'];
+  mockedFetchResult.headers =
+    new Map() as unknown as typeof mockedFetchResult['headers'];
 
   mockedFetchResult.json = jest.fn(async () => {
     return typeof mockedFetchResultJson == 'string' ||
@@ -91,7 +92,9 @@ describe('::jsonFetch', () => {
     expect.hasAssertions();
 
     mockedFetchResult.headers.set('content-type', 'application/json');
-    mockedFetchResultJson = new SyntaxError('unexpected token ? in JSON at position ??');
+    mockedFetchResultJson = new SyntaxError(
+      'unexpected token ? in JSON at position ??'
+    );
 
     await expect(jsonFetch('some-url')).rejects.toThrow(
       'failed to parse response body: unexpected token ? in JSON at position ??'
@@ -211,7 +214,9 @@ describe('::jsonFetch', () => {
     ).rejects.toMatchObject({ res: mockedFetchResult, json: mockedFetchResultJson });
 
     mockedFetchResult.headers.set('content-type', 'application/json');
-    mockedFetchResultJson = new SyntaxError('unexpected token ? in JSON at position ??');
+    mockedFetchResultJson = new SyntaxError(
+      'unexpected token ? in JSON at position ??'
+    );
 
     await expect(
       jsonFetch('some-url', { rejectIfNotOk: true, rejectIfNonJsonContentType: true })

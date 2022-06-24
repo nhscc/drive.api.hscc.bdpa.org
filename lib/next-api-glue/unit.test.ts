@@ -673,7 +673,9 @@ describe('::withMiddleware', () => {
           test: async ({ fetch }) => {
             expect((await fetch()).status).toBe(403);
             expect(stdErrSpy).toBeCalledWith(
-              expect.stringContaining('skipping execution of non-function item in chain')
+              expect.stringContaining(
+                'skipping execution of non-function item in chain'
+              )
             );
           }
         });

@@ -244,7 +244,9 @@ const validateNodeData = async (
     }
   }
 
-  const typeActual = (isNewNode(data) ? data.type : type) as NonNullable<NewNode['type']>;
+  const typeActual = (isNewNode(data) ? data.type : type) as NonNullable<
+    NewNode['type']
+  >;
 
   if (isNewNode(data) || data.name !== undefined) {
     if (
@@ -429,7 +431,11 @@ export async function getAllUsers({
     .toArray();
 }
 
-export async function getUser({ username }: { username: Username }): Promise<PublicUser> {
+export async function getUser({
+  username
+}: {
+  username: Username;
+}): Promise<PublicUser> {
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
 
@@ -611,7 +617,10 @@ export async function getNodes({
       {
         $unionWith: {
           coll: 'meta-nodes',
-          pipeline: [{ $match }, { $project: { ...publicMetaNodeProjection, _id: true } }]
+          pipeline: [
+            { $match },
+            { $project: { ...publicMetaNodeProjection, _id: true } }
+          ]
         }
       },
       { $sort: { _id: -1 } },
@@ -707,7 +716,9 @@ export async function searchNodes({
       }
 
       if (val.length > MAX_SEARCHABLE_TAGS) {
-        throw new ValidationError(ErrorMessage.TooManyItemsRequested('searchable tags'));
+        throw new ValidationError(
+          ErrorMessage.TooManyItemsRequested('searchable tags')
+        );
       }
     } else if (key == 'permissions') {
       throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
@@ -786,7 +797,10 @@ export async function searchNodes({
           throw new ValidationError(
             ErrorMessage.InvalidSpecifierValueType(key, 'a non-empty object')
           );
-      } else if (val !== null && !['number', 'string', 'boolean'].includes(typeof val)) {
+      } else if (
+        val !== null &&
+        !['number', 'string', 'boolean'].includes(typeof val)
+      ) {
         throw new ValidationError(
           ErrorMessage.InvalidSpecifierValueType(
             key,
@@ -858,7 +872,9 @@ export async function searchNodes({
     ...(afterId ? { _id: { $lt: afterId } } : {}),
     ...match,
     $and: [
-      { $or: [{ owner: username }, { [`permissions.${username}`]: { $exists: true } }] },
+      {
+        $or: [{ owner: username }, { [`permissions.${username}`]: { $exists: true } }]
+      },
       ...(orMatcher.length ? [{ $or: orMatcher }] : [])
     ],
     ...tagsMatcher,
@@ -927,7 +943,8 @@ export async function createNode({
     });
   } else {
     const metaNodes = db.collection<InternalMetaNode>('meta-nodes');
-    const { type, name, contents, permissions, ...rest } = data as Required<NewMetaNode>;
+    const { type, name, contents, permissions, ...rest } =
+      data as Required<NewMetaNode>;
     const restKeys = Object.keys(rest);
 
     if (restKeys.length != 0) {
@@ -1004,7 +1021,8 @@ export async function updateNode({
   await validateNodeData(data, { type: node.type });
 
   if (node.type == 'file') {
-    const { name, text, tags, lock, permissions, owner, ...rest } = data as PatchFileNode;
+    const { name, text, tags, lock, permissions, owner, ...rest } =
+      data as PatchFileNode;
     const restKeys = Object.keys(rest);
 
     if (restKeys.length != 0) {

@@ -643,7 +643,9 @@ export async function createEntry({
     };
 
     try {
-      await (await getDb({ name: 'root' })).collection('auth').insertOne({ ...newEntry });
+      await (await getDb({ name: 'root' }))
+        .collection('auth')
+        .insertOne({ ...newEntry });
     } catch (e) {
       /* istanbul ignore else */
       if (e instanceof MongoServerError && e.code == 11000) {

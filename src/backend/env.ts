@@ -63,7 +63,9 @@ export function getEnv<T extends Environment = Environment>() {
     });
 
     if (env.MIN_USER_NAME_LENGTH >= env.MAX_USER_NAME_LENGTH) {
-      errors.push('MIN_USER_NAME_LENGTH must be strictly less than MAX_USER_NAME_LENGTH');
+      errors.push(
+        'MIN_USER_NAME_LENGTH must be strictly less than MAX_USER_NAME_LENGTH'
+      );
     }
 
     if (env.MIN_USER_EMAIL_LENGTH >= env.MAX_USER_EMAIL_LENGTH) {
@@ -75,7 +77,9 @@ export function getEnv<T extends Environment = Environment>() {
     // TODO: make it easier to reuse error code from getDefaultEnv. Or is it
     // TODO: obsoleted by expect-env package? Either way, factor this logic out!
     if (errors.length) {
-      throw new InvalidAppEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
+      throw new InvalidAppEnvironmentError(
+        `bad variables:\n - ${errors.join('\n - ')}`
+      );
     }
   }
 

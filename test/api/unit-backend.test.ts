@@ -394,7 +394,9 @@ describe('::updateUser', () => {
           salt: '0'.repeat(getEnv().USER_SALT_LENGTH)
         }
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound('fake-user', 'user') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound('fake-user', 'user')
+    });
   });
 
   it('rejects when attempting to update a user to a duplicate email', async () => {
@@ -451,7 +453,10 @@ describe('::updateUser', () => {
         { salt: 'x'.repeat(saltLen) },
         ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
       ],
-      [{ key: '' }, ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')],
+      [
+        { key: '' },
+        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+      ],
       [
         { key: '0'.repeat(keyLen - 1) },
         ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
@@ -935,7 +940,8 @@ describe('::searchNodes', () => {
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[0].username)
         .filter(
-          (n) => n.type == 'file' && (n.tags.includes('music') || n.tags.includes('muse'))
+          (n) =>
+            n.type == 'file' && (n.tags.includes('music') || n.tags.includes('muse'))
         )
         .map(toPublicNode)
     );
@@ -1163,15 +1169,24 @@ describe('::searchNodes', () => {
     ][] = [
       [
         'wtf',
-        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
+        [
+          ErrorMessage.InvalidMatcher('match'),
+          ErrorMessage.InvalidMatcher('regexMatch')
+        ]
       ],
       [
         null,
-        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
+        [
+          ErrorMessage.InvalidMatcher('match'),
+          ErrorMessage.InvalidMatcher('regexMatch')
+        ]
       ],
       [
         undefined,
-        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
+        [
+          ErrorMessage.InvalidMatcher('match'),
+          ErrorMessage.InvalidMatcher('regexMatch')
+        ]
       ],
       [
         { bad: 'super-bad' },
@@ -2724,7 +2739,9 @@ describe('::deleteNodes', () => {
   it('does not reject if one or more of the node_ids is not found', async () => {
     expect.hasAssertions();
 
-    const fileNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection('file-nodes');
+    const fileNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection(
+      'file-nodes'
+    );
 
     await expect(
       fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id })
@@ -2787,7 +2804,9 @@ describe('::deleteNodes', () => {
   it('does nothing to node_ids even when user has edit permissions', async () => {
     expect.hasAssertions();
 
-    const metaNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection('meta-nodes');
+    const metaNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection(
+      'meta-nodes'
+    );
 
     await expect(
       metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]._id })
@@ -2814,7 +2833,9 @@ describe('::deleteNodes', () => {
 
     expect(numInContentArrays).toBeGreaterThan(0);
 
-    const metaNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection('meta-nodes');
+    const metaNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection(
+      'meta-nodes'
+    );
 
     await expect(metaNodeDb.countDocuments({ contents: node_id })).resolves.toBe(
       numInContentArrays

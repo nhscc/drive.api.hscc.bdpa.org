@@ -93,7 +93,8 @@ export function withMiddleware<
   }: {
     use: Middleware<NoInfer<Options>>[];
     useOnError?: Middleware<NoInfer<Options>>[];
-    options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> & NoInfer<Options>;
+    options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> &
+      NoInfer<Options>;
   }
 ) {
   if (!Array.isArray(use)) {
@@ -272,7 +273,9 @@ export function withMiddleware<
 
         if (useOnError) {
           try {
-            debug.error('selecting first middleware in error handling middleware chain');
+            debug.error(
+              'selecting first middleware in error handling middleware chain'
+            );
             await startPullingChain(useOnError[Symbol.iterator](), debug.error);
           } catch (err) {
             // ? Error in error handler was unhandled

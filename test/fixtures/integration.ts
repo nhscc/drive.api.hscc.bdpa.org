@@ -135,7 +135,10 @@ export type TestFixture = {
      */
     status?:
       | number
-      | ((status: number, prevResults: TestResultset) => Promisable<number | undefined>);
+      | ((
+          status: number,
+          prevResults: TestResultset
+        ) => Promisable<number | undefined>);
     /**
      * The expected JSON response body. No need to test for `success` as that is
      * handled automatically (unless a status callback was used and it returned
@@ -153,7 +156,9 @@ export type TestFixture = {
   };
 };
 
-export function getFixtures(api: typeof import('testverse/fixtures').api): TestFixture[] {
+export function getFixtures(
+  api: typeof import('testverse/fixtures').api
+): TestFixture[] {
   const runOnly = process.env.RUN_ONLY?.split(',')
     .flatMap((n) => {
       const range = n
@@ -1176,7 +1181,10 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       subject: 'V1 search does not return shared nodes',
       handler: api.v1.filesystemUsernameSearch,
       method: 'GET',
-      params: { username: 'the-hill', match: JSON.stringify({ name: 'node number 2!' }) },
+      params: {
+        username: 'the-hill',
+        match: JSON.stringify({ name: 'node number 2!' })
+      },
       response: {
         status: 200,
         json: { nodes: [] }
@@ -1186,7 +1194,10 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       subject: 'V2 search returns shared nodes matched case-insensitively (name)',
       handler: api.v2.usersUsernameFilesystemSearch,
       method: 'GET',
-      params: { username: 'the-hill', match: JSON.stringify({ name: 'node number 2!' }) },
+      params: {
+        username: 'the-hill',
+        match: JSON.stringify({ name: 'node number 2!' })
+      },
       response: {
         status: 200,
         json: (_json, { getResultAt }) => {
@@ -1308,7 +1319,8 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
       if (runOnly && !runOnly.includes(displayIndex)) return false;
       (test as TestFixture).displayIndex = !runOnly
         ? displayIndex
-        : runOnly.shift() ?? toss(new GuruMeditationError('ran out of RUN_ONLY indices'));
+        : runOnly.shift() ??
+          toss(new GuruMeditationError('ran out of RUN_ONLY indices'));
       return true;
     }
   );

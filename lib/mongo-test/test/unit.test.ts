@@ -547,7 +547,9 @@ describe('::setupMemoryServerOverride', () => {
       asMockedFunction(beforeAll).mockReset();
       asMockedFunction(beforeEach).mockReset();
       asMockedFunction(afterAll).mockReset();
-      jest.spyOn(lib, 'getSchemaConfig').mockImplementation(() => toss(new DummyError()));
+      jest
+        .spyOn(lib, 'getSchemaConfig')
+        .mockImplementation(() => toss(new DummyError()));
 
       testLib.setupMemoryServerOverride();
 

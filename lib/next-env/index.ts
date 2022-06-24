@@ -35,7 +35,9 @@ type OverrideEnvExpect = 'force-check' | 'force-no-check' | undefined;
  * Returns an object representing the current runtime environment.
  */
 export function getEnv<T extends Environment>(customizedEnv?: T) {
-  debug(`environment definitions (resolved as NODE_ENV) listed in order of precedence:`);
+  debug(
+    `environment definitions (resolved as NODE_ENV) listed in order of precedence:`
+  );
   debug(`APP_ENV: ${process.env.APP_ENV ?? '(undefined)'}`);
   debug(`NODE_ENV: ${process.env.NODE_ENV ?? '(undefined)'}`);
   debug(`BABEL_ENV: ${process.env.BABEL_ENV ?? '(undefined)'}`);
@@ -86,7 +88,8 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
       .BAN_HAMMER_RESOLUTION_WINDOW_SECONDS
       ? Number(process.env.BAN_HAMMER_RESOLUTION_WINDOW_SECONDS)
       : null,
-    BAN_HAMMER_DEFAULT_BAN_TIME_MINUTES: !!process.env.BAN_HAMMER_DEFAULT_BAN_TIME_MINUTES
+    BAN_HAMMER_DEFAULT_BAN_TIME_MINUTES: !!process.env
+      .BAN_HAMMER_DEFAULT_BAN_TIME_MINUTES
       ? Number(process.env.BAN_HAMMER_DEFAULT_BAN_TIME_MINUTES)
       : null,
     BAN_HAMMER_RECIDIVISM_PUNISH_MULTIPLIER: !!process.env
@@ -161,7 +164,9 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
     }
 
     if (errors.length) {
-      throw new InvalidAppEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
+      throw new InvalidAppEnvironmentError(
+        `bad variables:\n - ${errors.join('\n - ')}`
+      );
     }
   }
 

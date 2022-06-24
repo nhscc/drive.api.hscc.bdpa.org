@@ -274,7 +274,9 @@ describe('::removeRateLimit', () => {
       }),
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(removeRateLimit({ target: { header: true } as any })).rejects.toMatchObject({
+      expect(
+        removeRateLimit({ target: { header: true } as any })
+      ).rejects.toMatchObject({
         message: 'header must be a non-empty string'
       }),
 
@@ -295,9 +297,11 @@ describe('::removeRateLimit', () => {
       expect(
         removeRateLimit({ target: { ip: undefined, header: undefined } })
       ).rejects.toMatchObject({ message: 'must provide either an ip or a header' }),
-      expect(removeRateLimit({ target: { ip: '', header: '' } })).rejects.toMatchObject({
-        message: 'ip must be a non-empty string'
-      })
+      expect(removeRateLimit({ target: { ip: '', header: '' } })).rejects.toMatchObject(
+        {
+          message: 'ip must be a non-empty string'
+        }
+      )
     ]);
   });
 });

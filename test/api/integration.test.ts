@@ -200,7 +200,9 @@ describe('> fable integration tests', () => {
                     // eslint-disable-next-line jest/no-conditional-expect
                     expect(res.status).toBe(expectedStatus);
                     // eslint-disable-next-line jest/no-conditional-expect
-                    expect(json.success)[res.status == 200 ? 'toBeTrue' : 'toBeFalsy']();
+                    expect(json.success)[
+                      res.status == 200 ? 'toBeTrue' : 'toBeFalsy'
+                    ]();
                     delete json.success;
                   }
 

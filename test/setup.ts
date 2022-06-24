@@ -87,7 +87,9 @@ export const expectedEntries = {
       data: ''
     },
     {
-      headers: expect.objectContaining({ name: 'monorepo/packages/pkg-1/package.json' }),
+      headers: expect.objectContaining({
+        name: 'monorepo/packages/pkg-1/package.json'
+      }),
       data:
         '{\n' +
         '  "name": "dummy-monorepo-pkg-2",\n' +
@@ -104,7 +106,9 @@ export const expectedEntries = {
       data: ''
     },
     {
-      headers: expect.objectContaining({ name: 'monorepo/packages/pkg-2/package.json' }),
+      headers: expect.objectContaining({
+        name: 'monorepo/packages/pkg-2/package.json'
+      }),
       data:
         '{\n' +
         '  "name": "dummy-monorepo-pkg-2",\n' +
@@ -166,7 +170,9 @@ export function itemFactory<T>(testItems: T[]) {
     () => {
       const next = nextItem['$iter'].next() as IteratorResult<T, unknown>;
       if (next.done) {
-        throw new FactoryExhaustionError('item factory iterator exhausted unexpectedly');
+        throw new FactoryExhaustionError(
+          'item factory iterator exhausted unexpectedly'
+        );
       } else return next.value;
     },
     {
@@ -200,7 +206,8 @@ export function itemFactory<T>(testItems: T[]) {
   Object.defineProperty(nextItem, 'length', {
     configurable: false,
     enumerable: false,
-    set: () => toss(new SyntaxError('did you mean to use ::count instead of ::length?')),
+    set: () =>
+      toss(new SyntaxError('did you mean to use ::count instead of ::length?')),
     get: () => toss(new SyntaxError('did you mean to use ::count instead of ::length?'))
   });
 
@@ -740,7 +747,9 @@ export interface GitProvider {
 
 // TODO: XXX: make this into a separate (mock-fixture) package (along w/ below)
 // eslint-disable-next-line @typescript-eslint/ban-types
-export type FixtureAction<Context = FixtureContext> = (ctx: Context) => Promise<unknown>;
+export type FixtureAction<Context = FixtureContext> = (
+  ctx: Context
+) => Promise<unknown>;
 
 // TODO: XXX: make this into a separate (mock-fixture) package (along w/ below)
 export type ReturnsString<Context = FixtureContext> = (
@@ -842,7 +851,10 @@ export function webpackTestFixture(): MockFixture {
 
       await Promise.all([
         writeFile(`${ctx.root}/${indexPath}`, ctx.fileContents[indexPath]),
-        writeFile(`${ctx.root}/webpack.config.js`, ctx.fileContents['webpack.config.js'])
+        writeFile(
+          `${ctx.root}/webpack.config.js`,
+          ctx.fileContents['webpack.config.js']
+        )
       ]);
 
       ctx.treeOutput = await getTreeOutput(ctx);
@@ -1116,7 +1128,9 @@ export function mockFixtureFactory<
 >(testIdentifier: string, options?: Partial<FixtureOptions & CustomOptions>) {
   return (
     fn: FixtureAction<
-      FixtureContext<FixtureOptions & Partial<Record<string, unknown> & CustomOptions>> &
+      FixtureContext<
+        FixtureOptions & Partial<Record<string, unknown> & CustomOptions>
+      > &
         CustomContext
     >
   ) => withMockedFixture<CustomOptions, CustomContext>({ fn, testIdentifier, options });

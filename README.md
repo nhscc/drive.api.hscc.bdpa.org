@@ -22,12 +22,11 @@ version of this API locally following the instructions below.
 ## Accessing the Production API
 
 - Version 1 root URI: [https://drive.api.hscc.bdpa.org/v1][22]
-- Version 2 root URI:
-  [https://drive.api.hscc.bdpa.org/v2](https://drive.api.hscc.bdpa.org/v2)
+- Version 2 root URI: [https://drive.api.hscc.bdpa.org/v2][12]
 - Version 1 documentation and playground with examples:
   [https://hsccebun98j2.docs.apiary.io/][23]
 - Version 2 documentation and playground with examples:
-  [https://hscchkie87hj.docs.apiary.io/](https://hscchkie87hj.docs.apiary.io/)
+  [https://hscchkie87hj.docs.apiary.io/][13]
 
 ## Running a local instance of the API
 
@@ -227,3 +226,5 @@ Currently, the following external scripts exist:
 [58]: ./CONTRIBUTING.md
 [59]: .github/SUPPORT.md
 [31]: https://www.npmjs.com/package/faker
+[12]: https://drive.api.hscc.bdpa.org/v2
+[13]: https://hscchkie87hj.docs.apiary.io/
