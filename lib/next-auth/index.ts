@@ -381,6 +381,15 @@ export async function deriveSchemeAndToken({
   }
 }
 
+/**
+ * Transform an internal entry from the well-known "auth" MongoDB collection
+ * into one that is safe for public consumption.
+ */
+export function toPublicAuthEntry(entry: InternalAuthEntry): PublicAuthEntry {
+  const { _id, ...publicEntry } = entry;
+  return publicEntry;
+}
+
 // * Authorization header checks
 
 /**
