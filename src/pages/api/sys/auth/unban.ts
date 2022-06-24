@@ -1,4 +1,5 @@
 import { sendHttpOk } from 'multiverse/next-api-respond';
+import { removeRateLimit } from 'multiverse/next-limit';
 import { withSysMiddleware } from 'universe/backend/middleware';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
@@ -9,8 +10,11 @@ export { defaultConfig as config } from 'universe/backend/api';
  */
 export default withSysMiddleware(
   async (req, res) => {
-    // TODO
-    void req, res, sendHttpOk;
+    sendHttpOk(res, {
+      unbannedCount: await removeRateLimit({
+        target: req.body?.target
+      })
+    });
   },
   { options: { allowedMethods: ['DELETE'] } }
 );
