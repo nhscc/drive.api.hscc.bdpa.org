@@ -1211,8 +1211,8 @@ describe('::searchNodes', () => {
       ],
       [
         {
-          tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map((_, ndx) =>
-            ndx.toString()
+          tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map(
+            (_, ndx) => ndx.toString()
           )
         },
         [
@@ -2170,7 +2170,9 @@ describe('::updateNode', () => {
         node_id,
         data: { owner: 'new-user' }
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound(node_id, 'node_id') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemNotFound(node_id, 'node_id')
+    });
   });
 
   it('rejects if the username is not found', async () => {

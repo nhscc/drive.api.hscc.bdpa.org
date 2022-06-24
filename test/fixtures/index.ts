@@ -75,7 +75,8 @@ export const api = {
     usersUsername: V1EndpointUsersUsername as NextApiHandlerMixin,
     usersUsernameAuth: V1EndpointUsersUsernameAuth as NextApiHandlerMixin,
     filesystemUsername: V1EndpointFilesystemUsername as NextApiHandlerMixin,
-    filesystemUsernameNodeId: V1EndpointFilesystemUsernameNodeId as NextApiHandlerMixin,
+    filesystemUsernameNodeId:
+      V1EndpointFilesystemUsernameNodeId as NextApiHandlerMixin,
     filesystemUsernameSearch: V1EndpointFilesystemUsernameSearch as NextApiHandlerMixin
   },
   v2: {

@@ -62,7 +62,9 @@ export async function getDummyData(): Promise<DummyData> {
     debug('importing `getDummyData` from "configverse/get-dummy-data"');
     return await (await import('configverse/get-dummy-data')).getDummyData();
   } catch (e) {
-    debug.warn(`failed to import getDummyData from "configverse/get-dummy-data": ${e}`);
+    debug.warn(
+      `failed to import getDummyData from "configverse/get-dummy-data": ${e}`
+    );
 
     throw new InvalidAppConfigurationError(
       'could not resolve mongodb dummy data: failed to import getDummyData from "configverse/get-dummy-data". Did you forget to register "configverse/get-dummy-data" as an import alias/path?'

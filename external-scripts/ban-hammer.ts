@@ -240,7 +240,9 @@ const invoked = async () => {
               if: { $ne: ['$count', 1] },
               then: {
                 $max: [
-                  { $add: [{ $toLong: '$$NOW' }, defaultBanTimeMs * punishMultiplier] },
+                  {
+                    $add: [{ $toLong: '$$NOW' }, defaultBanTimeMs * punishMultiplier]
+                  },
                   '$until'
                 ]
               },

@@ -541,7 +541,8 @@ export async function getAttributes<T extends TokenAttributes>({
         // ? To hit the index, order matters
         { scheme, token },
         { projection: { _id: false, attributes: true } }
-      )) || toss(new InvalidSecretError('authentication scheme and token combination'));
+      )) ||
+    toss(new InvalidSecretError('authentication scheme and token combination'));
 
   return attributes;
 }

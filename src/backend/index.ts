@@ -294,9 +294,17 @@ const validateNodeData = async (
   }
 
   if (isNewFileNode(data) || (isPatchFileNode(data) && data.text !== undefined)) {
-    if (typeof data.text != 'string' || data.text.length > MAX_NODE_TEXT_LENGTH_BYTES) {
+    if (
+      typeof data.text != 'string' ||
+      data.text.length > MAX_NODE_TEXT_LENGTH_BYTES
+    ) {
       throw new ValidationError(
-        ErrorMessage.InvalidStringLength('text', 0, MAX_NODE_TEXT_LENGTH_BYTES, 'bytes')
+        ErrorMessage.InvalidStringLength(
+          'text',
+          0,
+          MAX_NODE_TEXT_LENGTH_BYTES,
+          'bytes'
+        )
       );
     }
   }
@@ -368,7 +376,9 @@ const validateNodeData = async (
       data.contents.length > MAX_NODE_CONTENTS ||
       (typeActual == 'symlink' && data.contents.length > 1)
     ) {
-      throw new ValidationError(ErrorMessage.TooManyItemsRequested('content node_ids'));
+      throw new ValidationError(
+        ErrorMessage.TooManyItemsRequested('content node_ids')
+      );
     } else {
       const fileNodes = db.collection('file-nodes');
       const metaNodes = db.collection('meta-nodes');
@@ -440,8 +450,10 @@ export async function getUser({
   const users = db.collection<InternalUser>('users');
 
   return (
-    (await users.find({ username }).project<PublicUser>(publicUserProjection).next()) ||
-    toss(new ItemNotFoundError(username, 'user'))
+    (await users
+      .find({ username })
+      .project<PublicUser>(publicUserProjection)
+      .next()) || toss(new ItemNotFoundError(username, 'user'))
   );
 }
 
@@ -887,7 +899,10 @@ export async function searchNodes({
     {
       $unionWith: {
         coll: 'meta-nodes',
-        pipeline: [{ $match }, { $project: { ...publicMetaNodeProjection, _id: true } }]
+        pipeline: [
+          { $match },
+          { $project: { ...publicMetaNodeProjection, _id: true } }
+        ]
       }
     },
     { $sort: { _id: -1 } },

@@ -18,7 +18,12 @@ import '@testing-library/jest-dom/extend-expect';
 
 import type { Debugger } from 'multiverse/debug-extended';
 import type { SimpleGit } from 'simple-git';
-import type { NextApiHandler, NextApiRequest, NextApiResponse, PageConfig } from 'next';
+import type {
+  NextApiHandler,
+  NextApiRequest,
+  NextApiResponse,
+  PageConfig
+} from 'next';
 import type { Promisable } from 'type-fest';
 
 const { writeFile, access: accessFile } = fs;
@@ -208,7 +213,8 @@ export function itemFactory<T>(testItems: T[]) {
     enumerable: false,
     set: () =>
       toss(new SyntaxError('did you mean to use ::count instead of ::length?')),
-    get: () => toss(new SyntaxError('did you mean to use ::count instead of ::length?'))
+    get: () =>
+      toss(new SyntaxError('did you mean to use ::count instead of ::length?'))
   });
 
   return nextItem;
@@ -278,7 +284,9 @@ export async function withMockedEnv(
 ) {
   const prevEnv = { ...process.env };
   const clearEnv = () =>
-    Object.getOwnPropertyNames(process.env).forEach((prop) => delete process.env[prop]);
+    Object.getOwnPropertyNames(process.env).forEach(
+      (prop) => delete process.env[prop]
+    );
 
   // ? Take care to preserve the original env object reference in memory
   if (options.replace) clearEnv();
@@ -551,7 +559,8 @@ export async function withMockedOutput(
   !options?.passthrough?.errorSpy && errorSpy.mockImplementation(() => undefined);
   !options?.passthrough?.infoSpy && infoSpy.mockImplementation(() => undefined);
   !options?.passthrough?.stdoutSpy && stdoutSpy.mockImplementation(() => true);
-  options?.passthrough?.stdErrSpy === false && stdErrSpy.mockImplementation(() => true);
+  options?.passthrough?.stdErrSpy === false &&
+    stdErrSpy.mockImplementation(() => true);
 
   try {
     await fn({
@@ -1133,5 +1142,6 @@ export function mockFixtureFactory<
       > &
         CustomContext
     >
-  ) => withMockedFixture<CustomOptions, CustomContext>({ fn, testIdentifier, options });
+  ) =>
+    withMockedFixture<CustomOptions, CustomContext>({ fn, testIdentifier, options });
 }

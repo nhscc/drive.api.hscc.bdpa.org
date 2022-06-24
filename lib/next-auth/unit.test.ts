@@ -370,9 +370,9 @@ describe('::deriveSchemeAndToken', () => {
       'invalid auth string'
     );
 
-    await expect(deriveSchemeAndToken({ authString: 'bearer-bearer' })).rejects.toThrow(
-      'invalid auth string'
-    );
+    await expect(
+      deriveSchemeAndToken({ authString: 'bearer-bearer' })
+    ).rejects.toThrow('invalid auth string');
   });
 
   it('rejects on unknown schemes', async () => {

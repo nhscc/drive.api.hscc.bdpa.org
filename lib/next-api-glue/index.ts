@@ -169,7 +169,9 @@ export function withMiddleware<
                 );
               } else {
                 chainWasPulled = true;
-                localDebug('runtime.next: manually selecting next middleware in chain');
+                localDebug(
+                  'runtime.next: manually selecting next middleware in chain'
+                );
                 await pullChain();
               }
             } else {
@@ -240,7 +242,10 @@ export function withMiddleware<
 
       try {
         debug('selecting first middleware in primary middleware chain');
-        primaryChainWasAborted = await startPullingChain(use[Symbol.iterator](), debug);
+        primaryChainWasAborted = await startPullingChain(
+          use[Symbol.iterator](),
+          debug
+        );
       } catch (e) {
         debug('error in primary middleware chain');
         throw e;

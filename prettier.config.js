@@ -13,7 +13,7 @@ module.exports = {
       files: '**/*.@(ts|?(@(c|m))js)?(x)',
       options: {
         parser: 'babel-ts',
-        printWidth: 88
+        printWidth: 87
       }
     }
   ]

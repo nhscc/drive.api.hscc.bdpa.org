@@ -54,7 +54,10 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
             )
           ),
     NODE_ENV:
-      process.env.APP_ENV || process.env.NODE_ENV || process.env.BABEL_ENV || 'unknown',
+      process.env.APP_ENV ||
+      process.env.NODE_ENV ||
+      process.env.BABEL_ENV ||
+      'unknown',
     MONGODB_URI: process.env.MONGODB_URI || '',
     MONGODB_MS_PORT: !!process.env.MONGODB_MS_PORT
       ? Number(process.env.MONGODB_MS_PORT)
@@ -75,13 +78,15 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
     AUTH_HEADER_MAX_LENGTH: Number(process.env.AUTH_HEADER_MAX_LENGTH) || 500,
     DEBUG: process.env.DEBUG ?? null,
     DEBUG_INSPECTING: !!process.env.VSCODE_INSPECTOR_OPTIONS,
-    REQUESTS_PER_CONTRIVED_ERROR: Number(process.env.REQUESTS_PER_CONTRIVED_ERROR) || 0,
+    REQUESTS_PER_CONTRIVED_ERROR:
+      Number(process.env.REQUESTS_PER_CONTRIVED_ERROR) || 0,
 
     BAN_HAMMER_WILL_BE_CALLED_EVERY_SECONDS: !!process.env
       .BAN_HAMMER_WILL_BE_CALLED_EVERY_SECONDS
       ? Number(process.env.BAN_HAMMER_WILL_BE_CALLED_EVERY_SECONDS)
       : null,
-    BAN_HAMMER_MAX_REQUESTS_PER_WINDOW: !!process.env.BAN_HAMMER_MAX_REQUESTS_PER_WINDOW
+    BAN_HAMMER_MAX_REQUESTS_PER_WINDOW: !!process.env
+      .BAN_HAMMER_MAX_REQUESTS_PER_WINDOW
       ? Number(process.env.BAN_HAMMER_MAX_REQUESTS_PER_WINDOW)
       : null,
     BAN_HAMMER_RESOLUTION_WINDOW_SECONDS: !!process.env
@@ -131,7 +136,9 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
         isNaN(env[name] as number) ||
         (env[name] as number) < 0
       ) {
-        errors.push(`bad ${name}, saw "${env[name]}" (expected a non-negative number)`);
+        errors.push(
+          `bad ${name}, saw "${env[name]}" (expected a non-negative number)`
+        );
       }
     };
 
@@ -153,7 +160,9 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
       env.DISALLOWED_METHODS.forEach((method) => {
         if (!validHttpMethods.includes(method as ValidHttpMethod)) {
           errors.push(
-            `unknown method "${method}", must be one of: ${validHttpMethods.join(', ')}`
+            `unknown method "${method}", must be one of: ${validHttpMethods.join(
+              ', '
+            )}`
           );
         }
       });

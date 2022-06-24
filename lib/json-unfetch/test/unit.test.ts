@@ -1,6 +1,10 @@
 import { asMockedFunction } from '@xunnamius/jest-types';
 import unfetch from 'unfetch';
-import { globalJsonRequestOptions, jsonFetch, swrFetch } from 'multiverse/json-unfetch';
+import {
+  globalJsonRequestOptions,
+  jsonFetch,
+  swrFetch
+} from 'multiverse/json-unfetch';
 import { JsonObject } from 'type-fest';
 import { toss } from 'toss-expression';
 

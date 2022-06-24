@@ -58,7 +58,9 @@ export function getEnv<T extends Environment = Environment>() {
     ).forEach((name) => {
       const value = env[name];
       if (!value || value <= 0) {
-        errors.push(`bad ${name}, saw "${env[name]}" (expected a non-negative number)`);
+        errors.push(
+          `bad ${name}, saw "${env[name]}" (expected a non-negative number)`
+        );
       }
     });
 
