@@ -221,7 +221,7 @@ export function isTokenAttributes(
 ): obj is TokenAttributes {
   const attr = obj as TokenAttributes;
   if (!!attr && typeof attr == 'object') {
-    const isValidOwner = typeof attr.owner == 'string';
+    const isValidOwner = !!attr.owner && typeof attr.owner == 'string';
     const isValidGlobalAdmin =
       attr.isGlobalAdmin === undefined || typeof attr.isGlobalAdmin == 'boolean';
     const allKeysAreValid = Object.keys(attr).every((key) =>
