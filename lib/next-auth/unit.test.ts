@@ -22,7 +22,8 @@ import {
   isNewAuthEntry,
   getOwnerEntries,
   deleteEntry,
-  createEntry
+  createEntry,
+  toPublicAuthEntry
 } from 'multiverse/next-auth';
 
 import * as NextAuthSpyTarget from 'multiverse/next-auth';
@@ -117,6 +118,7 @@ describe('::isTokenAttributes', () => {
     expect(isTokenAttributes({})).toBeFalse();
     expect(isTokenAttributes({ owner: true })).toBeFalse();
     expect(isTokenAttributes({ owner: null })).toBeFalse();
+    expect(isTokenAttributes({ owner: '' })).toBeFalse();
     expect(isTokenAttributes({ owner: 'owner', isGlobalAdmin: 1 })).toBeFalse();
     expect(isTokenAttributes({ owner: 'owner', isGlobalAdmin: 'true' })).toBeFalse();
 
@@ -139,6 +141,7 @@ describe('::isTokenAttributes', () => {
     expect(isTokenAttributes({}, { patch: true })).toBeTrue();
     expect(isTokenAttributes({ owner: true }, { patch: true })).toBeFalse();
     expect(isTokenAttributes({ owner: null }, { patch: true })).toBeFalse();
+    expect(isTokenAttributes({ owner: '' })).toBeFalse();
 
     expect(
       isTokenAttributes({ owner: 'owner', isGlobalAdmin: 1 }, { patch: true })
@@ -812,11 +815,6 @@ describe('::getOwnerEntries', () => {
 
     const owner = dummyRootData.auth[0].attributes.owner;
 
-    const toPublicAuthEntry = (entry: InternalAuthEntry): PublicAuthEntry => {
-      const { _id, ...publicEntry } = entry;
-      return publicEntry;
-    };
-
     const newAuthEntry: InternalAuthEntry = {
       _id: new ObjectId(),
       attributes: { owner },
@@ -844,6 +842,18 @@ describe('::getOwnerEntries', () => {
     await expect(getOwnerEntries({ owner: 'does-not-exist' })).resolves.toStrictEqual([]);
   });
 
+  it('returns all auth entries if no owner specified', async () => {
+    expect.hasAssertions();
+
+    await expect(getOwnerEntries({})).resolves.toStrictEqual(
+      dummyRootData.auth.map(toPublicAuthEntry)
+    );
+
+    await expect(getOwnerEntries({ owner: undefined })).resolves.toStrictEqual(
+      dummyRootData.auth.map(toPublicAuthEntry)
+    );
+  });
+
   it('rejects if passed invalid data', async () => {
     expect.hasAssertions();
 
@@ -851,14 +861,12 @@ describe('::getOwnerEntries', () => {
       params: Partial<Parameters<typeof getOwnerEntries>[0]>,
       error: string
     ][] = [
-      [{}, 'invalid owner'],
-      [{ owner: undefined }, 'invalid owner'],
       [{ owner: null } as unknown as TokenAttributes, 'invalid owner'],
       [{ owner: false } as unknown as TokenAttributes, 'invalid owner'],
       [{ owner: true } as unknown as TokenAttributes, 'invalid owner'],
-      [{ isGlobalAdmin: null } as unknown as TokenAttributes, 'invalid owner'],
-      [{ isGlobalAdmin: 1 } as unknown as TokenAttributes, 'invalid owner'],
-      [{ name: 'owner' } as unknown as TokenAttributes, 'invalid owner'],
+      [{ owner: '', isGlobalAdmin: null } as unknown as TokenAttributes, 'invalid owner'],
+      [{ owner: '', isGlobalAdmin: 1 } as unknown as TokenAttributes, 'invalid owner'],
+      [{ owner: '', name: 'owner' } as unknown as TokenAttributes, 'invalid owner'],
       [{ owner: null } as unknown as TokenAttributes, 'invalid owner']
     ];
 
