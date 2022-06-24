@@ -67,12 +67,12 @@ export async function clientIsRateLimited(req: NextApiRequest) {
  * @returns The number of rate limits removed.
  */
 export async function removeRateLimit({
-  entry
+  target
 }: {
-  entry: { ip?: string; header?: string } | undefined;
+  target: { ip?: string; header?: string } | undefined;
 }) {
-  if (entry) {
-    const { ip, header } = entry;
+  if (target) {
+    const { ip, header } = target;
 
     if (ip !== undefined || header !== undefined) {
       if (ip !== undefined && (typeof ip != 'string' || !ip)) {
