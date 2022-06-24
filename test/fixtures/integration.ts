@@ -1,6 +1,11 @@
 import { name as pkgName } from 'package';
 import { toss } from 'toss-expression';
 import { GuruMeditationError } from 'universe/error';
+import { dummyAppData } from 'testverse/db';
+import { ObjectId } from 'mongodb';
+import { getEnv } from 'universe/backend/env';
+import debugFactory from 'debug';
+
 import {
   NewFileNode,
   NewMetaNode,
@@ -12,14 +17,10 @@ import {
   PublicNode,
   toPublicUser
 } from 'universe/backend/db';
-import { dummyAppData } from 'testverse/db';
-import { ObjectId } from 'mongodb';
-import debugFactory from 'debug';
 
 import type { Promisable } from 'type-fest';
 import type { NextApiHandlerMixin } from 'testverse/fixtures';
 import type { PatchUser, PublicUser } from 'universe/backend/db';
-import { getEnv } from 'universe/backend/env';
 
 // TODO: XXX: turn a lot of this into some kind of package; needs to be generic
 // TODO: XXX: enough to handle various use cases though :) Maybe
@@ -1314,12 +1315,15 @@ export function getFixtures(api: typeof import('testverse/fixtures').api): TestF
 
   // TODO: XXX: add ability to capture/suppress output via fixture option (even better: selectively use mock plugins like withMockEnv and withMockOutput via config options)
 
-  // TODO: XXX: with @xunnamius/fable, have an "every X" type construct (the below is "every 10")
+  // TODO: XXX: with @xunnamius/fable, have an "every X" type construct (the below is "every reqPerContrived")
   // TODO: XXX: also allow middleware
   // TODO: XXX: also custom props for fixtures
-  for (let i = 9; i < filteredFixtures.length; i += 10) {
+
+  const reqPerContrived = getEnv().REQUESTS_PER_CONTRIVED_ERROR;
+
+  for (let i = 0; i < filteredFixtures.length; i += reqPerContrived) {
     const invisibleCount = filteredFixtures
-      .slice(Math.max(0, i - 10), i)
+      .slice(Math.max(0, i - reqPerContrived), i)
       .filter((f) => f.invisible).length;
 
     // ? Ensure counts remain aligned by skipping tests that don't increase
