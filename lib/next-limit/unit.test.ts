@@ -148,7 +148,7 @@ describe('::removeRateLimit', () => {
     ).resolves.toBe(1);
 
     await expect(
-      removeRateLimit({ entry: { ip: dummyRootData['limited-log'][0].ip } })
+      removeRateLimit({ target: { ip: dummyRootData['limited-log'][0].ip } })
     ).resolves.toBe(1);
 
     await expect(
@@ -166,7 +166,7 @@ describe('::removeRateLimit', () => {
     ).resolves.toBe(1);
 
     await expect(
-      removeRateLimit({ entry: { header: dummyRootData['limited-log'][2].header } })
+      removeRateLimit({ target: { header: dummyRootData['limited-log'][2].header } })
     ).resolves.toBe(1);
 
     await expect(
@@ -194,7 +194,7 @@ describe('::removeRateLimit', () => {
 
     await expect(
       removeRateLimit({
-        entry: {
+        target: {
           ip: dummyRootData['limited-log'][1].ip,
           header: dummyRootData['limited-log'][2].header
         }
@@ -224,7 +224,7 @@ describe('::removeRateLimit', () => {
 
     await expect(
       removeRateLimit({
-        entry: {
+        target: {
           ip: dummyRootData['limited-log'][1].ip,
           header: dummyRootData['limited-log'][2].header
         }
@@ -243,7 +243,7 @@ describe('::removeRateLimit', () => {
     );
 
     await expect(
-      removeRateLimit({ entry: { ip: dummyRootData['limited-log'][1].ip } })
+      removeRateLimit({ target: { ip: dummyRootData['limited-log'][1].ip } })
     ).resolves.toBe(0);
   });
 
@@ -260,42 +260,42 @@ describe('::removeRateLimit', () => {
         message: 'must provide either an ip or a header'
       }),
 
-      expect(removeRateLimit({ entry: undefined })).rejects.toMatchObject({
+      expect(removeRateLimit({ target: undefined })).rejects.toMatchObject({
         message: 'must provide either an ip or a header'
       }),
 
-      expect(removeRateLimit({ entry: {} })).rejects.toMatchObject({
+      expect(removeRateLimit({ target: {} })).rejects.toMatchObject({
         message: 'must provide either an ip or a header'
       }),
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(removeRateLimit({ entry: { ip: true } } as any)).rejects.toMatchObject({
+      expect(removeRateLimit({ target: { ip: true } } as any)).rejects.toMatchObject({
         message: 'ip must be a non-empty string'
       }),
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      expect(removeRateLimit({ entry: { header: true } as any })).rejects.toMatchObject({
+      expect(removeRateLimit({ target: { header: true } as any })).rejects.toMatchObject({
         message: 'header must be a non-empty string'
       }),
 
       expect(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        removeRateLimit({ entry: { ip: '', header: true } as any })
+        removeRateLimit({ target: { ip: '', header: true } as any })
       ).rejects.toMatchObject({
         message: 'ip must be a non-empty string'
       }),
 
       expect(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        removeRateLimit({ entry: { ip: null, header: '' } as any })
+        removeRateLimit({ target: { ip: null, header: '' } as any })
       ).rejects.toMatchObject({
         message: 'ip must be a non-empty string'
       }),
 
       expect(
-        removeRateLimit({ entry: { ip: undefined, header: undefined } })
+        removeRateLimit({ target: { ip: undefined, header: undefined } })
       ).rejects.toMatchObject({ message: 'must provide either an ip or a header' }),
-      expect(removeRateLimit({ entry: { ip: '', header: '' } })).rejects.toMatchObject({
+      expect(removeRateLimit({ target: { ip: '', header: '' } })).rejects.toMatchObject({
         message: 'ip must be a non-empty string'
       })
     ]);
