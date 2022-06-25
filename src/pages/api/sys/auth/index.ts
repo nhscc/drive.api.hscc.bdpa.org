@@ -39,9 +39,6 @@ export default withSysMiddleware(
     }
   },
   {
-    options: {
-      allowedMethods: ['GET', 'POST', 'PATCH', 'DELETE'],
-      allowedContentTypes: ['application/json']
-    }
+    options: { allowedMethods: ['GET', 'POST', 'PATCH', 'DELETE'] }
   }
 );

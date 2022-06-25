@@ -17,9 +17,6 @@ export default withSysMiddleware(
     });
   },
   {
-    options: {
-      allowedMethods: ['DELETE'],
-      allowedContentTypes: ['application/json']
-    }
+    options: { allowedMethods: ['DELETE'] }
   }
 );
