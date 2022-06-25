@@ -4,7 +4,7 @@ import { debugFactory } from 'multiverse/debug-extended';
 
 import {
   sendHttpRateLimited,
-  sendHttpUnauthenticated
+  sendHttpUnauthorized
 } from 'multiverse/next-api-respond';
 
 import type { NextApiRequest, NextApiResponse } from 'next';
@@ -23,7 +23,9 @@ export default async function (req: NextApiRequest, res: NextApiResponse) {
 
   if (getEnv().LOCKOUT_ALL_CLIENTS) {
     debug('rate-limit check failed: all clients locked out');
-    sendHttpUnauthenticated(res);
+    sendHttpUnauthorized(res, {
+      error: 'backend has temporarily locked out all clients'
+    });
   } else if (getEnv().IGNORE_RATE_LIMITS) {
     debug('skipped rate-limit check');
   } else {
@@ -31,6 +33,7 @@ export default async function (req: NextApiRequest, res: NextApiResponse) {
 
     if (isLimited) {
       debug('rate-limit check failed: client is rate-limited');
+      res.setHeader('Retry-After', Math.ceil(retryAfter / 1000));
       sendHttpRateLimited(res, { retryAfter });
     } else {
       debug('rate-limit check succeeded: client not rate-limited');
