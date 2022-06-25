@@ -49,7 +49,10 @@ export function sendHttpErrorResponse(
 /**
  * Sends an HTTP 200 "ok" response with optional `responseJson` data.
  */
-export function sendHttpOk(res: NextApiResponse, responseJson?: Record<string, unknown>) {
+export function sendHttpOk(
+  res: NextApiResponse,
+  responseJson?: Record<string, unknown>
+) {
   sendHttpSuccessResponse(res, 200, responseJson);
 }
 
@@ -129,6 +132,20 @@ export function sendHttpTooLarge(
 ) {
   sendHttpErrorResponse(res, 413, {
     error: 'request body is too large',
+    ...responseJson
+  });
+}
+
+/**
+ * Sends an HTTP 415 "unsupported media type" response with optional
+ * `responseJson` data.
+ */
+export function sendHttpBadContentType(
+  res: NextApiResponse,
+  responseJson?: Record<string, unknown>
+) {
+  sendHttpErrorResponse(res, 415, {
+    error: 'request payload is in an unsupported format',
     ...responseJson
   });
 }
