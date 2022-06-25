@@ -1,6 +1,7 @@
 import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { getDb } from 'multiverse/mongo-schema';
 import { dummyRootData, useMockDateNow } from 'multiverse/mongo-common';
+import { dummyAppData } from 'testverse/db';
 
 import {
   mockEnvFactory,
@@ -8,20 +9,36 @@ import {
   withMockedOutput
 } from 'testverse/setup';
 
-import type { InternalRequestLogEntry } from 'multiverse/next-log';
+import { TrialError } from 'named-app-errors';
+import { InternalFileNode, InternalMetaNode } from 'universe/backend/db';
+
+// * Follow the steps (below) to tailor these tests to this specific project 😉
 
 // ? Ensure the isolated external picks up the memory server override
 jest.mock('multiverse/mongo-schema', () => {
   return jest.requireActual('multiverse/mongo-schema');
 });
 
-const testCollections = ['request-log', 'limited-log'];
+const testCollectionsMap = {
+  'root.request-log': dummyRootData['request-log'].length,
+  'root.limited-log': dummyRootData['limited-log'].length,
+  // * Step 1: Add new collections here w/ keys of the form: database.collection
+  'hscc-api-drive.file-nodes': dummyAppData['file-nodes'].length,
+  'hscc-api-drive.meta-nodes': dummyAppData['meta-nodes'].length,
+  'hscc-api-drive.users': dummyAppData['users'].length
+};
 
 const withMockedEnv = mockEnvFactory({
   NODE_ENV: 'test',
   PRUNE_DATA_MAX_LOGS: '200000',
-  PRUNE_DATA_MAX_BANNED: '100000'
+  PRUNE_DATA_MAX_BANNED: '100000',
+  // * Step 2: Add new env var default values here
+  PRUNE_DATA_MAX_FILE_NODES: '10000',
+  PRUNE_DATA_MAX_META_NODES: '100000',
+  PRUNE_DATA_MAX_USERS: '100000'
 });
+
+const testCollections = Object.keys(testCollectionsMap);
 
 const importPruneData = protectedImportFactory<
   typeof import('externals/prune-data').default
@@ -33,27 +50,44 @@ const importPruneData = protectedImportFactory<
 setupMemoryServerOverride();
 useMockDateNow();
 
-const countCollection = async (collections: string | string[]) => {
+/**
+ * Accepts one or more database and collection names in the form
+ * `database.collection` and returns their size.
+ */
+async function countCollection(collections: string): Promise<number>;
+async function countCollection(collections: string[]): Promise<Record<string, number>>;
+async function countCollection(
+  collections: string | string[]
+): Promise<number | Record<string, number>> {
+  const targetCollections = [collections].flat();
   const result = Object.assign(
     {},
     ...(await Promise.all(
-      [collections].flat().map((collection) =>
-        getDb({ name: 'root' }).then((db) =>
-          db
-            .collection<InternalRequestLogEntry>(collection)
-            .countDocuments()
-            .then((count) => ({ [collection]: count }))
-        )
-      )
+      targetCollections.map(async (dbCollection) => {
+        const [dbName, ...rawCollectionName] = dbCollection.split('.');
+
+        if (!dbName || rawCollectionName.length != 1) {
+          throw new TrialError(`invalid input "${dbCollection}" to countCollection`);
+        }
+
+        return (await getDb({ name: dbName }))
+          .collection(rawCollectionName[0])
+          .countDocuments()
+          .then((count) => ({ [dbCollection]: count }));
+      })
     ))
   );
 
-  return Object.keys(result).length == 1
-    ? (result[collections.toString()] as number)
-    : (result as Record<string, number>);
-};
+  const resultLength = Object.keys(result).length;
 
-it('becomes verbose when no DEBUG environment variable and NODE_ENV is not test', async () => {
+  if (resultLength != targetCollections.length) {
+    throw new TrialError('invalid output from countCollection');
+  }
+
+  return resultLength == 1 ? result[collections.toString()] : result;
+}
+
+it('becomes verbose when no DEBUG environment variable set and NODE_ENV is not test', async () => {
   expect.hasAssertions();
 
   await withMockedOutput(async ({ infoSpy }) => {
@@ -75,6 +109,19 @@ it('becomes verbose when no DEBUG environment variable and NODE_ENV is not test'
 it('rejects on bad environment', async () => {
   expect.hasAssertions();
 
+  // * Step 3: Add new env vars emptiness tests below
+
+  // ? Remember that withMockedEnv is the result of calling a factory function
+  // ? with all the PRUNE_DATA_MAX_X env vars already defined.
+
+  await withMockedEnv(() => importPruneData({ expectedExitCode: 2 }), {
+    PRUNE_DATA_MAX_LOGS: '',
+    PRUNE_DATA_MAX_BANNED: '',
+    PRUNE_DATA_MAX_FILE_NODES: '',
+    PRUNE_DATA_MAX_META_NODES: '',
+    PRUNE_DATA_MAX_USERS: ''
+  });
+
   await withMockedEnv(() => importPruneData({ expectedExitCode: 2 }), {
     PRUNE_DATA_MAX_LOGS: ''
   });
@@ -82,24 +129,52 @@ it('rejects on bad environment', async () => {
   await withMockedEnv(() => importPruneData({ expectedExitCode: 2 }), {
     PRUNE_DATA_MAX_BANNED: ''
   });
+
+  await withMockedEnv(() => importPruneData({ expectedExitCode: 2 }), {
+    PRUNE_DATA_MAX_FILE_NODES: ''
+  });
+
+  await withMockedEnv(() => importPruneData({ expectedExitCode: 2 }), {
+    PRUNE_DATA_MAX_META_NODES: ''
+  });
+
+  await withMockedEnv(() => importPruneData({ expectedExitCode: 2 }), {
+    PRUNE_DATA_MAX_USERS: ''
+  });
 });
 
 it('ensures at most PRUNE_DATA_MAX_X entries exist', async () => {
   expect.hasAssertions();
 
-  await expect(countCollection(testCollections)).resolves.toStrictEqual({
-    'request-log': dummyRootData['request-log'].length,
-    'limited-log': dummyRootData['limited-log'].length
-  });
+  await expect(countCollection(testCollections)).resolves.toStrictEqual(
+    testCollectionsMap
+  );
+
+  // * Step 4: Add new env vars low-prune-threshold tests below
+
+  const db = await getDb({ name: 'hscc-api-drive' });
+
+  await db
+    .collection<InternalFileNode>('file-nodes')
+    .updateOne(
+      { _id: dummyAppData['file-nodes'][2]._id },
+      { $set: { permissions: { User3: 'view', User1: 'edit' } } }
+    );
 
   await withMockedEnv(importPruneData, {
     PRUNE_DATA_MAX_LOGS: '10',
-    PRUNE_DATA_MAX_BANNED: '2'
+    PRUNE_DATA_MAX_BANNED: '2',
+    PRUNE_DATA_MAX_FILE_NODES: '1',
+    PRUNE_DATA_MAX_META_NODES: '1',
+    PRUNE_DATA_MAX_USERS: '1'
   });
 
   await expect(countCollection(testCollections)).resolves.toStrictEqual({
-    'request-log': 10,
-    'limited-log': 2
+    'root.request-log': 10,
+    'root.limited-log': 2,
+    'hscc-api-drive.file-nodes': 1,
+    'hscc-api-drive.meta-nodes': 1,
+    'hscc-api-drive.users': 1
   });
 
   await withMockedEnv(importPruneData, {
@@ -108,26 +183,49 @@ it('ensures at most PRUNE_DATA_MAX_X entries exist', async () => {
   });
 
   await expect(countCollection(testCollections)).resolves.toStrictEqual({
-    'request-log': 1,
-    'limited-log': 1
+    'root.request-log': 1,
+    'root.limited-log': 1,
+    'hscc-api-drive.file-nodes': 1,
+    'hscc-api-drive.meta-nodes': 1,
+    'hscc-api-drive.users': 1
   });
+
+  await expect(
+    db
+      .collection<InternalFileNode>('file-nodes')
+      .findOne(
+        { _id: dummyAppData['file-nodes'][2]._id },
+        { projection: { _id: false, permissions: true } }
+      )
+  ).resolves.toStrictEqual({ permissions: { User3: 'view' } });
+
+  await expect(
+    db
+      .collection<InternalMetaNode>('meta-nodes')
+      .findOne(
+        { _id: dummyAppData['meta-nodes'][0]._id },
+        { projection: { _id: false, contents: true } }
+      )
+  ).resolves.toStrictEqual({ contents: [] });
 });
 
 it('only deletes entries if necessary', async () => {
   expect.hasAssertions();
 
-  await expect(countCollection(testCollections)).resolves.toStrictEqual({
-    'request-log': dummyRootData['request-log'].length,
-    'limited-log': dummyRootData['limited-log'].length
-  });
+  await expect(countCollection(testCollections)).resolves.toStrictEqual(
+    testCollectionsMap
+  );
 
   await withMockedEnv(importPruneData, {
     PRUNE_DATA_MAX_LOGS: '100',
-    PRUNE_DATA_MAX_BANNED: '100'
+    PRUNE_DATA_MAX_BANNED: '100',
+    // * Step 5: Add new env vars high-prune-threshold values here
+    PRUNE_DATA_MAX_FILE_NODES: '100',
+    PRUNE_DATA_MAX_META_NODES: '100',
+    PRUNE_DATA_MAX_USERS: '100'
   });
 
-  await expect(countCollection(testCollections)).resolves.toStrictEqual({
-    'request-log': dummyRootData['request-log'].length,
-    'limited-log': dummyRootData['limited-log'].length
-  });
+  await expect(countCollection(testCollections)).resolves.toStrictEqual(
+    testCollectionsMap
+  );
 });
