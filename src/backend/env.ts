@@ -25,7 +25,17 @@ export function getEnv<T extends Environment = Environment>() {
     MAX_NODE_PERMISSIONS: Number(process.env.MAX_NODE_PERMISSIONS) || 10,
     MAX_NODE_CONTENTS: Number(process.env.MAX_NODE_CONTENTS) || 10,
     MAX_NODE_TEXT_LENGTH_BYTES:
-      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10240
+      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10240,
+
+    PRUNE_DATA_MAX_FILE_NODES: !!process.env.PRUNE_DATA_MAX_FILE_NODES
+      ? Number(process.env.PRUNE_DATA_MAX_FILE_NODES)
+      : null,
+    PRUNE_DATA_MAX_META_NODES: !!process.env.PRUNE_DATA_MAX_META_NODES
+      ? Number(process.env.PRUNE_DATA_MAX_META_NODES)
+      : null,
+    PRUNE_DATA_MAX_USERS: !!process.env.PRUNE_DATA_MAX_USERS
+      ? Number(process.env.PRUNE_DATA_MAX_USERS)
+      : null
   });
 
   // TODO: retire all of the following logic when expect-env is created. Also,
