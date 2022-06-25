@@ -581,7 +581,7 @@ export async function updateAttributes({
           [{ $addFields: { attributes } }]
         );
 
-      if (result.modifiedCount != 1) {
+      if (result.matchedCount != 1) {
         throw new InvalidSecretError('authentication scheme and token combination');
       }
     }

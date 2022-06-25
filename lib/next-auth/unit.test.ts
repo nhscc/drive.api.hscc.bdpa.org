@@ -720,6 +720,17 @@ describe('::updateAttributes', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('does not reject when demonstrating idempotency', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      updateAttributes({
+        target: { scheme: 'bearer', token: { bearer: DEV_BEARER_TOKEN } },
+        attributes: dummyRootData.auth[0].attributes
+      })
+    ).resolves.toBeUndefined();
+  });
+
   it('rejects if the auth entry is not found', async () => {
     expect.hasAssertions();
 
