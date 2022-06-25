@@ -1,6 +1,6 @@
 {
   "name": "drive.api.hscc.bdpa.org",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "https://drive.api.hscc.bdpa.org",
   "homepage": "https://drive.api.hscc.bdpa.org",
@@ -156,7 +156,7 @@
     "test-listen": "^1.1.0",
     "text-extensions": "^2.4.0",
     "type-fest": "^2.14.0",
-    "typedoc": "^0.22.17",
+    "typedoc": "^0.22.18",
     "typedoc-plugin-markdown": "^3.12.1",
     "unfetch": "^4.2.0",
     "unique-filename": "^1.1.1",
