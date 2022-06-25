@@ -347,7 +347,10 @@ export async function withDebugEnabled(fn: () => Promisable<void>) {
  * "app-wide" connection that would not actually be closed and could cause your
  * test to hang unexpectedly, even when all tests pass.
  */
-export function isolatedImport<T = unknown>(args: {
+export function isolatedImport<T = unknown>({
+  path,
+  useDefault
+}: {
   /**
    * Path to the module to import. Module resolution is handled by `require`.
    */
@@ -363,26 +366,29 @@ export function isolatedImport<T = unknown>(args: {
 
   // ? Cache-busting
   jest.isolateModules(() => {
-    pkg = ((r) => {
-      debug(
-        `performing isolated import of ${args.path}${
-          args.useDefault ? ' (returning default by force)' : ''
-        }`
-      );
+    debug(
+      `performing isolated import of ${path}${
+        useDefault ? ' (returning default by force)' : ''
+      }`
+    );
 
+    pkg = ((r) => {
       return r.default &&
-        (args.useDefault === true ||
-          (args.useDefault !== false && r.__esModule && Object.keys(r).length == 1))
+        (useDefault === true ||
+          (useDefault !== false && r.__esModule && Object.keys(r).length == 1))
         ? r.default
         : r;
-    })(require(args.path));
+    })(require(path));
   });
 
   return pkg as T;
 }
 
 // TODO: XXX: make this into a separate package (along with the above)
-export function isolatedImportFactory<T = unknown>(args: {
+export function isolatedImportFactory<T = unknown>({
+  path,
+  useDefault
+}: {
   /**
    * Path to the module to import. Module resolution is handled by `require`.
    */
@@ -394,7 +400,7 @@ export function isolatedImportFactory<T = unknown>(args: {
    */
   useDefault?: boolean;
 }) {
-  return () => isolatedImport<T>({ path: args.path, useDefault: args.useDefault });
+  return () => isolatedImport<T>({ path: path, useDefault: useDefault });
 }
 
 // TODO: XXX: make this into a separate package (along with the above)
@@ -404,7 +410,11 @@ export function isolatedImportFactory<T = unknown>(args: {
  * with `withMockedExit`. This makes `protectedImport` useful for testing
  * IIFE modules such as CLI entry points an externals.
  */
-export async function protectedImport<T = unknown>(args: {
+export async function protectedImport<T = unknown>({
+  path,
+  useDefault,
+  expectedExitCode
+}: {
   /**
    * Path to the module to import. Module resolution is handled by `require`.
    */
@@ -426,13 +436,13 @@ export async function protectedImport<T = unknown>(args: {
   let pkg: unknown = undefined;
 
   await withMockedExit(async ({ exitSpy }) => {
-    pkg = await isolatedImport({ path: args.path, useDefault: args.useDefault });
+    pkg = await isolatedImport({ path: path, useDefault: useDefault });
     if (expect) {
-      args?.expectedExitCode == 'non-zero'
+      expectedExitCode == 'non-zero'
         ? expect(exitSpy).not.toBeCalledWith(0)
-        : args?.expectedExitCode === undefined
+        : expectedExitCode === undefined
         ? expect(exitSpy).not.toBeCalled()
-        : expect(exitSpy).toBeCalledWith(args.expectedExitCode);
+        : expect(exitSpy).toBeCalledWith(expectedExitCode);
     } else {
       debug.warn('"expect" object not found, so exit check was skipped');
     }
@@ -442,7 +452,10 @@ export async function protectedImport<T = unknown>(args: {
 }
 
 // TODO: XXX: make this into a separate package (along with the above)
-export function protectedImportFactory<T = unknown>(args: {
+export function protectedImportFactory<T = unknown>({
+  path,
+  useDefault
+}: {
   /**
    * Path to the module to import. Module resolution is handled by `require`.
    */
@@ -471,8 +484,8 @@ export function protectedImportFactory<T = unknown>(args: {
     expectedExitCode?: number | 'non-zero' | undefined;
   }) => {
     return protectedImport<T>({
-      path: args.path,
-      useDefault: args.useDefault,
+      path: path,
+      useDefault: useDefault,
       expectedExitCode: params?.expectedExitCode
     });
   };
