@@ -1057,7 +1057,7 @@ export function getFixtures(
       }
     },
     {
-      subject: 'update dir node to be self-referential',
+      subject: 'update dir node name, permissions, and make dir node self-referential',
       handler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
@@ -1068,10 +1068,37 @@ export function getFixtures(
       },
       body: ({ getResultAt }) => {
         return {
-          contents: [getResultAt('hill-dir', 'node.node_id')]
+          name: 'EMPTY dir node',
+          contents: [getResultAt('hill-dir', 'node.node_id')],
+          permissions: {}
         } as PatchMetaNode;
       },
       response: { status: 200 }
+    },
+    {
+      subject: 'get dir node as the-hill',
+      handler: api.v2.usersUsernameFilesystemNodeId,
+      method: 'GET',
+      params: ({ getResultAt }) => {
+        return {
+          username: 'the-hill',
+          node_ids: [getResultAt('hill-dir', 'node.node_id')]
+        };
+      },
+      response: {
+        status: 200,
+        json: (_, { getResultAt }) => {
+          return {
+            nodes: [
+              {
+                ...getResultAt<PublicMetaNode>('hill-dir', 'node'),
+                name: 'EMPTY dir node',
+                contents: [getResultAt('hill-dir', 'node.node_id')]
+              }
+            ]
+          };
+        }
+      }
     },
     {
       subject: 'update dir node to contain file nodes #1 and #2',
@@ -1105,6 +1132,34 @@ export function getFixtures(
       },
       body: { contents: [new ObjectId().toString()] } as PatchMetaNode,
       response: { status: 404 }
+    },
+    {
+      subject: 'get dir node as the-hill',
+      handler: api.v2.usersUsernameFilesystemNodeId,
+      method: 'GET',
+      params: ({ getResultAt }) => {
+        return {
+          username: 'the-hill',
+          node_ids: [getResultAt('hill-dir', 'node.node_id')]
+        };
+      },
+      response: {
+        status: 200,
+        json: (_, { getResultAt }) => {
+          return {
+            nodes: [
+              {
+                ...getResultAt<PublicMetaNode>('hill-dir', 'node'),
+                name: 'EMPTY dir node',
+                contents: [
+                  getResultAt<string>('node-1', 'node.node_id'),
+                  getResultAt<string>('node-2', 'node.node_id')
+                ]
+              }
+            ]
+          };
+        }
+      }
     },
     {
       subject: 'attempt to delete file nodes #1 and #2 as the-hill (fails silently)',

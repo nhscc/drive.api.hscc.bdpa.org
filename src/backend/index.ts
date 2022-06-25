@@ -497,16 +497,19 @@ export async function createUser({ data }: { data: NewUser }): Promise<PublicUse
       key: key.toLowerCase()
     });
   } catch (e) {
+    /* istanbul ignore else */
     if (e instanceof MongoServerError && e.code == 11000) {
       if (e.keyPattern?.username !== undefined) {
         throw new ValidationError(ErrorMessage.DuplicateFieldValue('username'));
       }
 
+      /* istanbul ignore else */
       if (e.keyPattern?.email !== undefined) {
         throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
       }
     }
 
+    /* istanbul ignore next */
     throw e;
   }
 
@@ -552,6 +555,7 @@ export async function updateUser({
     }
   } catch (e) {
     if (e instanceof MongoServerError && e.code == 11000) {
+      /* istanbul ignore else */
       if (e.keyPattern?.email !== undefined) {
         throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
       }
