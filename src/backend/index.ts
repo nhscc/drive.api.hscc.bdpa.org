@@ -550,7 +550,7 @@ export async function updateUser({
       }
     );
 
-    if (!result.modifiedCount) {
+    if (!result.matchedCount) {
       throw new ItemNotFoundError(username, 'user');
     }
   } catch (e) {

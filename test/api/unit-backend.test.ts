@@ -382,6 +382,17 @@ describe('::updateUser', () => {
     ).resolves.toBe(1);
   });
 
+  it('does not reject when demonstrating idempotency', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.updateUser({
+        username: dummyAppData.users[0].username,
+        data: { email: dummyAppData.users[0].email }
+      })
+    ).resolves.toBeUndefined();
+  });
+
   it('rejects if the username is not found', async () => {
     expect.hasAssertions();
 
@@ -2061,6 +2072,18 @@ describe('::updateNode', () => {
         modifiedAt: Date.now()
       })
     ).resolves.toBe(1);
+  });
+
+  it('does not reject when demonstrating idempotency', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        data: { name: dummyAppData['file-nodes'][0].name }
+      })
+    ).resolves.toBeUndefined();
   });
 
   it('treats tags as lowercase set', async () => {
