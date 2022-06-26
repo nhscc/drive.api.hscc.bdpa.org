@@ -152,7 +152,7 @@ const invoked = async () => {
         await Promise.all(
           Object.entries(dbLimitsObj).map(async ([collectionName, colLimitsObj]) => {
             const name = `${dbName}.${collectionName}`;
-            debug(`pruning collection "${name}"`);
+            debug(`collection "${name}" is a target for pruning`);
 
             const {
               limit: limitThreshold,
@@ -192,9 +192,9 @@ const invoked = async () => {
                 ).deletedCount;
               }
 
-              subLog(`pruned ${deletedCount}/${total} ${name} entries`);
+              subLog(`${deletedCount} pruned (${total} > ${limitThreshold})`);
             } else {
-              subLog(`no prunable ${name} entries (${total} <= ${limitThreshold})`);
+              subLog(`0 pruned (${total} <= ${limitThreshold})`);
             }
 
             await cursor.close();
