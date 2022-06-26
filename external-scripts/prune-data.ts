@@ -1,7 +1,7 @@
 import { debugNamespace as namespace } from 'universe/constants';
 import { getEnv } from 'universe/backend/env';
 import { AppError, InvalidAppEnvironmentError } from 'named-app-errors';
-import { getDb } from 'multiverse/mongo-schema';
+import { closeClient, getDb } from 'multiverse/mongo-schema';
 import { toss } from 'toss-expression';
 import { debugFactory } from 'multiverse/debug-extended';
 import { deleteUser } from 'universe/backend';
@@ -202,10 +202,16 @@ const invoked = async () => {
         );
       })
     );
-
-    log('execution complete');
   } catch (e) {
     throw new AppError(`${e}`);
+  } finally {
+    if (['production', 'development'].includes(getEnv().NODE_ENV)) {
+      await closeClient();
+      log('execution complete');
+      process.exit(0);
+    } else {
+      log('execution complete');
+    }
   }
 };
 

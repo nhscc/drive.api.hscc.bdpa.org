@@ -1,7 +1,7 @@
 import { debugNamespace as namespace } from 'universe/constants';
 import { getEnv } from 'universe/backend/env';
 import { AppError, InvalidAppEnvironmentError } from 'named-app-errors';
-import { getDb } from 'multiverse/mongo-schema';
+import { closeClient, getDb } from 'multiverse/mongo-schema';
 import { debugFactory } from 'multiverse/debug-extended';
 
 const debugNamespace = `${namespace}:ban-hammer`;
@@ -270,10 +270,16 @@ const invoked = async () => {
 
     await cursor.next();
     await cursor.close();
-
-    log('execution complete');
   } catch (e) {
     throw new AppError(`${e}`);
+  } finally {
+    if (['production', 'development'].includes(getEnv().NODE_ENV)) {
+      await closeClient();
+      log('execution complete');
+      process.exit(0);
+    } else {
+      log('execution complete');
+    }
   }
 };
 
