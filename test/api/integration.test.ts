@@ -8,9 +8,9 @@ import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { getFixtures } from 'testverse/fixtures/integration';
 import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
 import { api } from 'testverse/fixtures';
+import { getDb } from 'multiverse/mongo-schema';
 
 import type { TestResultset, TestResult } from 'testverse/fixtures/integration';
-import { getDb } from 'multiverse/mongo-schema';
 
 setupMemoryServerOverride({
   // ? Ensure all tests share the same database state
