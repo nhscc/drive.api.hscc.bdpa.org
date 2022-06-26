@@ -273,6 +273,7 @@ const invoked = async () => {
   } catch (e) {
     throw new AppError(`${e}`);
   } finally {
+    /* istanbul ignore if */
     if (['production', 'development'].includes(getEnv().NODE_ENV)) {
       await closeClient();
       log('execution complete');
