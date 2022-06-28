@@ -157,7 +157,7 @@
     "text-extensions": "^2.4.0",
     "type-fest": "^2.14.0",
     "typedoc": "^0.23.2",
-    "typedoc-plugin-markdown": "^3.13.0",
+    "typedoc-plugin-markdown": "^3.13.1",
     "unfetch": "^4.2.0",
     "unique-filename": "^1.1.1",
     "webpack": "^5.73.0",
