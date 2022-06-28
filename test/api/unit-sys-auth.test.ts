@@ -432,104 +432,133 @@ describe('api/sys/auth', () => {
     });
   });
 
-  describe('/unban [DELETE]', () => {
-    it('unbans a token', async () => {
-      expect.hasAssertions();
+  describe('/unban', () => {
+    describe('/ [GET]', () => {
+      it('list all banned tokens and ips', async () => {
+        expect.hasAssertions();
 
-      await expect(
-        limitDb.countDocuments({
-          header: `bearer ${BANNED_BEARER_TOKEN}`,
-          until: { $gt: Date.now() }
-        })
-      ).resolves.toBe(1);
-
-      await testApiHandler({
-        handler: authUnbanHandler,
-        requestPatcher(req) {
-          req.headers = { ...req.headers, ...headerOverrides };
-        },
-        async test({ fetch }) {
-          const res = await fetch({
-            method: 'DELETE',
-            body: JSON.stringify({
-              target: { header: `bearer ${BANNED_BEARER_TOKEN}` }
-            })
-          });
-
-          const json = await res.json();
-
-          expect(json).toStrictEqual({ success: true, unbannedCount: 1 });
-          expect(res.status).toBe(200);
-
-          await expect(
-            limitDb.countDocuments({
-              header: `bearer ${BANNED_BEARER_TOKEN}`,
-              until: { $gt: Date.now() }
-            })
-          ).resolves.toBe(0);
-        }
+        await testApiHandler({
+          handler: authUnbanHandler,
+          requestPatcher(req) {
+            req.headers = { ...req.headers, ...headerOverrides };
+          },
+          async test({ fetch }) {
+            await expect(
+              (await fetch({ method: 'GET' })).json()
+            ).resolves.toStrictEqual({
+              success: true,
+              entries: dummyRootData['limited-log']
+                .slice()
+                .reverse()
+                .map((ent) => {
+                  const { _id, ...entry } = ent;
+                  return entry;
+                })
+            });
+          }
+        });
       });
     });
 
-    it('unbans an ip address', async () => {
-      expect.hasAssertions();
+    describe('/ [DELETE]', () => {
+      it('unbans a token', async () => {
+        expect.hasAssertions();
 
-      await expect(
-        limitDb.countDocuments({
-          ip: '1.2.3.4',
-          until: { $gt: Date.now() }
-        })
-      ).resolves.toBe(1);
+        await expect(
+          limitDb.countDocuments({
+            header: `bearer ${BANNED_BEARER_TOKEN}`,
+            until: { $gt: Date.now() }
+          })
+        ).resolves.toBe(1);
 
-      await testApiHandler({
-        handler: authUnbanHandler,
-        requestPatcher(req) {
-          req.headers = { ...req.headers, ...headerOverrides };
-        },
-        async test({ fetch }) {
-          const res = await fetch({
-            method: 'DELETE',
-            body: JSON.stringify({ target: { ip: '1.2.3.4' } })
-          });
+        await testApiHandler({
+          handler: authUnbanHandler,
+          requestPatcher(req) {
+            req.headers = { ...req.headers, ...headerOverrides };
+          },
+          async test({ fetch }) {
+            const res = await fetch({
+              method: 'DELETE',
+              body: JSON.stringify({
+                target: { header: `bearer ${BANNED_BEARER_TOKEN}` }
+              })
+            });
 
-          const json = await res.json();
+            const json = await res.json();
 
-          expect(json).toStrictEqual({ success: true, unbannedCount: 1 });
-          expect(res.status).toBe(200);
+            expect(json).toStrictEqual({ success: true, unbannedCount: 1 });
+            expect(res.status).toBe(200);
 
-          await expect(
-            limitDb.countDocuments({
-              ip: '1.2.3.4',
-              until: { $gt: Date.now() }
-            })
-          ).resolves.toBe(0);
-        }
-      });
-    });
-
-    it('returns HTTP 400 on bad input', async () => {
-      expect.hasAssertions();
-
-      await testApiHandler({
-        handler: authUnbanHandler,
-        requestPatcher(req) {
-          req.headers = { ...req.headers, ...headerOverrides };
-        },
-        async test({ fetch }) {
-          expect((await fetch({ method: 'DELETE' })).status).toBe(400);
-        }
+            await expect(
+              limitDb.countDocuments({
+                header: `bearer ${BANNED_BEARER_TOKEN}`,
+                until: { $gt: Date.now() }
+              })
+            ).resolves.toBe(0);
+          }
+        });
       });
 
-      await testApiHandler({
-        handler: authUnbanHandler,
-        requestPatcher(req) {
-          req.headers = { ...req.headers, ...headerOverrides };
-        },
-        async test({ fetch }) {
-          expect(
-            (await fetch({ method: 'DELETE', body: JSON.stringify({}) })).status
-          ).toBe(400);
-        }
+      it('unbans an ip address', async () => {
+        expect.hasAssertions();
+
+        await expect(
+          limitDb.countDocuments({
+            ip: '1.2.3.4',
+            until: { $gt: Date.now() }
+          })
+        ).resolves.toBe(1);
+
+        await testApiHandler({
+          handler: authUnbanHandler,
+          requestPatcher(req) {
+            req.headers = { ...req.headers, ...headerOverrides };
+          },
+          async test({ fetch }) {
+            const res = await fetch({
+              method: 'DELETE',
+              body: JSON.stringify({ target: { ip: '1.2.3.4' } })
+            });
+
+            const json = await res.json();
+
+            expect(json).toStrictEqual({ success: true, unbannedCount: 1 });
+            expect(res.status).toBe(200);
+
+            await expect(
+              limitDb.countDocuments({
+                ip: '1.2.3.4',
+                until: { $gt: Date.now() }
+              })
+            ).resolves.toBe(0);
+          }
+        });
+      });
+
+      it('returns HTTP 400 on bad input', async () => {
+        expect.hasAssertions();
+
+        await testApiHandler({
+          handler: authUnbanHandler,
+          requestPatcher(req) {
+            req.headers = { ...req.headers, ...headerOverrides };
+          },
+          async test({ fetch }) {
+            expect((await fetch({ method: 'DELETE' })).status).toBe(400);
+          }
+        });
+
+        await testApiHandler({
+          handler: authUnbanHandler,
+          requestPatcher(req) {
+            req.headers = { ...req.headers, ...headerOverrides };
+          },
+          async test({ fetch }) {
+            expect(
+              (await fetch({ method: 'DELETE', body: JSON.stringify({}) })).status
+            ).toBe(400);
+          }
+        });
       });
     });
   });
