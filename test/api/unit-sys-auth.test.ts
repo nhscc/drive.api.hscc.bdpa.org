@@ -153,7 +153,7 @@ describe('api/sys/auth', () => {
         async test({ fetch }) {
           const res = await fetch({
             method: 'GET',
-            headers: { 'X-Target-Owner': dummyRootData.auth[0].attributes.owner }
+            headers: { 'X-Target-Owners': dummyRootData.auth[0].attributes.owner }
           });
 
           const json = await res.json();
@@ -171,6 +171,83 @@ describe('api/sys/auth', () => {
       });
     });
 
+    it('returns all tokens belonging to all the specified chapters', async () => {
+      expect.hasAssertions();
+
+      const newEntry1: InternalAuthBearerEntry = {
+        ...dummyRootData.auth[0],
+        _id: new ObjectId(),
+        token: { bearer: randomUUID() }
+      };
+
+      const newEntry2: InternalAuthBearerEntry = {
+        ...dummyRootData.auth[1],
+        _id: new ObjectId(),
+        token: { bearer: randomUUID() }
+      };
+
+      await authDb.insertMany([newEntry1, newEntry2]);
+
+      await testApiHandler({
+        handler: authHandler,
+        requestPatcher(req) {
+          req.headers = { ...req.headers, ...headerOverrides };
+        },
+        async test({ fetch }) {
+          const res = await fetch({
+            method: 'GET',
+            headers: [
+              ['x-target-owners', dummyRootData.auth[0].attributes.owner],
+              ['x-target-owners', dummyRootData.auth[1].attributes.owner]
+            ]
+          });
+
+          const json = await res.json();
+
+          expect(json).toStrictEqual({
+            success: true,
+            entries: [
+              toPublicAuthEntry(dummyRootData.auth[0]),
+              toPublicAuthEntry(dummyRootData.auth[1]),
+              toPublicAuthEntry(newEntry1),
+              toPublicAuthEntry(newEntry2)
+            ]
+          });
+
+          expect(res.status).toBe(200);
+        }
+      });
+
+      await testApiHandler({
+        handler: authHandler,
+        requestPatcher(req) {
+          req.headers = { ...req.headers, ...headerOverrides };
+        },
+        async test({ fetch }) {
+          const res = await fetch({
+            method: 'GET',
+            headers: {
+              'X-Target-Owners': `${dummyRootData.auth[0].attributes.owner},${dummyRootData.auth[1].attributes.owner}`
+            }
+          });
+
+          const json = await res.json();
+
+          expect(json).toStrictEqual({
+            success: true,
+            entries: [
+              toPublicAuthEntry(dummyRootData.auth[0]),
+              toPublicAuthEntry(dummyRootData.auth[1]),
+              toPublicAuthEntry(newEntry1),
+              toPublicAuthEntry(newEntry2)
+            ]
+          });
+
+          expect(res.status).toBe(200);
+        }
+      });
+    });
+
     it('returns all tokens in the system if no chapter specified', async () => {
       expect.hasAssertions();
 
@@ -180,9 +257,7 @@ describe('api/sys/auth', () => {
           req.headers = { ...req.headers, ...headerOverrides };
         },
         async test({ fetch }) {
-          const res = await fetch({
-            method: 'GET'
-          });
+          const res = await fetch({ method: 'GET' });
           const json = await res.json();
 
           expect(json).toStrictEqual({
@@ -208,7 +283,7 @@ describe('api/sys/auth', () => {
             (
               await fetch({
                 method: 'GET',
-                headers: { 'X-Target-Owner': '' }
+                headers: { 'X-Target-Owners': '' }
               })
             ).status
           ).toBe(400);

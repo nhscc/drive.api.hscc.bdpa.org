@@ -2,7 +2,7 @@ import { sendHttpOk } from 'multiverse/next-api-respond';
 import {
   createEntry,
   deleteEntry,
-  getOwnerEntries,
+  getOwnersEntries,
   updateAttributes
 } from 'multiverse/next-auth';
 import { withSysMiddleware } from 'universe/backend/middleware';
@@ -17,8 +17,13 @@ export default withSysMiddleware(
   async (req, res) => {
     if (req.method == 'GET') {
       sendHttpOk(res, {
-        entries: await getOwnerEntries({
-          owner: req.headers['x-target-owner']?.toString()
+        entries: await getOwnersEntries({
+          owners: [
+            req.headers['x-target-owners']
+              ?.toString()
+              .split(',')
+              .map((s) => s.trim())
+          ].flat()
         })
       });
     } else if (req.method == 'POST') {

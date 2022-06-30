@@ -594,27 +594,37 @@ export async function updateAttributes({
  * Returns all entries with a matching `owner` attribute in the well-known
  * "auth" MongoDB collection. Throws on invalid/missing `owner` attribute.
  */
-export async function getOwnerEntries({
-  owner
+export async function getOwnersEntries({
+  owners: rawOwners
 }: {
   /**
-   * A valid token `owner`.
+   * An array of one or more valid `owner` tokens.
    *
    * @see {@link TokenAttributes}
    */
-  owner?: TokenAttributes['owner'];
+  owners: (TokenAttributes['owner'] | undefined)[];
 }): Promise<PublicAuthEntry[]> {
-  if (owner === undefined || isTokenAttributes({ owner })) {
+  const owners = rawOwners.filter((owner): owner is string => owner !== undefined);
+
+  const isValidOwnerArray = (
+    owners: unknown[]
+  ): owners is TokenAttributes['owner'][] => {
+    return owners.every((owner) => isTokenAttributes({ owner }));
+  };
+
+  const returnAll = owners.length == 0;
+
+  if (returnAll || isValidOwnerArray(owners)) {
     return (await getDb({ name: 'root' }))
       .collection<InternalAuthEntry>('auth')
       .find<PublicAuthEntry>(
         // * Query is covered by the index
-        owner ? { 'attributes.owner': owner } : {},
-        { projection: { _id: false } }
+        returnAll ? {} : { 'attributes.owner': { $in: owners } },
+        { projection: { _id: false }, sort: { _id: 1 } }
       )
       .toArray();
   } else {
-    throw new InvalidSecretError('owner');
+    throw new InvalidSecretError('owner(s)');
   }
 }
 
