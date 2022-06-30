@@ -155,7 +155,7 @@
     "spellchecker": "^3.7.1",
     "test-listen": "^1.1.0",
     "text-extensions": "^2.4.0",
-    "type-fest": "^2.15.0",
+    "type-fest": "^2.15.1",
     "typedoc": "^0.23.2",
     "typedoc-plugin-markdown": "^3.13.1",
     "unfetch": "^4.2.0",
