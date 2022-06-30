@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { testApiHandler } from 'next-test-api-route-handler';
 import { api, setupMockBackend } from 'testverse/fixtures';
 
@@ -151,6 +152,24 @@ describe('api/v1/filesystem/:username', () => {
           expect(Object.keys(json)).toHaveLength(2);
         }
       });
+
+      await testApiHandler({
+        handler: api.v1.filesystemUsernameNodeId,
+        params: { username: 'User1' },
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
+          expect(status).toBe(200);
+        }
+      });
+
+      await testApiHandler({
+        handler: api.v1.filesystemUsernameNodeId,
+        params: {},
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
+          expect(status).toBe(200);
+        }
+      });
     });
   });
 
@@ -189,6 +208,24 @@ describe('api/v1/filesystem/:username', () => {
           expect(status).toBe(200);
           expect(json.success).toBeTrue();
           expect(Object.keys(json)).toHaveLength(1);
+        }
+      });
+
+      await testApiHandler({
+        handler: api.v1.filesystemUsernameNodeId,
+        params: { username: 'User1' },
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          expect(status).toBe(200);
+        }
+      });
+
+      await testApiHandler({
+        handler: api.v1.filesystemUsernameNodeId,
+        params: {},
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          expect(status).toBe(200);
         }
       });
     });
@@ -329,6 +366,24 @@ describe('api/v2/users/:username/filesystem', () => {
           expect(Object.keys(json)).toHaveLength(2);
         }
       });
+
+      await testApiHandler({
+        handler: api.v2.usersUsernameFilesystemNodeId,
+        params: { username: 'User1' },
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
+          expect(status).toBe(200);
+        }
+      });
+
+      await testApiHandler({
+        handler: api.v2.usersUsernameFilesystemNodeId,
+        params: {},
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
+          expect(status).toBe(200);
+        }
+      });
     });
   });
 
@@ -367,6 +422,24 @@ describe('api/v2/users/:username/filesystem', () => {
           expect(status).toBe(200);
           expect(json.success).toBeTrue();
           expect(Object.keys(json)).toHaveLength(1);
+        }
+      });
+
+      await testApiHandler({
+        handler: api.v2.usersUsernameFilesystemNodeId,
+        params: { username: 'User1' },
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          expect(status).toBe(200);
+        }
+      });
+
+      await testApiHandler({
+        handler: api.v2.usersUsernameFilesystemNodeId,
+        params: { username: 'User1' },
+        test: async ({ fetch }) => {
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          expect(status).toBe(200);
         }
       });
     });

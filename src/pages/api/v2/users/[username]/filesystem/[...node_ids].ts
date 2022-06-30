@@ -10,21 +10,21 @@ export default withMiddleware(
     if (req.method == 'GET') {
       sendHttpOk(res, {
         nodes: await getNodes({
-          username: req.query.username.toString(),
-          node_ids: [req.query.node_ids].flat()
+          username: req.query.username?.toString(),
+          node_ids: req.query.node_ids ? [req.query.node_ids].flat() : undefined
         })
       });
     } else if (req.method == 'DELETE') {
       await deleteNodes({
-        username: req.query.username.toString(),
-        node_ids: [req.query.node_ids].flat()
+        username: req.query.username?.toString(),
+        node_ids: req.query.node_ids ? [req.query.node_ids].flat() : undefined
       });
       sendHttpOk(res);
     } // * PUT
     else {
       await updateNode({
-        username: req.query.username.toString(),
-        node_id: req.query.node_ids[0],
+        username: req.query.username?.toString(),
+        node_id: [req.query.node_ids].flat()[0],
         data: req.body
       });
       sendHttpOk(res);

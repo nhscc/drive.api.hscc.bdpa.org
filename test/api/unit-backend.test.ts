@@ -56,15 +56,18 @@ describe('::getAllUsers', () => {
   it('does not crash when database is empty', async () => {
     expect.hasAssertions();
 
-    await expect(Backend.getAllUsers({ after: null })).resolves.not.toStrictEqual([]);
+    await expect(Backend.getAllUsers({ after: undefined })).resolves.not.toStrictEqual(
+      []
+    );
+
     await (await getDb({ name: 'hscc-api-drive' })).collection('users').deleteMany({});
-    await expect(Backend.getAllUsers({ after: null })).resolves.toStrictEqual([]);
+    await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual([]);
   });
 
   it('returns all users', async () => {
     expect.hasAssertions();
 
-    await expect(Backend.getAllUsers({ after: null })).resolves.toStrictEqual(
+    await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual(
       sortedUsers.map(toPublicUser)
     );
   });
@@ -75,7 +78,7 @@ describe('::getAllUsers', () => {
     await withMockedEnv(
       async () => {
         expect([
-          await Backend.getAllUsers({ after: null }),
+          await Backend.getAllUsers({ after: undefined }),
           await Backend.getAllUsers({
             after: sortedUsers[0]._id.toString()
           }),
@@ -116,12 +119,16 @@ describe('::getUser', () => {
     ).resolves.toStrictEqual(toPublicUser(dummyAppData.users[0]));
   });
 
-  it('rejects if username not found', async () => {
+  it('rejects if username missing or not found', async () => {
     expect.hasAssertions();
     const username = 'does-not-exist';
 
     await expect(Backend.getUser({ username })).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound(username, 'user')
+    });
+
+    await expect(Backend.getUser({ username: undefined })).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
     });
   });
 });
@@ -388,12 +395,12 @@ describe('::updateUser', () => {
     await expect(
       Backend.updateUser({
         username: dummyAppData.users[0].username,
-        data: { email: dummyAppData.users[0].email }
+        data: { salt: dummyAppData.users[0].salt }
       })
     ).resolves.toBeUndefined();
   });
 
-  it('rejects if the username is not found', async () => {
+  it('rejects if the username is missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
@@ -408,6 +415,19 @@ describe('::updateUser', () => {
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('fake-user', 'user')
     });
+
+    await expect(
+      Backend.updateUser({
+        username: undefined,
+        data: {
+          email: 'fake@email.com',
+          key: '0'.repeat(getEnv().USER_KEY_LENGTH),
+          salt: '0'.repeat(getEnv().USER_SALT_LENGTH)
+        }
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
+    });
   });
 
   it('rejects when attempting to update a user to a duplicate email', async () => {
@@ -421,6 +441,17 @@ describe('::updateUser', () => {
         }
       })
     ).rejects.toMatchObject({ message: ErrorMessage.DuplicateFieldValue('email') });
+  });
+
+  it('returns immediately is no data passed in', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.updateUser({
+        username: undefined,
+        data: {}
+      })
+    ).resolves.toBeUndefined();
   });
 
   it('rejects if data is invalid or contains properties that violates limits', async () => {
@@ -518,13 +549,17 @@ describe('::deleteUser', () => {
     ).resolves.toBe(0);
   });
 
-  it('rejects if the username is not found', async () => {
+  it('rejects if the username is missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
       Backend.deleteUser({ username: 'does-not-exist' })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
+
+    await expect(Backend.deleteUser({ username: undefined })).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
     });
   });
 
@@ -639,7 +674,7 @@ describe('::getNodes', () => {
     ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
   });
 
-  it('rejects if one or more node_ids not found', async () => {
+  it('rejects if one or more node_ids missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
@@ -658,9 +693,18 @@ describe('::getNodes', () => {
         ]
       })
     ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
+
+    await expect(
+      Backend.getNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: undefined
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('node_ids', 'parameter')
+    });
   });
 
-  it('rejects if the username is not found', async () => {
+  it('rejects if the username is missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
@@ -670,6 +714,15 @@ describe('::getNodes', () => {
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
+
+    await expect(
+      Backend.getNodes({
+        username: undefined,
+        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
     });
   });
 
@@ -758,7 +811,7 @@ describe('::searchNodes', () => {
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: null,
+            after: undefined,
             match: {},
             regexMatch: {}
           })
@@ -778,7 +831,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[1].username,
-        after: null,
+        after: undefined,
         match: { tags: ['darkshines'] },
         regexMatch: {}
       })
@@ -795,7 +848,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[1].username,
-        after: null,
+        after: undefined,
         match: { owner: dummyAppData.users[2].username },
         regexMatch: { [`permissions.${dummyAppData.users[1].username}`]: 'view|edit' }
       })
@@ -820,7 +873,7 @@ describe('::searchNodes', () => {
           await expect(
             Backend.searchNodes({
               username: dummyAppData.users[2].username,
-              after: prevNode ? prevNode.node_id : null,
+              after: prevNode ? prevNode.node_id : undefined,
               match: {},
               regexMatch: {}
             })
@@ -831,7 +884,7 @@ describe('::searchNodes', () => {
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: prevNode ? prevNode.node_id : null,
+            after: prevNode ? prevNode.node_id : undefined,
             match: {},
             regexMatch: {}
           })
@@ -871,18 +924,29 @@ describe('::searchNodes', () => {
     ).rejects.toMatchObject({ message: ErrorMessage.ItemNotFound(after, 'node_id') });
   });
 
-  it('rejects if the username is not found', async () => {
+  it('rejects if the username is missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
       Backend.searchNodes({
         username: 'does-not-exist',
-        after: null,
+        after: undefined,
         match: {},
         regexMatch: {}
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
+
+    await expect(
+      Backend.searchNodes({
+        username: undefined,
+        after: undefined,
+        match: {},
+        regexMatch: {}
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
     });
   });
 
@@ -899,7 +963,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: {},
         regexMatch: {}
       })
@@ -914,7 +978,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: { createdAt: { $lt: Date.now() } },
         regexMatch: { 'permissions.User2': 'view|edit' }
       })
@@ -931,7 +995,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[0].username,
-        after: null,
+        after: undefined,
         match: { tags: ['MuSiC'] },
         regexMatch: {}
       })
@@ -944,7 +1008,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[0].username,
-        after: null,
+        after: undefined,
         match: { tags: ['MuSiC', 'muse'] },
         regexMatch: {}
       })
@@ -964,7 +1028,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[0].username,
-        after: null,
+        after: undefined,
         match: { name: 'USER1-FILE1' },
         regexMatch: {}
       })
@@ -981,7 +1045,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[0].username,
-        after: null,
+        after: undefined,
         match: { createdAt: { $lt: Date.now() - 5000, $gt: Date.now() - 10000 } },
         regexMatch: {}
       })
@@ -996,7 +1060,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[0].username,
-        after: null,
+        after: undefined,
         match: { modifiedAt: { $lt: Date.now() - 500, $gt: Date.now() - 1000 } },
         regexMatch: {}
       })
@@ -1018,7 +1082,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: { createdAt: { $lt: Date.now() - 10000 } },
         regexMatch: {}
       })
@@ -1031,7 +1095,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: { createdAt: { $lte: Date.now() - 10000 } },
         regexMatch: {}
       })
@@ -1044,7 +1108,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: { createdAt: { $gt: Date.now() - 10000 } },
         regexMatch: {}
       })
@@ -1057,7 +1121,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: { createdAt: { $gte: Date.now() - 10000 } },
         regexMatch: {}
       })
@@ -1074,7 +1138,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: {
           createdAt: { $or: [{ $lt: Date.now() - 10000 }, { $gt: Date.now() - 5000 }] }
         },
@@ -1097,7 +1161,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[0].username,
-        after: null,
+        after: undefined,
         match: {},
         regexMatch: { text: '^cause look.*$' }
       })
@@ -1114,7 +1178,7 @@ describe('::searchNodes', () => {
     await expect(
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
-        after: null,
+        after: undefined,
         match: {
           tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map(() =>
             Math.random().toString(32).slice(2, 7)
@@ -1161,7 +1225,7 @@ describe('::searchNodes', () => {
         expect(
           Backend.searchNodes({
             username: dummyAppData.users[0].username,
-            after: null,
+            after: undefined,
             match,
             regexMatch
           })
@@ -1353,7 +1417,7 @@ describe('::searchNodes', () => {
           expect(
             Backend.searchNodes({
               username: dummyAppData.users[0].username,
-              after: null,
+              after: undefined,
               match: matcher,
               regexMatch: {}
             })
@@ -1362,7 +1426,7 @@ describe('::searchNodes', () => {
           expect(
             Backend.searchNodes({
               username: dummyAppData.users[0].username,
-              after: null,
+              after: undefined,
               match: {},
               regexMatch: matcher
             })
@@ -1477,7 +1541,7 @@ describe('::createNode', () => {
     await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(1);
   });
 
-  it('rejects if the username is not found', async () => {
+  it('rejects if the username is missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
@@ -1492,6 +1556,20 @@ describe('::createNode', () => {
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
+
+    await expect(
+      Backend.createNode({
+        username: undefined,
+        data: {
+          type: 'directory',
+          name: 'New Directory',
+          contents: [],
+          permissions: {}
+        }
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
     });
   });
 
@@ -2079,9 +2157,25 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
-        data: { name: dummyAppData['file-nodes'][0].name }
+        username: dummyAppData['file-nodes'][2].owner,
+        node_id: dummyAppData['file-nodes'][2]._id.toString(),
+        data: {
+          name: dummyAppData['file-nodes'][2].name,
+          lock: dummyAppData['file-nodes'][2].lock,
+          permissions: dummyAppData['file-nodes'][2].permissions
+        }
+      })
+    ).resolves.toBeUndefined();
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['meta-nodes'][0].owner,
+        node_id: dummyAppData['meta-nodes'][0]._id.toString(),
+        data: {
+          name: dummyAppData['meta-nodes'][0].name,
+          contents: dummyAppData['meta-nodes'][0].contents.map((id) => id.toString()),
+          permissions: dummyAppData['meta-nodes'][0].permissions
+        }
       })
     ).resolves.toBeUndefined();
   });
@@ -2182,7 +2276,7 @@ describe('::updateNode', () => {
     ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
   });
 
-  it('rejects if the node_id is not found', async () => {
+  it('rejects if the node_id is missing or not found', async () => {
     expect.hasAssertions();
 
     const node_id = new ObjectId().toString();
@@ -2196,9 +2290,19 @@ describe('::updateNode', () => {
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound(node_id, 'node_id')
     });
+
+    await expect(
+      Backend.updateNode({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_id: undefined,
+        data: { owner: 'new-user' }
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('node_id', 'parameter')
+    });
   });
 
-  it('rejects if the username is not found', async () => {
+  it('rejects if the username is missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
@@ -2210,6 +2314,28 @@ describe('::updateNode', () => {
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
     });
+
+    await expect(
+      Backend.updateNode({
+        username: undefined,
+        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        data: { owner: 'new-user' }
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
+    });
+  });
+
+  it('returns immediately is no data passed in', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.updateNode({
+        username: undefined,
+        node_id: undefined,
+        data: {}
+      })
+    ).resolves.toBeUndefined();
   });
 
   it('rejects if node_id not owned by username', async () => {
@@ -2748,7 +2874,7 @@ describe('::deleteNodes', () => {
     });
   });
 
-  it('rejects if the username is not found', async () => {
+  it('rejects if the username is missing or not found', async () => {
     expect.hasAssertions();
 
     await expect(
@@ -2758,6 +2884,28 @@ describe('::deleteNodes', () => {
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
+    });
+
+    await expect(
+      Backend.deleteNodes({
+        username: undefined,
+        node_ids: []
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('username', 'parameter')
+    });
+  });
+
+  it('rejects if node_ids is missing', async () => {
+    expect.hasAssertions();
+
+    await expect(
+      Backend.deleteNodes({
+        username: dummyAppData['file-nodes'][0].owner,
+        node_ids: undefined
+      })
+    ).rejects.toMatchObject({
+      message: ErrorMessage.InvalidItem('node_ids', 'parameter')
     });
   });
 

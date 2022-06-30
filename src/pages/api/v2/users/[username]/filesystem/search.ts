@@ -28,7 +28,7 @@ export default withMiddleware(
     sendHttpOk(res, {
       nodes: await searchNodes({
         after: req.query.after?.toString(),
-        username: req.query.username.toString(),
+        username: req.query.username?.toString(),
         match,
         regexMatch
       })

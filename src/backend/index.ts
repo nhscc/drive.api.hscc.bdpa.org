@@ -1,10 +1,4 @@
 import { MongoServerError, ObjectId } from 'mongodb';
-import {
-  ItemNotFoundError,
-  ItemsNotFoundError,
-  ValidationError,
-  ErrorMessage
-} from 'universe/error';
 import { isPlainObject } from 'is-plain-object';
 import { getDb } from 'multiverse/mongo-schema';
 import { itemExists } from 'multiverse/mongo-item';
@@ -16,6 +10,14 @@ import {
   publicMetaNodeProjection,
   publicUserProjection
 } from 'universe/backend/db';
+
+import {
+  ItemNotFoundError,
+  ItemsNotFoundError,
+  InvalidItemError,
+  ValidationError,
+  ErrorMessage
+} from 'universe/error';
 
 import type {
   PublicNode,
@@ -115,22 +117,22 @@ const normalizeTags = (tags: string[]) => {
 /**
  * Validate a username string for correctness.
  */
-const validateUsername = (username: unknown) => {
+function validateUsername(username: unknown): username is Username {
   return (
     typeof username == 'string' &&
     usernameRegex.test(username) &&
     username.length >= getEnv().MIN_USER_NAME_LENGTH &&
     username.length <= getEnv().MAX_USER_NAME_LENGTH
   );
-};
+}
 
 /**
  * Validate a new or patch user data object.
  */
-const validateUserData = (
+function validateUserData(
   data: NewUser | PatchUser | undefined,
   { required }: { required: boolean }
-) => {
+): asserts data is NewUser | PatchUser {
   if (!data || !isPlainObject(data)) {
     throw new ValidationError(ErrorMessage.InvalidJSON());
   }
@@ -180,7 +182,7 @@ const validateUserData = (
       ErrorMessage.InvalidStringLength('key', USER_KEY_LENGTH, null, 'hexadecimal')
     );
   }
-};
+}
 
 /**
  * Validate a new or patch file or meta node data object. If no `type` is
@@ -188,10 +190,10 @@ const validateUserData = (
  * required fields. If `type` is provided, data must be a valid PatchNode
  * instance where all fields are optional.
  */
-const validateNodeData = async (
+async function validateNodeData(
   data: NewNode | PatchNode | undefined,
   { type }: { type: NonNullable<NewNode['type']> | null }
-) => {
+) {
   if (!data || !isPlainObject(data)) {
     throw new ValidationError(ErrorMessage.InvalidJSON());
   }
@@ -411,16 +413,25 @@ const validateNodeData = async (
       throw new ItemNotFoundError(data.owner, 'user');
     }
   }
-};
+
+  return true;
+}
+
+function assertNodeDataWasValidated(
+  _data: NewNode | PatchNode | undefined
+): asserts _data is NewNode | PatchNode {
+  // ? Vacuously asserts data type, since it was already checked by
+  // ? validateNodeData
+}
 
 export async function getAllUsers({
   after
 }: {
-  after: string | null;
+  after: string | undefined;
 }): Promise<PublicUser[]> {
-  const afterId: UserId | null = (() => {
+  const afterId: UserId | undefined = (() => {
     try {
-      return after ? new ObjectId(after) : null;
+      return after ? new ObjectId(after) : undefined;
     } catch {
       throw new ValidationError(ErrorMessage.InvalidObjectId(after as string));
     }
@@ -444,8 +455,12 @@ export async function getAllUsers({
 export async function getUser({
   username
 }: {
-  username: Username;
+  username: Username | undefined;
 }): Promise<PublicUser> {
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  }
+
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
 
@@ -457,7 +472,11 @@ export async function getUser({
   );
 }
 
-export async function createUser({ data }: { data: NewUser }): Promise<PublicUser> {
+export async function createUser({
+  data
+}: {
+  data: NewUser | undefined;
+}): Promise<PublicUser> {
   validateUserData(data, { required: true });
 
   const { MAX_USER_NAME_LENGTH, MIN_USER_NAME_LENGTH } = getEnv();
@@ -520,10 +539,15 @@ export async function updateUser({
   username,
   data
 }: {
-  username: Username;
-  data: PatchUser;
+  username: Username | undefined;
+  data: PatchUser | undefined;
 }): Promise<void> {
   if (data && !Object.keys(data).length) return;
+
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  }
+
   validateUserData(data, { required: false });
 
   const { email, key, salt, ...rest } = data as Required<PatchUser>;
@@ -565,7 +589,15 @@ export async function updateUser({
   }
 }
 
-export async function deleteUser({ username }: { username: Username }): Promise<void> {
+export async function deleteUser({
+  username
+}: {
+  username: Username | undefined;
+}): Promise<void> {
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  }
+
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
   const fileNodes = db.collection<InternalNode>('file-nodes');
@@ -590,10 +622,10 @@ export async function authAppUser({
   username,
   key
 }: {
-  username: Username;
-  key: string;
+  username: Username | undefined;
+  key: string | undefined;
 }): Promise<boolean> {
-  if (!key) return false;
+  if (!key || !username) return false;
 
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
@@ -605,9 +637,17 @@ export async function getNodes({
   username,
   node_ids
 }: {
-  username: Username;
-  node_ids: string[];
+  username: Username | undefined;
+  node_ids: string[] | undefined;
 }): Promise<PublicNode[]> {
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  }
+
+  if (!node_ids) {
+    throw new InvalidItemError('node_ids', 'parameter');
+  }
+
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
 
@@ -656,8 +696,8 @@ export async function searchNodes({
   match,
   regexMatch
 }: {
-  username: Username;
-  after: string | null;
+  username: Username | undefined;
+  after: string | undefined;
   match: {
     [specifier: string]:
       | string
@@ -672,12 +712,16 @@ export async function searchNodes({
     [specifier: string]: string;
   };
 }): Promise<PublicNode[]> {
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  }
+
   const { MAX_SEARCHABLE_TAGS, RESULTS_PER_PAGE } = getEnv();
 
   // ? Derive the actual after_id
-  const afterId: UserId | null = (() => {
+  const afterId: UserId | undefined = (() => {
     try {
-      return after ? new ObjectId(after) : null;
+      return after ? new ObjectId(after) : undefined;
     } catch {
       throw new ValidationError(ErrorMessage.InvalidObjectId(after as string));
     }
@@ -922,10 +966,15 @@ export async function createNode({
   username,
   data
 }: {
-  username: Username;
-  data: NewNode;
+  username: Username | undefined;
+  data: NewNode | undefined;
 }): Promise<PublicNode> {
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  }
+
   await validateNodeData(data, { type: null });
+  assertNodeDataWasValidated(data);
 
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
@@ -991,11 +1040,17 @@ export async function updateNode({
   node_id,
   data
 }: {
-  username: Username;
-  node_id: string;
-  data: PatchNode;
+  username: Username | undefined;
+  node_id: string | undefined;
+  data: PatchNode | undefined;
 }): Promise<void> {
   if (data && !Object.keys(data).length) return;
+
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  } else if (!node_id) {
+    throw new InvalidItemError('node_id', 'parameter');
+  }
 
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection<InternalUser>('users');
@@ -1038,6 +1093,7 @@ export async function updateNode({
   }
 
   await validateNodeData(data, { type: node.type });
+  assertNodeDataWasValidated(data);
 
   if (node.type == 'file') {
     const { name, text, tags, lock, permissions, owner, ...rest } =
@@ -1090,9 +1146,15 @@ export async function deleteNodes({
   username,
   node_ids
 }: {
-  username: Username;
-  node_ids: string[];
+  username: Username | undefined;
+  node_ids: string[] | undefined;
 }): Promise<void> {
+  if (!username) {
+    throw new InvalidItemError('username', 'parameter');
+  } else if (!node_ids) {
+    throw new InvalidItemError('node_ids', 'parameter');
+  }
+
   if (node_ids.length > getEnv().MAX_PARAMS_PER_REQUEST) {
     throw new ValidationError(ErrorMessage.TooManyItemsRequested('node_ids'));
   }

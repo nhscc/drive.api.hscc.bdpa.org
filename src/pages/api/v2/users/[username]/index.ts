@@ -7,7 +7,7 @@ export { defaultConfig as config } from 'universe/backend/api';
 
 export default withMiddleware(
   async (req, res) => {
-    const username = req.query.username.toString();
+    const username = req.query.username?.toString();
 
     if (req.method == 'GET') {
       sendHttpOk(res, { user: await getUser({ username }) });

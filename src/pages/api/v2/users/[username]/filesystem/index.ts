@@ -10,7 +10,7 @@ export default withMiddleware(
     // * POST
     sendHttpOk(res, {
       node: await createNode({
-        username: req.query.username.toString(),
+        username: req.query.username?.toString(),
         data: req.body
       })
     });

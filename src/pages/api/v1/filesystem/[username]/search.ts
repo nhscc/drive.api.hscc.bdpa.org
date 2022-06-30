@@ -8,7 +8,7 @@ export { defaultConfig as config } from 'universe/backend/api';
 
 export default withMiddleware(
   async (req, res) => {
-    const username = req.query.username.toString();
+    const username = req.query.username?.toString();
 
     const match = (() => {
       try {

@@ -21,7 +21,7 @@ export default withMiddleware(
   async (req, res) => {
     // * POST
     (await authAppUser({
-      username: req.query.username.toString(),
+      username: req.query.username?.toString(),
       key: req.body?.key
     }))
       ? sendHttpOk(res)
