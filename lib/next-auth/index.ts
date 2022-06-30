@@ -4,6 +4,7 @@ import { toss } from 'toss-expression';
 import { isError } from '@xunnamius/types';
 import { debugFactory } from 'multiverse/debug-extended';
 import { randomUUID as generateUUID } from 'node:crypto';
+import { MongoServerError } from 'mongodb';
 
 import {
   AppValidationError,
@@ -12,8 +13,8 @@ import {
   InvalidSecretError
 } from 'universe/error';
 
-import { MongoServerError, WithId, WithoutId } from 'mongodb';
-import type { Merge } from 'type-fest';
+import type { WithId, WithoutId } from 'mongodb';
+import type { JsonValue, Merge } from 'type-fest';
 
 // TODO: consider breaking this into multiple different files (and tests) when
 // TODO: turned into a standalone package. Also, multiple debug identifiers.
@@ -107,7 +108,7 @@ export type TargetToken = Partial<{
   /**
    * The target token.
    */
-  token: Record<string, unknown>;
+  token: Record<string, JsonValue>;
 }>;
 
 /**
@@ -122,7 +123,7 @@ export type Token = {
   /**
    * The actual token.
    */
-  token: Record<string, unknown>;
+  token: Record<string, JsonValue>;
 };
 
 /**
