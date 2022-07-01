@@ -58,7 +58,11 @@ beforeEach(() => {
 
 afterEach(() => {
   mutableAuthSchemes.splice(0, mutableAuthSchemes.length, ..._authSchemes);
-  mutableAuthConstraints.splice(0, mutableAuthConstraints.length, ..._authConstraints);
+  mutableAuthConstraints.splice(
+    0,
+    mutableAuthConstraints.length,
+    ..._authConstraints
+  );
 });
 
 test('ensure authSchemes contains only lowercase alphanumeric strings', () => {
@@ -785,7 +789,10 @@ describe('::updateAttributes', () => {
       ],
       [
         {
-          attributes: { owner: 'name', isGlobalAdmin: 1 } as unknown as TokenAttributes
+          attributes: {
+            owner: 'name',
+            isGlobalAdmin: 1
+          } as unknown as TokenAttributes
         },
         'invalid attributes'
       ],
@@ -1118,7 +1125,9 @@ describe('::deleteEntry', () => {
       })
     ).resolves.toBeUndefined();
 
-    await expect(authDb.countDocuments()).resolves.toBe(dummyRootData.auth.length - 1);
+    await expect(authDb.countDocuments()).resolves.toBe(
+      dummyRootData.auth.length - 1
+    );
 
     await expect(
       deleteEntry({
@@ -1126,7 +1135,9 @@ describe('::deleteEntry', () => {
       })
     ).resolves.toBeUndefined();
 
-    await expect(authDb.countDocuments()).resolves.toBe(dummyRootData.auth.length - 2);
+    await expect(authDb.countDocuments()).resolves.toBe(
+      dummyRootData.auth.length - 2
+    );
   });
 
   it('rejects if the auth entry is not found', async () => {
@@ -1244,7 +1255,9 @@ it('allows multiple different auth entries of various schemes to coexist', async
 
   jest.spyOn(NextAuthSpyTarget, 'isTokenAttributes').mockReturnValue(true);
 
-  const newEntry1 = await createEntry({ entry: { attributes: { owner: 'owner-1' } } });
+  const newEntry1 = await createEntry({
+    entry: { attributes: { owner: 'owner-1' } }
+  });
   const newEntry2 = await createEntry({
     entry: { attributes: { owner: 'owner-2', isGlobalAdmin: true } }
   });
@@ -1266,7 +1279,9 @@ it('allows multiple different auth entries of various schemes to coexist', async
   ).resolves.toStrictEqual({ authenticated: true });
 
   await expect(
-    authenticateHeader({ header: `${newEntryBlue.scheme} ${newEntryBlue.token.uuid}` })
+    authenticateHeader({
+      header: `${newEntryBlue.scheme} ${newEntryBlue.token.uuid}`
+    })
   ).resolves.toStrictEqual({ authenticated: true });
 
   await expect(

@@ -152,7 +152,9 @@ export type TestFixture = {
       | ((
           json: Record<string, unknown> | undefined,
           prevResults: TestResultset
-        ) => Promisable<Record<string, unknown> | jest.AsymmetricMatcher | undefined>);
+        ) => Promisable<
+          Record<string, unknown> | jest.AsymmetricMatcher | undefined
+        >);
   };
 };
 
@@ -993,7 +995,8 @@ export function getFixtures(
       }
     },
     {
-      subject: "attempt to update the-hill's symlink to point to file nodes #1 and #2",
+      subject:
+        "attempt to update the-hill's symlink to point to file nodes #1 and #2",
       handler: api.v2.usersUsernameFilesystemNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
@@ -1057,7 +1060,8 @@ export function getFixtures(
       }
     },
     {
-      subject: 'update dir node name, permissions, and make dir node self-referential',
+      subject:
+        'update dir node name, permissions, and make dir node self-referential',
       handler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {

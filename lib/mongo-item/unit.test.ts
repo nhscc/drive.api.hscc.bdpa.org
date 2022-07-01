@@ -148,7 +148,9 @@ describe('::itemToObjectId', () => {
     const ids = [id, id, id];
 
     expect(itemToObjectId(ids)).toStrictEqual(ids);
-    expect(itemToObjectId([{ _id: id }, { _id: id }, { _id: id }])).toStrictEqual(ids);
+    expect(itemToObjectId([{ _id: id }, { _id: id }, { _id: id }])).toStrictEqual(
+      ids
+    );
     expect(
       itemToObjectId([id.toString(), id.toString(), id.toString()])
     ).toStrictEqual(ids);

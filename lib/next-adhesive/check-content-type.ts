@@ -51,7 +51,9 @@ export type Options = {
    *
    * @see https://www.iana.org/assignments/media-types/media-types.xhtml
    */
-  allowedContentTypes?: AllowedContentTypesConfig | AllowedContentTypesPerMethodConfig;
+  allowedContentTypes?:
+    | AllowedContentTypesConfig
+    | AllowedContentTypesPerMethodConfig;
 };
 
 /**

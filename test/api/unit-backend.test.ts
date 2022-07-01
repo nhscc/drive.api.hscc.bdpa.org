@@ -56,12 +56,16 @@ describe('::getAllUsers', () => {
   it('does not crash when database is empty', async () => {
     expect.hasAssertions();
 
-    await expect(Backend.getAllUsers({ after: undefined })).resolves.not.toStrictEqual(
+    await expect(
+      Backend.getAllUsers({ after: undefined })
+    ).resolves.not.toStrictEqual([]);
+
+    await (await getDb({ name: 'hscc-api-drive' }))
+      .collection('users')
+      .deleteMany({});
+    await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual(
       []
     );
-
-    await (await getDb({ name: 'hscc-api-drive' })).collection('users').deleteMany({});
-    await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual([]);
   });
 
   it('returns all users', async () => {
@@ -342,7 +346,9 @@ describe('::createUser', () => {
           salt: '0'.repeat(getEnv().USER_SALT_LENGTH)
         }
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.DuplicateFieldValue('username') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.DuplicateFieldValue('username')
+    });
 
     await expect(
       Backend.createUser({
@@ -682,7 +688,9 @@ describe('::getNodes', () => {
         username: dummyAppData['file-nodes'][0].owner,
         node_ids: [new ObjectId().toString()]
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemOrItemsNotFound('node_ids')
+    });
 
     await expect(
       Backend.getNodes({
@@ -692,7 +700,9 @@ describe('::getNodes', () => {
           new ObjectId().toString()
         ]
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemOrItemsNotFound('node_ids')
+    });
 
     await expect(
       Backend.getNodes({
@@ -734,7 +744,9 @@ describe('::getNodes', () => {
         username: dummyAppData['file-nodes'][2].owner,
         node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemOrItemsNotFound('node_ids')
+    });
   });
 
   it('does not reject if node_id not owned when user has view/edit permission', async () => {
@@ -768,7 +780,9 @@ describe('::getNodes', () => {
         username: dummyAppData['file-nodes'][0].owner,
         node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
       })
-    ).rejects.toMatchObject({ message: ErrorMessage.ItemOrItemsNotFound('node_ids') });
+    ).rejects.toMatchObject({
+      message: ErrorMessage.ItemOrItemsNotFound('node_ids')
+    });
 
     await db.collection('users').deleteMany({});
 
@@ -788,8 +802,8 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: 'User1',
-        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(() =>
-          new ObjectId().toString()
+        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(
+          () => new ObjectId().toString()
         )
       })
     ).rejects.toMatchObject({
@@ -800,7 +814,9 @@ describe('::getNodes', () => {
 
 describe('::searchNodes', () => {
   const getOwnedAndSharedNodes = (username: Username) => {
-    return sortedNodes.filter((n) => n.owner == username || !!n.permissions[username]);
+    return sortedNodes.filter(
+      (n) => n.owner == username || !!n.permissions[username]
+    );
   };
 
   it("returns all of a user's nodes if no query params given", async () => {
@@ -1140,7 +1156,9 @@ describe('::searchNodes', () => {
         username: dummyAppData.users[2].username,
         after: undefined,
         match: {
-          createdAt: { $or: [{ $lt: Date.now() - 10000 }, { $gt: Date.now() - 5000 }] }
+          createdAt: {
+            $or: [{ $lt: Date.now() - 10000 }, { $gt: Date.now() - 5000 }]
+          }
         },
         regexMatch: {}
       })
@@ -1713,7 +1731,12 @@ describe('::createNode', () => {
         ErrorMessage.InvalidObjectKeyValue('permissions')
       ],
       [
-        { type: 'file', name: 'x', permissions: {}, text: null } as unknown as NewNode,
+        {
+          type: 'file',
+          name: 'x',
+          permissions: {},
+          text: null
+        } as unknown as NewNode,
         ErrorMessage.InvalidStringLength('text', 0, maxNodeTextBytes, 'bytes')
       ],
       [
@@ -2627,7 +2650,12 @@ describe('::updateNode', () => {
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string'),
+        ErrorMessage.InvalidStringLength(
+          'lock.client',
+          1,
+          maxLockClientLen,
+          'string'
+        ),
         knownFileNode
       ],
       [
@@ -2638,7 +2666,12 @@ describe('::updateNode', () => {
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string'),
+        ErrorMessage.InvalidStringLength(
+          'lock.client',
+          1,
+          maxLockClientLen,
+          'string'
+        ),
         knownFileNode
       ],
       [
@@ -2649,7 +2682,12 @@ describe('::updateNode', () => {
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string'),
+        ErrorMessage.InvalidStringLength(
+          'lock.client',
+          1,
+          maxLockClientLen,
+          'string'
+        ),
         knownFileNode
       ],
       [
@@ -2865,8 +2903,8 @@ describe('::deleteNodes', () => {
     await expect(
       Backend.deleteNodes({
         username: 'User1',
-        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(() =>
-          new ObjectId().toString()
+        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(
+          () => new ObjectId().toString()
         )
       })
     ).rejects.toMatchObject({

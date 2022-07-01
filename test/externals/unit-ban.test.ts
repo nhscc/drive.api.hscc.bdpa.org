@@ -116,7 +116,9 @@ it('rate limits only those ips and auth headers that exceed limits', async () =>
   const now = ((n: number) => n - (n % 5000) - 1000)(mockDateNowMs);
 
   await (await getRateLimitsCollection()).deleteMany({});
-  await (await getRequestLogCollection()).updateMany({}, { $set: { createdAt: now } });
+  await (
+    await getRequestLogCollection()
+  ).updateMany({}, { $set: { createdAt: now } });
 
   await withMockedEnv(importBanHammer, {
     BAN_HAMMER_MAX_REQUESTS_PER_WINDOW: '10',

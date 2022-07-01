@@ -215,7 +215,9 @@ describe('api/v1/filesystem/:username', () => {
         handler: api.v1.filesystemUsernameNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          const status = await fetch({ method: 'DELETE' }).then(
+            async (r) => r.status
+          );
           expect(status).toBe(200);
         }
       });
@@ -224,7 +226,9 @@ describe('api/v1/filesystem/:username', () => {
         handler: api.v1.filesystemUsernameNodeId,
         params: {},
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          const status = await fetch({ method: 'DELETE' }).then(
+            async (r) => r.status
+          );
           expect(status).toBe(200);
         }
       });
@@ -429,7 +433,9 @@ describe('api/v2/users/:username/filesystem', () => {
         handler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          const status = await fetch({ method: 'DELETE' }).then(
+            async (r) => r.status
+          );
           expect(status).toBe(200);
         }
       });
@@ -438,7 +444,9 @@ describe('api/v2/users/:username/filesystem', () => {
         handler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
+          const status = await fetch({ method: 'DELETE' }).then(
+            async (r) => r.status
+          );
           expect(status).toBe(200);
         }
       });

@@ -69,7 +69,8 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
     IGNORE_RATE_LIMITS:
       !!process.env.IGNORE_RATE_LIMITS && process.env.IGNORE_RATE_LIMITS !== 'false',
     LOCKOUT_ALL_CLIENTS:
-      !!process.env.LOCKOUT_ALL_CLIENTS && process.env.LOCKOUT_ALL_CLIENTS !== 'false',
+      !!process.env.LOCKOUT_ALL_CLIENTS &&
+      process.env.LOCKOUT_ALL_CLIENTS !== 'false',
     DISALLOWED_METHODS: !!process.env.DISALLOWED_METHODS
       ? envToArray(process.env.DISALLOWED_METHODS.toUpperCase())
       : [],

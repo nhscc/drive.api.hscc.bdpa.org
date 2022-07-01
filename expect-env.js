@@ -245,7 +245,8 @@ module.exports = {
         }
       }
 
-      if (!succeeded) isCli ? console.error(rule.errorMessage) : violations.push(rule);
+      if (!succeeded)
+        isCli ? console.error(rule.errorMessage) : violations.push(rule);
       verificationSucceeded = verificationSucceeded && succeeded;
     });
 

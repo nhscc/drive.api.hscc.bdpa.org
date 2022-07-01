@@ -14,7 +14,9 @@ import {
   updateUser
 } from 'universe/backend';
 
-import V1EndpointUsers, { config as V1ConfigUsers } from 'universe/pages/api/v1/users';
+import V1EndpointUsers, {
+  config as V1ConfigUsers
+} from 'universe/pages/api/v1/users';
 
 import V1EndpointUsersUsername, {
   config as V1ConfigUsersUsername
@@ -36,7 +38,9 @@ import V1EndpointFilesystemUsernameSearch, {
   config as V1ConfigFilesystemUsernameSearch
 } from 'universe/pages/api/v1/filesystem/[username]/search';
 
-import V2EndpointUsers, { config as V2ConfigUsers } from 'universe/pages/api/v2/users';
+import V2EndpointUsers, {
+  config as V2ConfigUsers
+} from 'universe/pages/api/v2/users';
 
 import V2EndpointUsersUsername, {
   config as V2ConfigUsersUsername
@@ -77,7 +81,8 @@ export const api = {
     filesystemUsername: V1EndpointFilesystemUsername as NextApiHandlerMixin,
     filesystemUsernameNodeId:
       V1EndpointFilesystemUsernameNodeId as NextApiHandlerMixin,
-    filesystemUsernameSearch: V1EndpointFilesystemUsernameSearch as NextApiHandlerMixin
+    filesystemUsernameSearch:
+      V1EndpointFilesystemUsernameSearch as NextApiHandlerMixin
   },
   v2: {
     users: V2EndpointUsers as NextApiHandlerMixin,

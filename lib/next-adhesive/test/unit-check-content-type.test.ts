@@ -77,7 +77,8 @@ it('sends 415 by default for requests not using POST, PUT, or PATCH methods if t
       // ).toBe(415);
 
       expect(
-        (await fetch({ method: 'OPTIONS', headers: { 'content-type': 'a/j' } })).status
+        (await fetch({ method: 'OPTIONS', headers: { 'content-type': 'a/j' } }))
+          .status
       ).toBe(415);
 
       expect(

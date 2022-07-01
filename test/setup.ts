@@ -998,7 +998,8 @@ export function dummyFilesFixture(): MockFixture {
         Object.entries(ctx.fileContents).map(async ([path, contents]) => {
           const fullPath = `${ctx.root}/${path}`;
           await accessFile(fullPath).then(
-            () => debug(`skipped creating dummy file: file already exists at ${path}`),
+            () =>
+              debug(`skipped creating dummy file: file already exists at ${path}`),
             async () => {
               debug(`creating dummy file "${path}" with contents:`);
               debug.extend('contents >')(contents);
@@ -1039,7 +1040,9 @@ export async function withMockedFixture<
   options
 }: {
   fn: FixtureAction<
-    FixtureContext<FixtureOptions & Partial<Record<string, unknown> & CustomOptions>> &
+    FixtureContext<
+      FixtureOptions & Partial<Record<string, unknown> & CustomOptions>
+    > &
       CustomContext
   >;
   testIdentifier: string;
@@ -1091,7 +1094,8 @@ export async function withMockedFixture<
   const setupDebugger = async (fixture: CustomizedMockFixture, error = false) => {
     const toString = async (
       p: CustomizedMockFixture['name'] | CustomizedMockFixture['description']
-    ) => (typeof p == 'function' ? p(ctx) : typeof p == 'string' ? p : ':impossible:');
+    ) =>
+      typeof p == 'function' ? p(ctx) : typeof p == 'string' ? p : ':impossible:';
     const name = await toString(fixture.name.toString());
     const desc = await toString(fixture.description);
     const dbg = debug.extend(error ? `${name}:<error>` : name);

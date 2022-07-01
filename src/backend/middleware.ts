@@ -8,7 +8,9 @@ import checkVersion, {
   Options as CheckVersionOptions
 } from 'multiverse/next-adhesive/check-version';
 
-import useCors, { Options as UseCorsOptions } from 'multiverse/next-adhesive/use-cors';
+import useCors, {
+  Options as UseCorsOptions
+} from 'multiverse/next-adhesive/use-cors';
 
 import authRequest, {
   Options as AuthRequestOptions

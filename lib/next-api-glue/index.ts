@@ -216,7 +216,8 @@ export function withMiddleware<
             }
           } else {
             localDebug('no more middleware to execute');
-            !executionCompleted && localDebug('deactivated runtime control functions');
+            !executionCompleted &&
+              localDebug('deactivated runtime control functions');
             executionCompleted = true;
           }
         };
@@ -224,7 +225,9 @@ export function withMiddleware<
         await pullChain();
         localDebug('stopped middleware execution chain');
         localDebug(
-          `at least one middleware executed: ${ranAtLeastOneMiddleware ? 'yes' : 'no'}`
+          `at least one middleware executed: ${
+            ranAtLeastOneMiddleware ? 'yes' : 'no'
+          }`
         );
 
         return executionWasAborted;
@@ -325,7 +328,8 @@ export function middlewareFactory<
 }: {
   use: Middleware<NoInfer<Options>>[];
   useOnError?: Middleware<NoInfer<Options>>[];
-  options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> & NoInfer<Options>;
+  options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> &
+    NoInfer<Options>;
 }) {
   return <PassedOptions extends Record<string, unknown> = Record<string, unknown>>(
     handler: NextApiHandler | undefined,
