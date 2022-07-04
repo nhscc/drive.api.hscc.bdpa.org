@@ -130,7 +130,7 @@
     "jest-silent-reporter": "^0.5.0",
     "lint-staged": "^13.0.3",
     "mongodb-memory-server": "^8.7.2",
-    "msw": "^0.42.3",
+    "msw": "^0.43.0",
     "next-test-api-route-handler": "^3.1.6",
     "prettier": "^2.7.1",
     "random-case": "^1.0.0",
