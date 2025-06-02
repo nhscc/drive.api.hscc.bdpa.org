@@ -127,7 +127,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-extended": "^5.0.3",
     "jest-silent-reporter": "^0.6.0",
-    "lint-staged": "^13.0.3",
+    "lint-staged": "^16.1.0",
     "mongodb-memory-server": "^8.8.0",
     "msw": "^0.44.2",
     "next-test-api-route-handler": "^3.1.7",
