@@ -96,7 +96,7 @@
     "@types/clone-deep": "^4.0.4",
     "@types/confusing-browser-globals": "^1.0.3",
     "@types/content-type": "^1.1.8",
-    "@types/jest": "^28.1.6",
+    "@types/jest": "^29.5.14",
     "@types/node-fetch": "^2.5.12",
     "@types/semver": "^7.3.10",
     "@types/tar-stream": "^2.2.2",
