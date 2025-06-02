@@ -159,7 +159,7 @@
     "typedoc-plugin-markdown": "^4.6.4",
     "unfetch": "^5.0.0",
     "unique-filename": "^4.0.0",
-    "webpack": "^5.74.0",
+    "webpack": "^5.99.9",
     "webpack-cli": "^4.10.0",
     "webpack-node-externals": "^3.0.0"
   },
