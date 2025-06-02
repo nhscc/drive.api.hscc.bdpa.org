@@ -99,7 +99,7 @@
     "@types/jest": "^29.5.14",
     "@types/node-fetch": "^2.5.12",
     "@types/semver": "^7.7.0",
-    "@types/tar-stream": "^2.2.2",
+    "@types/tar-stream": "^3.1.4",
     "@types/test-listen": "^1.1.0",
     "@types/webpack": "^5.28.0",
     "@typescript-eslint/eslint-plugin": "^5.31.0",
