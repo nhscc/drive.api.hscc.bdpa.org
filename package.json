@@ -112,7 +112,7 @@
     "conventional-changelog-cli": "^5.0.0",
     "dotenv": "^16.5.0",
     "eslint": "^9.28.0",
-    "eslint-config-next": "^12.2.3",
+    "eslint-config-next": "^15.3.3",
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-import-resolver-typescript": "^3.3.0",
     "eslint-plugin-import": "^2.26.0",
