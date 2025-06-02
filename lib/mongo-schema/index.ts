@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable unicorn/no-keyword-prefix */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { MongoClient } from 'mongodb';
-import { InvalidAppConfigurationError } from 'named-app-errors';
-import { getEnv } from 'multiverse/next-env';
 import { debugFactory } from 'multiverse/debug-extended';
+import { getEnv } from 'multiverse/next-env';
+import { InvalidAppConfigurationError } from 'named-app-errors';
 
 import type { Db } from 'mongodb';
 
@@ -59,6 +62,9 @@ export type CollectionSchema = {
  * aliases.
  */
 export type DbSchema = {
+  /**
+   * All databases known to this system. These can be accessed via `getDb`.
+   */
   databases: Record<
     string,
     {
@@ -69,6 +75,11 @@ export type DbSchema = {
     }
   >;
 
+  /**
+   * These are alternative names to use with `getDb` that map to the names of
+   * databases known to this system. Aliases are specified as `alias:
+   * real-name`.
+   */
   aliases: Record<string, string>;
 };
 
@@ -96,11 +107,11 @@ export async function getSchemaConfig(): Promise<DbSchema> {
     try {
       debug('importing `getSchemaConfig` from "configverse/get-schema-config"');
       return (memory.schema = await (
-        await import('configverse/get-schema-config')
+        await require('configverse/get-schema-config')
       ).getSchemaConfig());
-    } catch (e) {
+    } catch (error) {
       debug.warn(
-        `failed to import getSchemaConfig from "configverse/get-schema-config": ${e}`
+        `failed to import getSchemaConfig from "configverse/get-schema-config": ${error}`
       );
 
       throw new InvalidAppConfigurationError(
@@ -114,20 +125,21 @@ export async function getSchemaConfig(): Promise<DbSchema> {
  * Mutates internal memory. Used for testing purposes.
  */
 export function overwriteMemory(newMemory: InternalMemory) {
+  debug('internal memory overwritten\nold: %O\nnew: %O', memory, newMemory);
   memory = newMemory;
-  debug('internal memory overwritten');
 }
 
 /**
  * Lazily connects to the server on-demand, memoizing the result.
  */
 export async function getClient() {
+  const uri = getEnv().MONGODB_URI;
+
   if (!memory.client) {
-    const uri = getEnv().MONGODB_URI;
-    debug(`connecting to mongo server at ${uri}`);
+    debug(`connecting (new client) to mongo server at ${uri}`);
     memory.client = await MongoClient.connect(uri);
   } else {
-    debug('connected (from memory) to mongo server');
+    debug(`connected (client from memory) to mongo server to mongo server at ${uri}`);
   }
 
   return memory.client;
@@ -144,6 +156,8 @@ export async function closeClient() {
     await memory.client.close(true);
   }
 
+  debug(`server connection closed, overwriting memory`);
+
   memory = getInitialInternalMemoryState();
 }
 
@@ -155,7 +169,7 @@ export async function getNameFromAlias(alias: string) {
   const schema = await getSchemaConfig();
   const nameActual = schema.aliases[alias] || alias;
 
-  if (alias != nameActual) {
+  if (alias !== nameActual) {
     debug(`mapped alias "${alias}" to database name "${nameActual}"`);
   }
 
@@ -166,6 +180,38 @@ export async function getNameFromAlias(alias: string) {
   }
 
   return nameActual;
+}
+
+/**
+ * Accepts a database name (or an alias) and returns one or more aliases. If the
+ * named database has no aliases listed in the schema, said database name is
+ * returned as a single-element array. If said database name is not listed in
+ * the schema, an error is thrown.
+ */
+export async function getAliasFromName(nameActual: string) {
+  const schema = await getSchemaConfig();
+
+  if (!schema.databases[nameActual]?.collections) {
+    throw new InvalidAppConfigurationError(
+      `database "${nameActual}" is not defined in schema`
+    );
+  }
+
+  const aliases = Object.entries(schema.aliases)
+    .filter(([, name]) => name === nameActual)
+    .map(([alias]) => alias);
+
+  if (aliases.length) {
+    debug(
+      `reverse-mapped database name "${nameActual}" to alias${
+        aliases.length === 1 ? ` "${aliases.toString()}"` : `es: ${aliases.join(', ')}`
+      }`
+    );
+
+    return aliases;
+  } else {
+    return [nameActual];
+  }
 }
 
 /**
@@ -252,26 +298,26 @@ export async function initializeDb({
   debug(`initializing database "${nameActual}"`);
 
   await Promise.all(
-    (
-      await getSchemaConfig()
-    ).databases[nameActual].collections.map((colNameOrSchema) => {
-      const colSchema: CollectionSchema =
-        typeof colNameOrSchema == 'string'
-          ? {
-              name: colNameOrSchema
-            }
-          : colNameOrSchema;
+    (await getSchemaConfig()).databases[nameActual].collections.map(
+      (colNameOrSchema) => {
+        const colSchema: CollectionSchema =
+          typeof colNameOrSchema === 'string'
+            ? {
+                name: colNameOrSchema
+              }
+            : colNameOrSchema;
 
-      debug(`initializing collection "${nameActual}.${colSchema.name}"`);
-      return db
-        .createCollection(colSchema.name, colSchema.createOptions)
-        .then((col) => {
-          return Promise.all(
-            colSchema.indices?.map((indexSchema) =>
-              col.createIndex(indexSchema.spec, indexSchema.options || {})
-            ) || []
-          );
-        });
-    })
+        debug(`initializing collection "${nameActual}.${colSchema.name}"`);
+        return db
+          .createCollection(colSchema.name, colSchema.createOptions)
+          .then((col) => {
+            return Promise.all(
+              colSchema.indices?.map((indexSchema) =>
+                col.createIndex(indexSchema.spec, indexSchema.options || {})
+              ) || []
+            );
+          });
+      }
+    )
   );
 }

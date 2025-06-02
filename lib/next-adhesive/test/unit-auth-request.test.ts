@@ -1,9 +1,13 @@
-import { testApiHandler } from 'next-test-api-route-handler';
 import { asMockedFunction } from '@xunnamius/jest-types';
-import { authenticateHeader, authorizeHeader } from 'multiverse/next-auth';
-import { noopHandler, wrapHandler } from 'testverse/setup';
 import { withMiddleware } from 'multiverse/next-api-glue';
-import authRequest, { Options } from 'multiverse/next-adhesive/auth-request';
+import { authenticateHeader, authorizeHeader } from 'multiverse/next-auth';
+import { testApiHandler } from 'next-test-api-route-handler';
+
+import { noopHandler, wrapHandler } from 'testverse/setup';
+
+import authRequest from 'multiverse/next-adhesive/auth-request';
+
+import type { Options } from 'multiverse/next-adhesive/auth-request';
 
 jest.mock('multiverse/next-auth');
 
@@ -20,7 +24,7 @@ it('throws if missing requiresAuth option', async () => {
 
   await testApiHandler({
     rejectOnHandlerError: true,
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         useOnError: [
@@ -40,7 +44,7 @@ it('throws if missing requiresAuth option', async () => {
 
   await testApiHandler({
     rejectOnHandlerError: true,
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         useOnError: [
@@ -67,7 +71,7 @@ it('passes allowedSchemes to authenticateHeader', async () => {
   mockAuthenticateHeader.mockReturnValue(Promise.resolve({ authenticated: true }));
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: { allowedSchemes: 'bearer' } }
@@ -75,7 +79,7 @@ it('passes allowedSchemes to authenticateHeader', async () => {
     ),
     test: async ({ fetch }) => {
       expect((await fetch({ headers: { authorization: 'token' } })).status).toBe(200);
-      expect(mockAuthenticateHeader).toBeCalledWith({
+      expect(mockAuthenticateHeader).toHaveBeenCalledWith({
         header: 'token',
         allowedSchemes: 'bearer'
       });
@@ -90,7 +94,7 @@ it('passes constraints to authorizeHeader', async () => {
   mockAuthorizeHeader.mockReturnValue(Promise.resolve({ authorized: true }));
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: { constraints: ['isGlobalAdmin'] } }
@@ -98,7 +102,7 @@ it('passes constraints to authorizeHeader', async () => {
     ),
     test: async ({ fetch }) => {
       expect((await fetch({ headers: { authorization: 'token' } })).status).toBe(200);
-      expect(mockAuthorizeHeader).toBeCalledWith({
+      expect(mockAuthorizeHeader).toHaveBeenCalledWith({
         header: 'token',
         constraints: ['isGlobalAdmin']
       });
@@ -112,7 +116,7 @@ it('does not send 401 if requires auth and authenticateHeader returns ok', async
   mockAuthenticateHeader.mockReturnValue(Promise.resolve({ authenticated: true }));
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: true }
@@ -130,7 +134,7 @@ it('sends 401 if requires auth and authenticateHeader returns not-ok or error', 
   mockAuthenticateHeader.mockReturnValue(Promise.resolve({ authenticated: false }));
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: true }
@@ -140,7 +144,7 @@ it('sends 401 if requires auth and authenticateHeader returns not-ok or error', 
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: false }
@@ -154,7 +158,7 @@ it('sends 401 if requires auth and authenticateHeader returns not-ok or error', 
   );
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: true }
@@ -171,7 +175,7 @@ it('does not send 403 if requires auth and authorizeHeader returns ok', async ()
   mockAuthorizeHeader.mockReturnValue(Promise.resolve({ authorized: true }));
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: { constraints: ['isGlobalAdmin'] } }
@@ -179,8 +183,8 @@ it('does not send 403 if requires auth and authorizeHeader returns ok', async ()
     ),
     test: async ({ fetch }) => {
       expect((await fetch({ headers: { authorization: 'token' } })).status).toBe(200);
-      expect(mockAuthenticateHeader).toBeCalledTimes(1);
-      expect(mockAuthorizeHeader).toBeCalledTimes(1);
+      expect(mockAuthenticateHeader).toHaveBeenCalledTimes(1);
+      expect(mockAuthorizeHeader).toHaveBeenCalledTimes(1);
     }
   });
 });
@@ -192,7 +196,7 @@ it('sends 403 if requires auth and authorizeHeader returns ok or error', async (
   mockAuthorizeHeader.mockReturnValue(Promise.resolve({ authorized: false }));
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: { constraints: 'isGlobalAdmin' } }
@@ -206,7 +210,7 @@ it('sends 403 if requires auth and authorizeHeader returns ok or error', async (
   );
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [authRequest],
         options: { requiresAuth: { constraints: 'isGlobalAdmin' } }

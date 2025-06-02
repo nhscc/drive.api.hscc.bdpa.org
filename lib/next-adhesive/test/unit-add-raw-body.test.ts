@@ -1,7 +1,7 @@
-/* eslint-disable jest/no-conditional-expect */
-import { testApiHandler } from 'next-test-api-route-handler';
-import { withMockedOutput, noopHandler, wrapHandler } from 'testverse/setup';
 import { withMiddleware } from 'multiverse/next-api-glue';
+import { testApiHandler } from 'next-test-api-route-handler';
+
+import { noopHandler, withMockedOutput, wrapHandler } from 'testverse/setup';
 
 import addRawBody, {
   ensureNextApiRequestHasRawBody,
@@ -9,13 +9,13 @@ import addRawBody, {
 } from 'multiverse/next-adhesive/add-raw-body';
 
 import type { NextApiRequest } from 'next';
-import type { WithRawBody, Options } from 'multiverse/next-adhesive/add-raw-body';
+import type { Options, WithRawBody } from 'multiverse/next-adhesive/add-raw-body';
 
 describe('::<default export>', () => {
   it('throws if bodyParser is not disabled', async () => {
     expect.hasAssertions();
 
-    const handler = wrapHandler(
+    const pagesHandler = wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [addRawBody] }),
       {}
     );
@@ -24,7 +24,7 @@ describe('::<default export>', () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler,
+          pagesHandler,
           test: async ({ fetch }) => void (await fetch())
         })
       ).rejects.toMatchObject({
@@ -32,10 +32,10 @@ describe('::<default export>', () => {
       });
     });
 
-    handler.config = { api: { bodyParser: false } };
+    pagesHandler.config = { api: { bodyParser: false } };
 
     await testApiHandler({
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => expect((await fetch()).status).toBe(200)
     });
   });
@@ -50,7 +50,7 @@ describe('::<default export>', () => {
     normalHandler.config = { api: { bodyParser: false } };
 
     await testApiHandler({
-      handler: normalHandler,
+      pagesHandler: normalHandler,
       test: async ({ fetch }) => expect((await fetch()).status).toBe(200)
     });
 
@@ -65,7 +65,7 @@ describe('::<default export>', () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler: obsoleterHandler,
+          pagesHandler: obsoleterHandler,
           test: async ({ fetch }) => void (await fetch())
         })
       ).rejects.toMatchObject({
@@ -77,17 +77,17 @@ describe('::<default export>', () => {
   it('throws on bad JSON body', async () => {
     expect.hasAssertions();
 
-    const handler = wrapHandler(
+    const pagesHandler = wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [addRawBody] })
     );
 
-    handler.config = { api: { bodyParser: false } };
+    pagesHandler.config = { api: { bodyParser: false } };
 
     await withMockedOutput(async () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler,
+          pagesHandler,
           test: async ({ fetch }) =>
             void (await fetch({
               method: 'POST',
@@ -104,17 +104,17 @@ describe('::<default export>', () => {
   it('throws on invalid body (raw-body chokes)', async () => {
     expect.hasAssertions();
 
-    const handler = wrapHandler(
+    const pagesHandler = wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [addRawBody] })
     );
 
-    handler.config = { api: { bodyParser: false } };
+    pagesHandler.config = { api: { bodyParser: false } };
 
     await withMockedOutput(async () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler,
+          pagesHandler,
           requestPatcher(req) {
             req.destroy();
           },
@@ -129,7 +129,7 @@ describe('::<default export>', () => {
   it('adds rawBody to request object while still providing parsed body', async () => {
     expect.hasAssertions();
 
-    const handler = wrapHandler(
+    const pagesHandler = wrapHandler(
       withMiddleware<Options>(
         (req, res) => {
           if (ensureNextApiRequestHasRawBody(req)) {
@@ -140,10 +140,10 @@ describe('::<default export>', () => {
       )
     );
 
-    handler.config = { api: { bodyParser: false } };
+    pagesHandler.config = { api: { bodyParser: false } };
 
     await testApiHandler({
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => {
         let res, json, rawBody, jsonBody;
 
@@ -226,17 +226,17 @@ describe('::<default export>', () => {
   it('respects requestBodySizeLimit option', async () => {
     expect.hasAssertions();
 
-    const handler = wrapHandler(
+    const pagesHandler = wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [addRawBody],
         options: { requestBodySizeLimit: 1 }
       })
     );
 
-    handler.config = { api: { bodyParser: false } };
+    pagesHandler.config = { api: { bodyParser: false } };
 
     await testApiHandler({
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => {
         expect((await fetch({ method: 'POST', body: 'x' })).status).toBe(200);
         expect((await fetch({ method: 'POST', body: 'xx' })).status).toBe(413);

@@ -1,3 +1,4 @@
+# shellcheck disable=all
 # This file's syntax is only KINDA similar like .gitignore...
 
 # Ignore all root-level files

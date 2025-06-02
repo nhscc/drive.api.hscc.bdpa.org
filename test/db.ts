@@ -1,12 +1,14 @@
 import { ObjectId } from 'mongodb';
+
 import { getCommonDummyData, mockDateNowMs } from 'multiverse/mongo-common';
 
-import type { DummyData } from 'multiverse/mongo-test';
 import type {
   InternalFileNode,
   InternalMetaNode,
   InternalUser
 } from 'universe/backend/db';
+
+import type { DummyData } from 'multiverse/mongo-test';
 
 /**
  * Returns data used to hydrate databases and their collections.
@@ -65,7 +67,7 @@ export const dummyAppData: DummyAppData = {
       _id: new ObjectId(),
       type: 'file',
       owner: 'User1',
-      createdAt: mockDateNowMs - 10000,
+      createdAt: mockDateNowMs - 10_000,
       modifiedAt: mockDateNowMs - 1000,
       name: 'user1-file1',
       'name-lowercase': 'user1-file1',
@@ -93,8 +95,8 @@ export const dummyAppData: DummyAppData = {
       _id: new ObjectId(),
       type: 'file',
       owner: 'User2',
-      createdAt: mockDateNowMs - 150000,
-      modifiedAt: mockDateNowMs - 50000,
+      createdAt: mockDateNowMs - 150_000,
+      modifiedAt: mockDateNowMs - 50_000,
       name: 'user2-file2',
       'name-lowercase': 'user2-file2',
       size: 39,
@@ -103,7 +105,7 @@ export const dummyAppData: DummyAppData = {
       lock: {
         user: 'User2',
         client: 'F951YAClN2',
-        createdAt: mockDateNowMs - 50000
+        createdAt: mockDateNowMs - 50_000
       },
       permissions: {}
     },
@@ -111,7 +113,7 @@ export const dummyAppData: DummyAppData = {
       _id: knownFileId1,
       type: 'file',
       owner: 'User3',
-      createdAt: mockDateNowMs - 10000,
+      createdAt: mockDateNowMs - 10_000,
       modifiedAt: mockDateNowMs - 1000,
       name: 'USER3-FILE3',
       'name-lowercase': 'user3-file3',
@@ -128,7 +130,7 @@ export const dummyAppData: DummyAppData = {
       _id: knownFileId2,
       type: 'file',
       owner: 'User3',
-      createdAt: mockDateNowMs - 20000,
+      createdAt: mockDateNowMs - 20_000,
       modifiedAt: mockDateNowMs - 5432,
       name: 'user-3-file-4',
       'name-lowercase': 'user-3-file-4',
@@ -146,7 +148,7 @@ export const dummyAppData: DummyAppData = {
       _id: new ObjectId(),
       type: 'directory',
       owner: 'User3',
-      createdAt: mockDateNowMs - 200000,
+      createdAt: mockDateNowMs - 200_000,
       name: 'My Music',
       'name-lowercase': 'my music',
       contents: [knownFolderId, knownFileId1, knownSymlinkId],
@@ -158,7 +160,7 @@ export const dummyAppData: DummyAppData = {
       _id: knownFolderId,
       type: 'directory',
       owner: 'User3',
-      createdAt: mockDateNowMs - 15000,
+      createdAt: mockDateNowMs - 15_000,
       name: 'tv show music',
       'name-lowercase': 'tv show music',
       contents: [knownFileId2],

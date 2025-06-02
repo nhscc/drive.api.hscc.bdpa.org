@@ -1,9 +1,10 @@
-import { isDueForContrivedError } from 'multiverse/next-contrived';
-import { sendHttpContrivedError } from 'multiverse/next-api-respond';
+/* eslint-disable unicorn/no-anonymous-default-export */
 import { debugFactory } from 'multiverse/debug-extended';
+import { sendHttpContrivedError } from 'multiverse/next-api-respond';
+import { isDueForContrivedError } from 'multiverse/next-contrived';
 
-import type { NextApiRequest, NextApiResponse } from 'next';
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-adhesive:contrive-error');
 

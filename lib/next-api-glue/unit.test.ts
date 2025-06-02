@@ -1,14 +1,18 @@
+/* eslint-disable eqeqeq */
 import { testApiHandler } from 'next-test-api-route-handler';
-import { middlewareFactory, withMiddleware } from 'multiverse/next-api-glue';
-import { withDebugEnabled, mockOutputFactory } from 'testverse/setup';
 import { toss } from 'toss-expression';
+
 import { DummyError } from 'universe/error';
+
+import { mockOutputFactory, withDebugEnabled } from 'testverse/setup';
+
+import { middlewareFactory, withMiddleware } from 'multiverse/next-api-glue';
 
 import type { NextApiRequest, NextApiResponse, NextConfig } from 'next';
 import type { Middleware, MiddlewareContext } from 'multiverse/next-api-glue';
 
-const MAX_CONTENT_LENGTH_BYTES = 100000;
-const MAX_CONTENT_LENGTH_BYTES_PLUS_1 = 100001;
+const MAX_CONTENT_LENGTH_BYTES = 100_000;
+const MAX_CONTENT_LENGTH_BYTES_PLUS_1 = 100_001;
 
 const withMockedOutput = mockOutputFactory({ passthrough: { stdErrSpy: false } });
 
@@ -39,11 +43,11 @@ describe('::withMiddleware', () => {
   it('rejects requests that are too big when exporting config (next.js)', async () => {
     expect.hasAssertions();
 
-    const handler = withMiddleware(noopHandler, { use: [] }) as ReturnType<
+    const pagesHandler = withMiddleware(noopHandler, { use: [] }) as ReturnType<
       typeof withMiddleware
     > & { config: NextConfig };
 
-    handler.config = {
+    pagesHandler.config = {
       api: {
         bodyParser: {
           get sizeLimit() {
@@ -55,7 +59,7 @@ describe('::withMiddleware', () => {
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => {
         await expect(
           fetch({
@@ -72,7 +76,7 @@ describe('::withMiddleware', () => {
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(
+      pagesHandler: withMiddleware(
         async (req, res) => {
           res.status(req.headers.key == '1234' ? 200 : 555).send({});
         },
@@ -91,7 +95,7 @@ describe('::withMiddleware', () => {
         req.url = '/?some=url&yes';
       },
       rejectOnHandlerError: true,
-      handler: withMiddleware(
+      pagesHandler: withMiddleware(
         async (req, res) => {
           expect(req.query).toStrictEqual({ some: 'url', yes: '' });
           res.status(200).send({});
@@ -111,10 +115,10 @@ describe('::withMiddleware', () => {
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(noopHandler, { use: [middleware] }),
+      pagesHandler: withMiddleware(noopHandler, { use: [middleware] }),
       test: async ({ fetch }) => {
         expect((await fetch()).status).toBe(200);
-        expect(middleware).toBeCalledTimes(1);
+        expect(middleware).toHaveBeenCalledTimes(1);
       }
     });
   });
@@ -126,55 +130,55 @@ describe('::withMiddleware', () => {
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(noopHandler, { use: middleware }),
+      pagesHandler: withMiddleware(noopHandler, { use: middleware }),
       test: async ({ fetch }) => {
         expect((await fetch()).status).toBe(200);
-        middleware.forEach((m) => expect(m).toBeCalledTimes(1));
+        middleware.forEach((m) => expect(m).toHaveBeenCalledTimes(1));
       }
     });
   });
 
-  it('runs primary chain middleware then handler', async () => {
+  it('runs primary chain middleware then pagesHandler', async () => {
     expect.hasAssertions();
 
     const middleware = jest.fn(() =>
-      expect(handler).toBeCalledTimes(0)
+      expect(pagesHandler).toHaveBeenCalledTimes(0)
     ) as Middleware;
-    const handler = jest.fn(() => expect(middleware).toBeCalledTimes(1));
+    const pagesHandler = jest.fn(() => expect(middleware).toHaveBeenCalledTimes(1));
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(handler, { use: [middleware] }),
+      pagesHandler: withMiddleware(pagesHandler, { use: [middleware] }),
       test: async ({ fetch }) => {
         await fetch();
-        expect(middleware).toBeCalledTimes(1);
-        expect(handler).toBeCalledTimes(1);
+        expect(middleware).toHaveBeenCalledTimes(1);
+        expect(pagesHandler).toHaveBeenCalledTimes(1);
       }
     });
   });
 
-  it('runs handler even if no middleware used', async () => {
+  it('runs pagesHandler even if no middleware used', async () => {
     expect.hasAssertions();
 
-    const handler = jest.fn();
+    const pagesHandler = jest.fn();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(handler, { use: [] }),
+      pagesHandler: withMiddleware(pagesHandler, { use: [] }),
       test: async ({ fetch }) => {
         await fetch();
-        expect(handler).toBeCalledTimes(1);
+        expect(pagesHandler).toHaveBeenCalledTimes(1);
       }
     });
   });
 
-  it('skips running handler if not a function', async () => {
+  it('skips running pagesHandler if not a function', async () => {
     expect.hasAssertions();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      // @ts-expect-error: bad handler
-      handler: withMiddleware(true, { use: [(_, res) => res.status(200).end()] }),
+      // @ts-expect-error: bad pagesHandler
+      pagesHandler: withMiddleware(true, { use: [(_, res) => res.status(200).end()] }),
       test: async ({ fetch }) => {
         await fetch();
         expect((await fetch()).status).toBe(200);
@@ -182,17 +186,19 @@ describe('::withMiddleware', () => {
     });
   });
 
-  it('skips running handler if primary chain was aborted', async () => {
+  it('skips running pagesHandler if primary chain was aborted', async () => {
     expect.hasAssertions();
 
-    const handler = jest.fn();
+    const pagesHandler = jest.fn();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(handler, { use: [(_, __, ctx) => ctx.runtime.done()] }),
+      pagesHandler: withMiddleware(pagesHandler, {
+        use: [(_, __, ctx) => ctx.runtime.done()]
+      }),
       test: async ({ fetch }) => {
         await fetch();
-        expect(handler).toBeCalledTimes(0);
+        expect(pagesHandler).toHaveBeenCalledTimes(0);
       }
     });
 
@@ -200,33 +206,35 @@ describe('::withMiddleware', () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(handler, { use: [() => toss(new Error('bad'))] }),
+          pagesHandler: withMiddleware(pagesHandler, {
+            use: [() => toss(new Error('bad'))]
+          }),
           test: async ({ fetch }) => {
             await fetch();
           }
         })
       ).rejects.toMatchObject({ message: 'bad' });
 
-      expect(handler).toBeCalledTimes(0);
+      expect(pagesHandler).toHaveBeenCalledTimes(0);
     });
   });
 
-  it('sends 501 if handler is undefined', async () => {
+  it('sends 501 if pagesHandler is undefined', async () => {
     expect.hasAssertions();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(undefined, { use: [] }),
+      pagesHandler: withMiddleware(undefined, { use: [] }),
       test: async ({ fetch }) => expect((await fetch()).status).toBe(501)
     });
   });
 
-  it('sends 501 if res.end not called by the time handler completes', async () => {
+  it('sends 501 if res.end not called by the time pagesHandler completes', async () => {
     expect.hasAssertions();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(async () => undefined, { use: [] }),
+      pagesHandler: withMiddleware(async () => undefined, { use: [] }),
       test: async ({ fetch }) => expect((await fetch()).status).toBe(501)
     });
   });
@@ -240,7 +248,7 @@ describe('::withMiddleware', () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(noopHandler, {
+          pagesHandler: withMiddleware(noopHandler, {
             use: [
               (_, __, ctx) => expect(ctx.runtime.error).toBeUndefined(),
               (_, __, ctx) => expect(ctx.runtime.error).toBeUndefined(),
@@ -265,13 +273,13 @@ describe('::withMiddleware', () => {
     await withMockedOutput(async () => {
       await testApiHandler({
         rejectOnHandlerError: true,
-        handler: withMiddleware(noopHandler, {
+        pagesHandler: withMiddleware(noopHandler, {
           use: [() => toss(new Error('error'))],
           useOnError: [middleware, (_, res) => res.end()]
         }),
         test: async ({ fetch }) => {
           await fetch();
-          expect(middleware).toBeCalledTimes(1);
+          expect(middleware).toHaveBeenCalledTimes(1);
         }
       });
     });
@@ -285,19 +293,19 @@ describe('::withMiddleware', () => {
     await withMockedOutput(async () => {
       await testApiHandler({
         rejectOnHandlerError: true,
-        handler: withMiddleware(noopHandler, {
+        pagesHandler: withMiddleware(noopHandler, {
           use: [() => toss(new Error('error'))],
           useOnError: middleware
         }),
         test: async ({ fetch }) => {
           await fetch();
-          middleware.slice(0, -1).forEach((m) => expect(m).toBeCalledTimes(1));
+          middleware.slice(0, -1).forEach((m) => expect(m).toHaveBeenCalledTimes(1));
         }
       });
     });
   });
 
-  it('runs one middleware in error handling chain on error in handler', async () => {
+  it('runs one middleware in error handling chain on error in pagesHandler', async () => {
     expect.hasAssertions();
 
     const middleware = jest.fn();
@@ -305,19 +313,19 @@ describe('::withMiddleware', () => {
     await withMockedOutput(async () => {
       await testApiHandler({
         rejectOnHandlerError: true,
-        handler: withMiddleware(() => toss(new Error('error')), {
+        pagesHandler: withMiddleware(() => toss(new Error('error')), {
           use: [],
           useOnError: [middleware, (_, res) => res.end()]
         }),
         test: async ({ fetch }) => {
           await fetch();
-          expect(middleware).toBeCalledTimes(1);
+          expect(middleware).toHaveBeenCalledTimes(1);
         }
       });
     });
   });
 
-  it('runs multiple middleware in error handling chain on error in handler', async () => {
+  it('runs multiple middleware in error handling chain on error in pagesHandler', async () => {
     expect.hasAssertions();
 
     const middleware = [jest.fn(), jest.fn(), ((_, res) => res.end()) as Middleware];
@@ -325,13 +333,13 @@ describe('::withMiddleware', () => {
     await withMockedOutput(async () => {
       await testApiHandler({
         rejectOnHandlerError: true,
-        handler: withMiddleware(() => toss(new Error('error')), {
+        pagesHandler: withMiddleware(() => toss(new Error('error')), {
           use: [],
           useOnError: middleware
         }),
         test: async ({ fetch }) => {
           await fetch();
-          middleware.slice(0, -1).forEach((m) => expect(m).toBeCalledTimes(1));
+          middleware.slice(0, -1).forEach((m) => expect(m).toHaveBeenCalledTimes(1));
         }
       });
     });
@@ -345,20 +353,20 @@ describe('::withMiddleware', () => {
     await withMockedOutput(async () => {
       await testApiHandler({
         rejectOnHandlerError: true,
-        handler: withMiddleware(noopHandler, {
+        pagesHandler: withMiddleware(noopHandler, {
           use: [(_, __, ctx) => ctx.runtime.done(), middleware, middleware],
           useOnError: [(_, __, ctx) => ctx.runtime.done(), middleware, middleware]
         }),
         test: async ({ fetch }) => {
           await fetch();
-          expect(middleware).toBeCalledTimes(0);
+          expect(middleware).toHaveBeenCalledTimes(0);
         }
       });
 
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(noopHandler, {
+          pagesHandler: withMiddleware(noopHandler, {
             use: [() => toss(new Error('bad')), middleware, middleware],
             useOnError: [() => toss(new Error('bad')), middleware, middleware]
           }),
@@ -368,7 +376,7 @@ describe('::withMiddleware', () => {
         })
       ).toReject();
 
-      expect(middleware).toBeCalledTimes(0);
+      expect(middleware).toHaveBeenCalledTimes(0);
     });
   });
 
@@ -379,7 +387,7 @@ describe('::withMiddleware', () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [() => toss(new Error('bad'))],
             useOnError: [() => toss(new Error('worse'))]
           }),
@@ -398,7 +406,7 @@ describe('::withMiddleware', () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [() => toss(new Error('bad'))],
             useOnError: []
           }),
@@ -417,7 +425,7 @@ describe('::withMiddleware', () => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [() => toss(new Error('bad'))],
             useOnError: [() => undefined]
           }),
@@ -446,16 +454,16 @@ describe('::withMiddleware', () => {
       await withMockedOutput(async ({ stdErrSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(
+          pagesHandler: withMiddleware(
             async () => {
-              expect(stdErrSpy).not.toBeCalledWith(nextWarning);
-              expect(stdErrSpy).not.toBeCalledWith(doneWarning);
+              expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
+              expect(stdErrSpy).not.toHaveBeenCalledWith(doneWarning);
 
               await next();
-              expect(stdErrSpy).toBeCalledWith(nextWarning);
+              expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
 
               done();
-              expect(stdErrSpy).toBeCalledWith(doneWarning);
+              expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
 
               throw new Error('badness');
             },
@@ -484,10 +492,10 @@ describe('::withMiddleware', () => {
             stdErrSpy.mockClear();
 
             await next();
-            expect(stdErrSpy).toBeCalledWith(nextWarning);
+            expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
 
             done();
-            expect(stdErrSpy).toBeCalledWith(doneWarning);
+            expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
           }
         });
       });
@@ -512,7 +520,7 @@ describe('::withMiddleware', () => {
         await expect(
           testApiHandler({
             rejectOnHandlerError: true,
-            handler: withMiddleware(undefined, {
+            pagesHandler: withMiddleware(undefined, {
               use: [
                 (_req, _res, { runtime }) => {
                   next = runtime.next;
@@ -522,14 +530,14 @@ describe('::withMiddleware', () => {
               ],
               useOnError: [
                 async (_req, _res, { runtime }) => {
-                  expect(stdErrSpy).not.toBeCalledWith(nextWarning);
-                  expect(stdErrSpy).not.toBeCalledWith(doneWarning);
+                  expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
+                  expect(stdErrSpy).not.toHaveBeenCalledWith(doneWarning);
 
                   await next();
-                  expect(stdErrSpy).toBeCalledWith(nextWarning);
+                  expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
 
                   done();
-                  expect(stdErrSpy).toBeCalledWith(doneWarning);
+                  expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
 
                   next = runtime.next;
                   done = runtime.done;
@@ -547,10 +555,10 @@ describe('::withMiddleware', () => {
         stdErrSpy.mockClear();
 
         await next();
-        expect(stdErrSpy).toBeCalledWith(nextWarning);
+        expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
 
         done();
-        expect(stdErrSpy).toBeCalledWith(doneWarning);
+        expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
       });
     });
   });
@@ -566,19 +574,19 @@ describe('::withMiddleware', () => {
       await withMockedOutput(async ({ stdErrSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [
               async (_req, res, { runtime: { next } }) => {
                 await next();
-                expect(stdErrSpy).not.toBeCalledWith(nextWarning);
+                expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
 
                 await next();
-                expect(stdErrSpy).toBeCalledWith(nextWarning);
+                expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
 
                 stdErrSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).toBeCalledWith(nextWarning);
+                expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
 
                 res.status(200).end();
               }
@@ -604,16 +612,16 @@ describe('::withMiddleware', () => {
       await withDebugEnabled(async () => {
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [
               async (_req, _res, { runtime: { next } }) => {
                 await next();
-                expect(stdErrSpy).not.toBeCalledWith(nextWarning);
+                expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
 
                 stdErrSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).toBeCalledWith(nextWarning);
+                expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
 
                 throw new Error('not good bad bad');
               },
@@ -622,17 +630,17 @@ describe('::withMiddleware', () => {
             ],
             useOnError: [
               async (_req, _res, { runtime: { next, error } }) => {
-                expect(middleware).toBeCalledTimes(2);
+                expect(middleware).toHaveBeenCalledTimes(2);
                 expect(error).toMatchObject({ message: 'not good bad bad' });
                 stdErrSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).not.toBeCalledWith(nextWarning);
+                expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
 
                 stdErrSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).toBeCalledWith(
+                expect(stdErrSpy).toHaveBeenCalledWith(
                   expect.stringContaining(
                     'aborted; calling runtime.next() at this point is a noop'
                   )
@@ -641,7 +649,7 @@ describe('::withMiddleware', () => {
               middleware,
               middleware,
               (_, res) => {
-                expect(middleware).toBeCalledTimes(4);
+                expect(middleware).toHaveBeenCalledTimes(4);
                 res.status(200).end();
               }
             ]
@@ -661,7 +669,7 @@ describe('::withMiddleware', () => {
       await withMockedOutput(async ({ stdErrSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [
               // @ts-expect-error: bad middleware value
               'bad',
@@ -674,10 +682,8 @@ describe('::withMiddleware', () => {
           }),
           test: async ({ fetch }) => {
             expect((await fetch()).status).toBe(403);
-            expect(stdErrSpy).toBeCalledWith(
-              expect.stringContaining(
-                'skipping execution of non-function item in chain'
-              )
+            expect(stdErrSpy).toHaveBeenCalledWith(
+              expect.stringContaining('skipping execution of non-function item in chain')
             );
           }
         });
@@ -692,25 +698,25 @@ describe('::withMiddleware', () => {
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(undefined, {
+      pagesHandler: withMiddleware(undefined, {
         use: [(_, res) => res.status(404).end(), middleware],
         options: { callDoneOnEnd: false }
       }),
       test: async ({ fetch }) => {
         expect((await fetch()).status).toBe(404);
-        expect(middleware).toBeCalledTimes(1);
+        expect(middleware).toHaveBeenCalledTimes(1);
       }
     });
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: withMiddleware(undefined, {
+      pagesHandler: withMiddleware(undefined, {
         use: [(_, res) => res.status(403).end(), middleware],
         options: { callDoneOnEnd: true }
       }),
       test: async ({ fetch }) => {
         expect((await fetch()).status).toBe(403);
-        expect(middleware).toBeCalledTimes(1);
+        expect(middleware).toHaveBeenCalledTimes(1);
       }
     });
   });
@@ -724,13 +730,13 @@ describe('::withMiddleware', () => {
       await withMockedOutput(async ({ stdErrSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [
               async (_, res, { runtime: { done } }) => {
                 done();
-                expect(stdErrSpy).not.toBeCalledWith(skippedMessage);
+                expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
                 res.status(404).end();
-                expect(stdErrSpy).toBeCalledWith(skippedMessage);
+                expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
               }
             ]
           }),
@@ -741,7 +747,7 @@ describe('::withMiddleware', () => {
 
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(undefined, {
+          pagesHandler: withMiddleware(undefined, {
             use: [
               async () => {
                 throw new Error('contrived');
@@ -754,9 +760,9 @@ describe('::withMiddleware', () => {
                 done();
 
                 stdErrSpy.mockClear();
-                expect(stdErrSpy).not.toBeCalledWith(skippedMessage);
+                expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
                 res.status(404).end();
-                expect(stdErrSpy).toBeCalledWith(skippedMessage);
+                expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
               }
             ]
           }),
@@ -777,11 +783,11 @@ describe('::withMiddleware', () => {
       await withMockedOutput(async ({ stdErrSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(
+          pagesHandler: withMiddleware(
             async (_, res) => {
-              expect(stdErrSpy).not.toBeCalledWith(skippedMessage);
+              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
               res.status(404).end();
-              expect(stdErrSpy).toBeCalledWith(skippedMessage);
+              expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
             },
             {
               use: []
@@ -804,15 +810,15 @@ describe('::withMiddleware', () => {
       await withMockedOutput(async ({ stdErrSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
-          handler: withMiddleware(
+          pagesHandler: withMiddleware(
             async (_, res) => {
-              expect(stdErrSpy).not.toBeCalledWith(skippedMessage);
+              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
               res.status(404).end();
-              expect(stdErrSpy).toBeCalledWith(skippedMessage);
+              expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
               stdErrSpy.mockClear();
-              expect(stdErrSpy).not.toBeCalledWith(skippedMessage);
+              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
               res.status(404).end();
-              expect(stdErrSpy).not.toBeCalledWith(skippedMessage);
+              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
             },
             {
               use: []
@@ -907,13 +913,13 @@ describe('::middlewareFactory', () => {
 
     const customOption = true;
 
-    const handler = middlewareFactory<myMiddlewareOptions>({
+    const pagesHandler = middlewareFactory<myMiddlewareOptions>({
       use: [myMiddleware],
       options: { customOption }
     })(undefined);
 
     await testApiHandler({
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => {
         await expect((await fetch()).json()).resolves.toStrictEqual({ customOption });
       }
@@ -936,7 +942,7 @@ describe('::middlewareFactory', () => {
     const customOption = true;
 
     await testApiHandler({
-      handler: middlewareFactory<myMiddlewareOptions>({
+      pagesHandler: middlewareFactory<myMiddlewareOptions>({
         use: [myMiddleware],
         options: { customOption }
       })(undefined, { prependUse: [(_, res) => res.status(201).send({ a: 1 })] }),
@@ -948,7 +954,7 @@ describe('::middlewareFactory', () => {
     });
 
     await testApiHandler({
-      handler: middlewareFactory({
+      pagesHandler: middlewareFactory({
         use: [(_, res) => void res.status(202)]
       })(undefined, { appendUse: [(_, res) => res.send({ b: 1 })] }),
       test: async ({ fetch }) => {
@@ -959,7 +965,7 @@ describe('::middlewareFactory', () => {
     });
 
     await testApiHandler({
-      handler: middlewareFactory<myMiddlewareOptions>({
+      pagesHandler: middlewareFactory<myMiddlewareOptions>({
         use: [myMiddleware],
         options: { customOption }
       })(undefined, {

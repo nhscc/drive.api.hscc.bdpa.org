@@ -1,10 +1,18 @@
-import { getEnv } from 'multiverse/next-env';
-import { getDb } from 'multiverse/mongo-schema';
-import { toss } from 'toss-expression';
-import { isError } from '@xunnamius/types';
-import { debugFactory } from 'multiverse/debug-extended';
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable unicorn/no-keyword-prefix */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable eqeqeq */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable unicorn/no-object-as-default-parameter */
+/* eslint-disable import/no-cycle */
 import { randomUUID as generateUUID } from 'node:crypto';
+
+import { isError } from '@xunnamius/types';
 import { MongoServerError } from 'mongodb';
+import { debugFactory } from 'multiverse/debug-extended';
+import { getDb } from 'multiverse/mongo-schema';
+import { getEnv } from 'multiverse/next-env';
+import { toss } from 'toss-expression';
 
 import {
   AppValidationError,
@@ -69,12 +77,12 @@ export const authAttributes = ['owner', 'isGlobalAdmin'] as const;
 /**
  * A supported authentication scheme.
  */
-export type AuthScheme = typeof authSchemes[number];
+export type AuthScheme = (typeof authSchemes)[number];
 
 /**
  * A supported "auth" entry attribute (field name).
  */
-export type AuthAttribute = typeof authAttributes[number];
+export type AuthAttribute = (typeof authAttributes)[number];
 
 // * Well-known authorization (Authorization header) constraints
 
@@ -92,7 +100,7 @@ export const authConstraints = [
 /**
  * A supported authorization constraint.
  */
-export type AuthConstraint = typeof authConstraints[number];
+export type AuthConstraint = (typeof authConstraints)[number];
 
 // * Base token interfaces
 
@@ -220,21 +228,20 @@ export function isTokenAttributes(
   obj: unknown,
   { patch }: { patch: boolean } = { patch: false }
 ): obj is TokenAttributes {
-  const attr = obj as TokenAttributes;
-  if (!!attr && typeof attr == 'object') {
-    const isValidOwner = !!attr.owner && typeof attr.owner == 'string';
+  const attribute = obj as TokenAttributes;
+  if (!!attribute && typeof attribute === 'object') {
+    const isValidOwner = !!attribute.owner && typeof attribute.owner === 'string';
     const isValidGlobalAdmin =
-      attr.isGlobalAdmin === undefined || typeof attr.isGlobalAdmin == 'boolean';
-    const allKeysAreValid = Object.keys(attr).every((key) =>
+      attribute.isGlobalAdmin === undefined ||
+      typeof attribute.isGlobalAdmin === 'boolean';
+    const allKeysAreValid = Object.keys(attribute).every((key) =>
       authAttributes.includes(key as AuthAttribute)
     );
 
     if (allKeysAreValid) {
-      if (patch) {
-        return (attr.owner === undefined || isValidOwner) && isValidGlobalAdmin;
-      } else {
-        return isValidOwner && isValidGlobalAdmin;
-      }
+      return patch
+        ? (attribute.owner === undefined || isValidOwner) && isValidGlobalAdmin
+        : isValidOwner && isValidGlobalAdmin;
     }
   }
 
@@ -308,7 +315,7 @@ export async function deriveSchemeAndToken({
   if (authString !== undefined) {
     if (
       !authString ||
-      typeof authString != 'string' ||
+      typeof authString !== 'string' ||
       !/^\S+ \S/.test(authString) ||
       authString.length > getEnv().AUTH_HEADER_MAX_LENGTH
     ) {
@@ -343,7 +350,7 @@ export async function deriveSchemeAndToken({
       );
     }
   } else if (authData !== undefined) {
-    if (!authData || typeof authData != 'object') {
+    if (!authData || typeof authData !== 'object') {
       throw new InvalidSecretError('auth data');
     }
 
@@ -361,10 +368,10 @@ export async function deriveSchemeAndToken({
     if (scheme == 'bearer') {
       if (
         authData.token &&
-        typeof authData.token == 'object' &&
+        typeof authData.token === 'object' &&
         Object.keys(authData.token).length == 1 &&
         authData.token.bearer &&
-        typeof authData.token.bearer == 'string'
+        typeof authData.token.bearer === 'string'
       ) {
         return { scheme, token: { bearer: authData.token.bearer } };
       } else {
@@ -421,11 +428,11 @@ export async function authenticateHeader({
       authString: header,
       allowedSchemes
     }));
-  } catch (e) {
+  } catch (error) {
     return {
       authenticated: false,
       error: `bad Authorization header: ${
-        isError(e) ? e.message : /* istanbul ignore next */ e
+        isError(error) ? error.message : /* istanbul ignore next */ error
       }`
     };
   }
@@ -464,17 +471,17 @@ export async function authorizeHeader({
     attributes = await getAttributes({
       target: await deriveSchemeAndToken({ authString: header })
     });
-  } catch (e) {
+  } catch (error) {
     return {
       authorized: false,
       error: `bad Authorization header: ${
-        isError(e) ? e.message : /* istanbul ignore next */ e
+        isError(error) ? error.message : /* istanbul ignore next */ error
       }`
     };
   }
 
   if (
-    typeof constraints != 'string' &&
+    typeof constraints !== 'string' &&
     (!Array.isArray(constraints) || !constraints.length)
   ) {
     debug.warn('header authorization was vacuous (no constraints)');
@@ -493,6 +500,7 @@ export async function authorizeHeader({
             debug(`evaluating authorization constraint "${constraint}"`);
 
             const failAuthorization = () => {
+              // eslint-disable-next-line @typescript-eslint/only-throw-error
               throw `failed to satisfy authorization constraint "${constraint}"`;
             };
 
@@ -542,8 +550,7 @@ export async function getAttributes<T extends TokenAttributes>({
         // ? To hit the index, order matters
         { scheme, token },
         { projection: { _id: false, attributes: true } }
-      )) ||
-    toss(new InvalidSecretError('authentication scheme and token combination'));
+      )) || toss(new InvalidSecretError('authentication scheme and token combination'));
 
   return attributes;
 }
@@ -621,6 +628,7 @@ export async function getOwnersEntries({
       .find<PublicAuthEntry>(
         // * Query is covered by the index
         returnAll ? {} : { 'attributes.owner': { $in: owners } },
+        // eslint-disable-next-line unicorn/no-array-method-this-argument
         { projection: { _id: false }, sort: { _id: 1 } }
       )
       .toArray();
@@ -658,13 +666,13 @@ export async function createEntry({
       await (await getDb({ name: 'root' }))
         .collection('auth')
         .insertOne({ ...newEntry });
-    } catch (e) {
+    } catch (error) {
       /* istanbul ignore else */
-      if (e instanceof MongoServerError && e.code == 11000) {
-        throw new AppValidationError('token collision');
-      } else {
-        throw e;
-      }
+      const error_ =
+        error instanceof MongoServerError && error.code == 11_000
+          ? new AppValidationError('token collision')
+          : error;
+      throw error_;
     }
     return newEntry;
   } else {

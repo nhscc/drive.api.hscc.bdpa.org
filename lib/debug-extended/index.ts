@@ -1,4 +1,5 @@
 import getDebugger from 'debug';
+
 import type { Debug, Debugger } from 'debug';
 
 export type { Debug, Debugger };

@@ -1,7 +1,8 @@
+/* eslint-disable eqeqeq */
 import { getCommonSchemaConfig } from 'multiverse/mongo-common';
 
-import type { ObjectId, WithId, WithoutId } from 'mongodb';
 import type { UnixEpochMs } from '@xunnamius/types';
+import type { ObjectId, WithId, WithoutId } from 'mongodb';
 import type { DbSchema } from 'multiverse/mongo-schema';
 
 /**
@@ -60,10 +61,11 @@ export function getSchemaConfig(): DbSchema {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface UserId extends ObjectId {}
 export type Username = string;
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface NodeId extends ObjectId {}
 
 /**

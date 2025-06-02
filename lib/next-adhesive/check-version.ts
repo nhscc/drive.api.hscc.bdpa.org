@@ -1,9 +1,10 @@
-import { getEnv } from 'multiverse/next-env';
-import { sendHttpNotFound } from 'multiverse/next-api-respond';
+/* eslint-disable unicorn/no-anonymous-default-export */
 import { debugFactory } from 'multiverse/debug-extended';
+import { sendHttpNotFound } from 'multiverse/next-api-respond';
+import { getEnv } from 'multiverse/next-env';
 
-import type { NextApiRequest, NextApiResponse } from 'next';
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-adhesive:check-version');
 

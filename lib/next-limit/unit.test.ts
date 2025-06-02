@@ -1,15 +1,16 @@
 import { dummyRootData, useMockDateNow } from 'multiverse/mongo-common';
 import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
+
 import {
   clientIsRateLimited,
   getAllRateLimits,
   removeRateLimit
 } from 'multiverse/next-limit';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 
-import type { InternalLimitedLogEntry } from 'multiverse/next-limit';
 import type { NextApiRequest } from 'next';
+import type { InternalLimitedLogEntry } from 'multiverse/next-limit';
 
 setupMemoryServerOverride();
 useMockDateNow();
@@ -301,9 +302,7 @@ describe('::removeRateLimit', () => {
       expect(
         removeRateLimit({ target: { ip: undefined, header: undefined } })
       ).rejects.toMatchObject({ message: 'must provide either an ip or a header' }),
-      expect(
-        removeRateLimit({ target: { ip: '', header: '' } })
-      ).rejects.toMatchObject({
+      expect(removeRateLimit({ target: { ip: '', header: '' } })).rejects.toMatchObject({
         message: 'ip must be a non-empty string'
       })
     ]);

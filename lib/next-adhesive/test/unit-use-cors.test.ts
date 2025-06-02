@@ -1,7 +1,13 @@
-import { testApiHandler } from 'next-test-api-route-handler';
-import { isolatedImport, wrapHandler, noopHandler } from 'testverse/setup';
+/* eslint-disable unicorn/prevent-abbreviations */
+/* eslint-disable @typescript-eslint/no-meaningless-void-operator */
 import { withMiddleware } from 'multiverse/next-api-glue';
-import useCors, { Options } from 'multiverse/next-adhesive/use-cors';
+import { testApiHandler } from 'next-test-api-route-handler';
+
+import { isolatedImport, noopHandler, wrapHandler } from 'testverse/setup';
+
+import useCors from 'multiverse/next-adhesive/use-cors';
+
+import type { Options } from 'multiverse/next-adhesive/use-cors';
 
 afterEach(() => {
   jest.dontMock('cors');
@@ -11,7 +17,7 @@ it('works', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(withMiddleware(noopHandler, { use: [] })),
+    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [] })),
     test: async ({ fetch }) => {
       const res = await fetch({ method: 'OPTIONS' });
       expect(res.status).toBe(200);
@@ -21,7 +27,7 @@ it('works', async () => {
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [useCors],
         options: { allowedMethods: ['GET', 'POST', 'HEAD'] }
@@ -42,15 +48,15 @@ it('works', async () => {
 it('handles cors package errors gracefully', async () => {
   expect.hasAssertions();
 
-  jest.doMock(
+  jest.doMock<typeof import('cors')>(
     'cors',
-    () => () => (_req: unknown, _res: unknown, cb: (e: Error) => void) => {
-      return cb(new Error('fake error'));
+    () => () => (_req: unknown, _res: unknown, callback: (e: Error) => void) => {
+      return void callback(new Error('fake error'));
     }
   );
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware(noopHandler, {
         use: [
           isolatedImport<typeof useCors>({

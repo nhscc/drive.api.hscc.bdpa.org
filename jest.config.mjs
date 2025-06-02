@@ -1,6 +1,4 @@
-'use strict';
-
-module.exports = {
+export default {
   restoreMocks: true,
   resetMocks: true,
   testEnvironment: 'node',

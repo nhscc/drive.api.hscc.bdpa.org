@@ -1,8 +1,10 @@
-import { testApiHandler } from 'next-test-api-route-handler';
 import { asMockedFunction } from '@xunnamius/jest-types';
-import { clientIsRateLimited } from 'multiverse/next-limit';
 import { withMiddleware } from 'multiverse/next-api-glue';
-import { mockEnvFactory, wrapHandler, noopHandler } from 'testverse/setup';
+import { clientIsRateLimited } from 'multiverse/next-limit';
+import { testApiHandler } from 'next-test-api-route-handler';
+
+import { mockEnvFactory, noopHandler, wrapHandler } from 'testverse/setup';
+
 import limitRequest from 'multiverse/next-adhesive/limit-request';
 
 jest.mock('multiverse/next-limit');
@@ -20,7 +22,7 @@ it('rate limits requests according to backend determination', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {
@@ -55,7 +57,7 @@ it('does not rate limit requests when ignoring rate limits', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {
@@ -85,7 +87,7 @@ it('treats otherwise valid requests as unauthenticatable only when locking out a
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {
@@ -108,7 +110,7 @@ it('includes retry-after value in header (s) and in response JSON (ms)', async (
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {
@@ -121,14 +123,14 @@ it('includes retry-after value in header (s) and in response JSON (ms)', async (
           ).resolves.toStrictEqual([null, {}]);
 
           void mockClientIsRateLimited.mockReturnValue(
-            Promise.resolve({ isLimited: true, retryAfter: 12344 })
+            Promise.resolve({ isLimited: true, retryAfter: 12_344 })
           );
 
           await expect(
             fetch().then(async (r) => [r.headers.get('retry-after'), await r.json()])
           ).resolves.toStrictEqual([
             '13',
-            expect.objectContaining({ retryAfter: 12344 })
+            expect.objectContaining({ retryAfter: 12_344 })
           ]);
         },
         { IGNORE_RATE_LIMITS: 'false' }

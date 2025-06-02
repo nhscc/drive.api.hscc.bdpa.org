@@ -1,15 +1,16 @@
+/* eslint-disable eqeqeq */
+/* eslint-disable @typescript-eslint/no-confusing-void-expression */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable unicorn/no-anonymous-default-export */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { debugFactory } from 'multiverse/debug-extended';
-import { ValidHttpMethod } from '@xunnamius/types';
+import { sendHttpBadContentType, sendHttpBadRequest } from 'multiverse/next-api-respond';
 import { InvalidAppConfigurationError } from 'named-app-errors';
 import { toss } from 'toss-expression';
 
-import {
-  sendHttpBadContentType,
-  sendHttpBadRequest
-} from 'multiverse/next-api-respond';
-
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { ValidHttpMethod } from '@xunnamius/types';
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-adhesive:check-content-type');
 
@@ -51,9 +52,7 @@ export type Options = {
    *
    * @see https://www.iana.org/assignments/media-types/media-types.xhtml
    */
-  allowedContentTypes?:
-    | AllowedContentTypesConfig
-    | AllowedContentTypesPerMethodConfig;
+  allowedContentTypes?: AllowedContentTypesConfig | AllowedContentTypesPerMethodConfig;
 };
 
 /**
@@ -73,15 +72,15 @@ export default async function (
   const configToLowercase = (
     c: AllowedContentTypesConfig
   ): AllowedContentTypesConfig => {
-    return typeof c == 'string'
+    return typeof c === 'string'
       ? (c.toLowerCase() as typeof c)
       : Array.isArray(c)
-      ? c.map((s) => s.toLowerCase())
-      : toss(
-          new InvalidAppConfigurationError(
-            'allowedContentTypes must adhere to type constraints'
-          )
-        );
+        ? c.map((s) => s.toLowerCase())
+        : toss(
+            new InvalidAppConfigurationError(
+              'allowedContentTypes must adhere to type constraints'
+            )
+          );
   };
 
   // ? Ensure everything is lowercased before we begin
@@ -89,7 +88,7 @@ export default async function (
     if (rawAllowedContentTypes) {
       if (
         Array.isArray(rawAllowedContentTypes) ||
-        typeof rawAllowedContentTypes == 'string'
+        typeof rawAllowedContentTypes === 'string'
       ) {
         return configToLowercase(rawAllowedContentTypes);
       } else {
@@ -160,10 +159,7 @@ export default async function (
                 if (!allowsNone) {
                   return sendError();
                 }
-              } else if (
-                contentType == 'none' ||
-                !allowedSubset.includes(contentType)
-              ) {
+              } else if (contentType == 'none' || !allowedSubset.includes(contentType)) {
                 return sendError();
               }
             }

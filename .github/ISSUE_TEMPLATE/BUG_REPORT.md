@@ -1,7 +1,7 @@
 ---
-name: 🤯 Bug report
-about: Alert us about an issue
-labels: bug
+
+name: 🤯 Bug report about: Alert us about an issue labels: bug
+
 ---
 
 <!-- THANK YOU for taking a moment to improve this project. 🤘🏿 You rock! 🎸 -->

@@ -1,26 +1,31 @@
-/* eslint-disable jest/no-conditional-expect */
+/* eslint-disable eqeqeq */
 import { asMockedClass, asMockedFunction } from '@xunnamius/jest-types';
 import { MongoClient } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { DummyError } from 'named-app-errors';
+import { toss } from 'toss-expression';
+
 import { isolatedImportFactory, mockEnvFactory } from 'testverse/setup';
 
 import type { TestCustomizations } from 'multiverse/mongo-test';
-import { DummyError } from 'named-app-errors';
-import { toss } from 'toss-expression';
 
 jest.mock('mongodb');
 jest.mock('mongodb-memory-server');
 
-jest.mock('multiverse/mongo-schema', () => {
-  if (mockedMongoSchema) {
-    return mockedMongoSchema;
-  } else {
-    return jest.requireActual('multiverse/mongo-schema');
-  }
+jest.mock<typeof import('multiverse/mongo-schema')>('multiverse/mongo-schema', () => {
+  return mockedMongoSchema || jest.requireActual('multiverse/mongo-schema');
 });
 
-jest.mock('configverse/get-schema-config', () => mockedMongoCustomizations);
-jest.mock('configverse/get-dummy-data', () => mockedMongoCustomizations);
+jest.mock<typeof import('configverse/get-schema-config')>(
+  'configverse/get-schema-config',
+  () =>
+    mockedMongoCustomizations as unknown as typeof import('configverse/get-schema-config')
+);
+jest.mock<typeof import('configverse/get-dummy-data')>(
+  'configverse/get-dummy-data',
+  () =>
+    mockedMongoCustomizations as unknown as typeof import('configverse/get-dummy-data')
+);
 
 const now = Date.now();
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
@@ -39,18 +44,19 @@ const mockedMongoMemoryServer = {
   stop: jest.fn()
 } as unknown as MongoMemoryServer;
 
-const importDbLib = isolatedImportFactory<MongoSchemaPackage>({
+const importDbLibrary = isolatedImportFactory<MongoSchemaPackage>({
   path: 'multiverse/mongo-schema'
 });
 
-const importTestDbLib = isolatedImportFactory<typeof import('multiverse/mongo-test')>(
-  {
-    path: 'multiverse/mongo-test'
-  }
-);
+const importTestDbLibrary = isolatedImportFactory<
+  typeof import('multiverse/mongo-test')
+>({
+  path: 'multiverse/mongo-test'
+});
 
 beforeEach(() => {
   mockedMongoSchema = undefined;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   mockedMongoCustomizations = mockedMongoCustomizations || {};
 
   mockedMongoCustomizations.getSchemaConfig = async () => {
@@ -140,7 +146,7 @@ describe('::getDummyData', () => {
   it('dynamically imports customizations', async () => {
     expect.hasAssertions();
 
-    await expect(importTestDbLib().getDummyData()).resolves.toStrictEqual(
+    await expect(importTestDbLibrary().getDummyData()).resolves.toStrictEqual(
       await mockedMongoCustomizations.getDummyData()
     );
   });
@@ -150,7 +156,7 @@ describe('::getDummyData', () => {
 
     // @ts-expect-error: don't care that we're deleting a non-optional prop
     delete mockedMongoCustomizations.getDummyData;
-    await expect(importTestDbLib().getDummyData()).rejects.toThrow(
+    await expect(importTestDbLibrary().getDummyData()).rejects.toThrow(
       'configverse/get-dummy-data'
     );
   });
@@ -160,19 +166,19 @@ describe('::hydrateDb', () => {
   it('fills a database with dummy data (multi-item collections)', async () => {
     expect.hasAssertions();
 
-    const lib = importDbLib();
-    mockedMongoSchema = lib;
-    const testLib = importTestDbLib();
-    const db = await lib.getDb({ name: 'fake-db-1' });
+    const library = importDbLibrary();
+    mockedMongoSchema = library;
+    const testLibrary = importTestDbLibrary();
+    const db = await library.getDb({ name: 'fake-db-1' });
 
-    await expect(testLib.hydrateDb({ name: 'fake-db-1' })).resolves.toBeUndefined();
+    await expect(testLibrary.hydrateDb({ name: 'fake-db-1' })).resolves.toBeUndefined();
 
-    Object.entries((await testLib.getDummyData())['fake-db-1']).forEach(
+    Object.entries((await testLibrary.getDummyData())['fake-db-1']).forEach(
       ([colName, colData]) => {
         if (colName != '_generatedAt') {
-          expect(db.collection).toBeCalledWith(colName);
+          expect(db.collection).toHaveBeenCalledWith(colName);
           // ? The createIndex method is reused for easy access to the insertMany mock
-          expect(db.createIndex).toBeCalledWith(colData);
+          expect(db.createIndex).toHaveBeenCalledWith(colData);
         }
       }
     );
@@ -201,17 +207,17 @@ describe('::hydrateDb', () => {
       };
     };
 
-    const lib = importDbLib();
-    mockedMongoSchema = lib;
-    const testLib = importTestDbLib();
-    const db = await lib.getDb({ name: 'fake-db-1' });
+    const library = importDbLibrary();
+    mockedMongoSchema = library;
+    const testLibrary = importTestDbLibrary();
+    const db = await library.getDb({ name: 'fake-db-1' });
 
-    await expect(testLib.hydrateDb({ name: 'fake-db-1' })).resolves.toBeUndefined();
+    await expect(testLibrary.hydrateDb({ name: 'fake-db-1' })).resolves.toBeUndefined();
 
-    expect(db.collection).toBeCalledWith('col');
+    expect(db.collection).toHaveBeenCalledWith('col');
     // ? The createIndex method is reused for easy access to the insertMany mock
-    expect(db.createIndex).toBeCalledWith([
-      (await testLib.getDummyData())['fake-db-1'].col
+    expect(db.createIndex).toHaveBeenCalledWith([
+      (await testLibrary.getDummyData())['fake-db-1'].col
     ]);
   });
 
@@ -238,11 +244,11 @@ describe('::hydrateDb', () => {
       };
     };
 
-    const lib = importDbLib();
-    mockedMongoSchema = lib;
-    const testLib = importTestDbLib();
+    const library = importDbLibrary();
+    mockedMongoSchema = library;
+    const testLibrary = importTestDbLibrary();
 
-    await expect(testLib.hydrateDb({ name: 'fake-db-2' })).rejects.toThrow(
+    await expect(testLibrary.hydrateDb({ name: 'fake-db-2' })).rejects.toThrow(
       /dummy data for database "fake-db-2" does not exist/
     );
   });
@@ -250,11 +256,11 @@ describe('::hydrateDb', () => {
   it('throws if collection referenced in dummy data is not in schema', async () => {
     expect.hasAssertions();
 
-    const lib = importDbLib();
-    mockedMongoSchema = lib;
-    const testLib = importTestDbLib();
+    const library = importDbLibrary();
+    mockedMongoSchema = library;
+    const testLibrary = importTestDbLibrary();
 
-    await expect(testLib.hydrateDb({ name: 'fake-db-2' })).rejects.toThrow(
+    await expect(testLibrary.hydrateDb({ name: 'fake-db-2' })).rejects.toThrow(
       /collection "fake-db-2.col-does-not-exist" referenced in dummy data is not defined in source db schema/
     );
   });
@@ -269,31 +275,35 @@ describe('::setupMemoryServerOverride', () => {
     const oldAfterAll = afterAll;
 
     try {
-      const testLib = importTestDbLib();
+      const testLibrary = importTestDbLibrary();
 
       // eslint-disable-next-line no-global-assign
       beforeAll = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       beforeEach = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       afterAll = jest.fn();
 
-      testLib.setupMemoryServerOverride();
+      testLibrary.setupMemoryServerOverride();
 
-      expect(beforeAll).toBeCalledTimes(1);
-      expect(beforeEach).toBeCalledTimes(1);
-      expect(afterAll).toBeCalledTimes(1);
+      expect(beforeAll).toHaveBeenCalledTimes(1);
+      expect(beforeEach).toHaveBeenCalledTimes(1);
+      expect(afterAll).toHaveBeenCalledTimes(1);
 
-      testLib.setupMemoryServerOverride({ defer: true });
+      testLibrary.setupMemoryServerOverride({ defer: true });
 
-      expect(beforeAll).toBeCalledTimes(2);
-      expect(beforeEach).toBeCalledTimes(1);
-      expect(afterAll).toBeCalledTimes(2);
+      expect(beforeAll).toHaveBeenCalledTimes(2);
+      expect(beforeEach).toHaveBeenCalledTimes(1);
+      expect(afterAll).toHaveBeenCalledTimes(2);
     } finally {
       // eslint-disable-next-line no-global-assign
       beforeAll = oldBeforeAll;
+
       // eslint-disable-next-line no-global-assign
       beforeEach = oldBeforeEach;
+
       // eslint-disable-next-line no-global-assign
       afterAll = oldAfterAll;
     }
@@ -308,40 +318,42 @@ describe('::setupMemoryServerOverride', () => {
 
     try {
       await withMockedEnv(async () => {
-        const lib = importDbLib();
+        const library = importDbLibrary();
 
-        mockedMongoSchema = lib;
+        mockedMongoSchema = library;
 
-        const testLib = importTestDbLib();
+        const testLibrary = importTestDbLibrary();
 
         const destroySpy = jest
-          .spyOn(lib, 'destroyDb')
+          .spyOn(library, 'destroyDb')
           .mockImplementation(async () => true);
 
         const initializeDbSpy = jest
-          .spyOn(lib, 'initializeDb')
+          .spyOn(library, 'initializeDb')
           .mockImplementation(async () => undefined);
 
         const hydrateDbSpy = jest
-          .spyOn(testLib, 'hydrateDb')
+          .spyOn(testLibrary, 'hydrateDb')
           .mockImplementation(async () => undefined);
 
         const closeClientSpy = jest
-          .spyOn(lib, 'closeClient')
+          .spyOn(library, 'closeClient')
           .mockImplementation(async () => undefined);
 
         // eslint-disable-next-line no-global-assign
         beforeAll = jest.fn();
+
         // eslint-disable-next-line no-global-assign
         beforeEach = jest.fn();
+
         // eslint-disable-next-line no-global-assign
         afterAll = jest.fn();
 
-        testLib.setupMemoryServerOverride();
+        testLibrary.setupMemoryServerOverride();
 
-        expect(beforeAll).toBeCalledTimes(1);
-        expect(beforeEach).toBeCalledTimes(1);
-        expect(afterAll).toBeCalledTimes(1);
+        expect(beforeAll).toHaveBeenCalledTimes(1);
+        expect(beforeEach).toHaveBeenCalledTimes(1);
+        expect(afterAll).toHaveBeenCalledTimes(1);
 
         await asMockedFunction(beforeAll).mock.calls[0][0](
           undefined as unknown as jest.DoneCallback
@@ -351,7 +363,7 @@ describe('::setupMemoryServerOverride', () => {
         expect(initializeDbSpy).not.toHaveBeenCalled();
         expect(hydrateDbSpy).not.toHaveBeenCalled();
         expect(closeClientSpy).not.toHaveBeenCalled();
-        // eslint-disable-next-line jest/unbound-method
+
         expect(asMockedFunction(mockedMongoMemoryServer.stop)).not.toHaveBeenCalled();
 
         await asMockedFunction(afterAll).mock.calls[0][0](
@@ -359,40 +371,42 @@ describe('::setupMemoryServerOverride', () => {
         );
 
         expect(closeClientSpy).toHaveBeenCalled();
-        // eslint-disable-next-line jest/unbound-method
+
         expect(asMockedFunction(mockedMongoMemoryServer.stop)).toHaveBeenCalled();
 
-        testLib.setupMemoryServerOverride({ defer: true });
+        testLibrary.setupMemoryServerOverride({ defer: true });
 
-        expect(beforeAll).toBeCalledTimes(2);
-        expect(beforeEach).toBeCalledTimes(1);
-        expect(afterAll).toBeCalledTimes(2);
+        expect(beforeAll).toHaveBeenCalledTimes(2);
+        expect(beforeEach).toHaveBeenCalledTimes(1);
+        expect(afterAll).toHaveBeenCalledTimes(2);
 
         await asMockedFunction(beforeAll).mock.calls[1][0](
           undefined as unknown as jest.DoneCallback
         );
 
-        Object.keys(
-          (await mockedMongoCustomizations.getSchemaConfig()).databases
-        ).map((name) => {
-          expect(destroySpy).toBeCalledWith({ name });
-          expect(initializeDbSpy).toBeCalledWith({ name });
-          expect(hydrateDbSpy).toBeCalledWith({ name });
-        });
+        Object.keys((await mockedMongoCustomizations.getSchemaConfig()).databases).map(
+          (name) => {
+            expect(destroySpy).toHaveBeenCalledWith({ name });
+            expect(initializeDbSpy).toHaveBeenCalledWith({ name });
+            expect(hydrateDbSpy).toHaveBeenCalledWith({ name });
+          }
+        );
 
         await asMockedFunction(afterAll).mock.calls[1][0](
           undefined as unknown as jest.DoneCallback
         );
 
-        expect(closeClientSpy).toBeCalledTimes(2);
-        // eslint-disable-next-line jest/unbound-method
-        expect(asMockedFunction(mockedMongoMemoryServer.stop)).toBeCalledTimes(2);
+        expect(closeClientSpy).toHaveBeenCalledTimes(2);
+
+        expect(asMockedFunction(mockedMongoMemoryServer.stop)).toHaveBeenCalledTimes(2);
       });
     } finally {
       // eslint-disable-next-line no-global-assign
       beforeAll = oldBeforeAll;
+
       // eslint-disable-next-line no-global-assign
       beforeEach = oldBeforeEach;
+
       // eslint-disable-next-line no-global-assign
       afterAll = oldAfterAll;
     }
@@ -406,19 +420,21 @@ describe('::setupMemoryServerOverride', () => {
     const oldAfterAll = afterAll;
 
     try {
-      const testLib = importTestDbLib();
+      const testLibrary = importTestDbLibrary();
 
       // eslint-disable-next-line no-global-assign
       beforeAll = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       beforeEach = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       afterAll = jest.fn();
 
       await withMockedEnv(
         async () => {
-          testLib.setupMemoryServerOverride();
-          expect(mockMongoMemoryServer).toBeCalledWith({
+          testLibrary.setupMemoryServerOverride();
+          expect(mockMongoMemoryServer).toHaveBeenCalledWith({
             instance: expect.objectContaining({ port: 5678 })
           });
         },
@@ -430,8 +446,10 @@ describe('::setupMemoryServerOverride', () => {
     } finally {
       // eslint-disable-next-line no-global-assign
       beforeAll = oldBeforeAll;
+
       // eslint-disable-next-line no-global-assign
       beforeEach = oldBeforeEach;
+
       // eslint-disable-next-line no-global-assign
       afterAll = oldAfterAll;
     }
@@ -445,12 +463,14 @@ describe('::setupMemoryServerOverride', () => {
     const oldAfterAll = afterAll;
 
     try {
-      const testLib = importTestDbLib();
+      const testLibrary = importTestDbLibrary();
 
       // eslint-disable-next-line no-global-assign
       beforeAll = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       beforeEach = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       afterAll = jest.fn();
 
@@ -461,7 +481,7 @@ describe('::setupMemoryServerOverride', () => {
 
       await withMockedEnv(
         async () => {
-          testLib.setupMemoryServerOverride();
+          testLibrary.setupMemoryServerOverride();
 
           await expect(
             asMockedFunction(beforeAll).mock.calls[0][0](
@@ -477,8 +497,10 @@ describe('::setupMemoryServerOverride', () => {
     } finally {
       // eslint-disable-next-line no-global-assign
       beforeAll = oldBeforeAll;
+
       // eslint-disable-next-line no-global-assign
       beforeEach = oldBeforeEach;
+
       // eslint-disable-next-line no-global-assign
       afterAll = oldAfterAll;
     }
@@ -492,20 +514,22 @@ describe('::setupMemoryServerOverride', () => {
     const oldAfterAll = afterAll;
 
     try {
-      const lib = importDbLib();
+      const library = importDbLibrary();
 
-      mockedMongoSchema = lib;
+      mockedMongoSchema = library;
 
-      const testLib = importTestDbLib();
+      const testLibrary = importTestDbLibrary();
 
       const destroySpy = jest
-        .spyOn(lib, 'destroyDb')
+        .spyOn(library, 'destroyDb')
         .mockImplementation(async () => true);
 
       // eslint-disable-next-line no-global-assign
       beforeAll = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       beforeEach = jest.fn();
+
       // eslint-disable-next-line no-global-assign
       afterAll = jest.fn();
 
@@ -516,7 +540,7 @@ describe('::setupMemoryServerOverride', () => {
 
       await withMockedEnv(
         async () => {
-          testLib.setupMemoryServerOverride();
+          testLibrary.setupMemoryServerOverride();
 
           await expect(
             asMockedFunction(beforeAll).mock.calls[0][0](
@@ -550,16 +574,16 @@ describe('::setupMemoryServerOverride', () => {
       asMockedFunction(beforeEach).mockReset();
       asMockedFunction(afterAll).mockReset();
       jest
-        .spyOn(lib, 'getSchemaConfig')
+        .spyOn(library, 'getSchemaConfig')
         .mockImplementation(() => toss(new DummyError()));
 
-      testLib.setupMemoryServerOverride();
+      testLibrary.setupMemoryServerOverride();
 
       await expect(
         asMockedFunction(beforeEach).mock.calls[0][0](
           undefined as unknown as jest.DoneCallback
         )
-      ).rejects.toThrowError(DummyError);
+      ).rejects.toThrow(DummyError);
 
       // ? Calling it a second time turns it into a noop
       await expect(
@@ -570,8 +594,10 @@ describe('::setupMemoryServerOverride', () => {
     } finally {
       // eslint-disable-next-line no-global-assign
       beforeAll = oldBeforeAll;
+
       // eslint-disable-next-line no-global-assign
       beforeEach = oldBeforeEach;
+
       // eslint-disable-next-line no-global-assign
       afterAll = oldAfterAll;
     }

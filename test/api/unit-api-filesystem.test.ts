@@ -1,20 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { testApiHandler } from 'next-test-api-route-handler';
+
 import { api, setupMockBackend } from 'testverse/fixtures';
 
 import type { PublicNode } from 'universe/backend/db';
 
 jest.mock('universe/backend');
-jest.mock('universe/backend/middleware', () => {
-  const { middlewareFactory } = require('multiverse/next-api-glue');
-  const { default: handleError } = require('multiverse/next-adhesive/handle-error');
+jest.mock<typeof import('universe/backend/middleware')>(
+  'universe/backend/middleware',
+  () => {
+    const { middlewareFactory } = require('multiverse/next-api-glue');
+    const { default: handleError } = require('multiverse/next-adhesive/handle-error');
 
-  return {
-    withMiddleware: jest
-      .fn()
-      .mockImplementation(middlewareFactory({ use: [], useOnError: [handleError] }))
-  };
-});
+    return {
+      withMiddleware: jest
+        .fn()
+        .mockImplementation(middlewareFactory({ use: [], useOnError: [handleError] }))
+    } as unknown as typeof import('universe/backend/middleware');
+  }
+);
 
 const { mockedSearchNodes } = setupMockBackend();
 
@@ -24,7 +28,7 @@ describe('api/v1/filesystem/:username', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.filesystemUsername,
+        pagesHandler: api.v1.filesystemUsername,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(
@@ -45,7 +49,7 @@ describe('api/v1/filesystem/:username', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameSearch,
+        pagesHandler: api.v1.filesystemUsernameSearch,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -60,7 +64,7 @@ describe('api/v1/filesystem/:username', () => {
       });
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameSearch,
+        pagesHandler: api.v1.filesystemUsernameSearch,
         params: {
           username: 'User1',
           after: 'id',
@@ -80,7 +84,7 @@ describe('api/v1/filesystem/:username', () => {
       });
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameSearch,
+        pagesHandler: api.v1.filesystemUsernameSearch,
         params: { username: 'User1', match: 'x' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -95,7 +99,7 @@ describe('api/v1/filesystem/:username', () => {
       });
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameSearch,
+        pagesHandler: api.v1.filesystemUsernameSearch,
         params: { username: 'User1', regexMatch: 'x' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -118,7 +122,7 @@ describe('api/v1/filesystem/:username', () => {
       );
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameSearch,
+        pagesHandler: api.v1.filesystemUsernameSearch,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -139,7 +143,7 @@ describe('api/v1/filesystem/:username', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameNodeId,
+        pagesHandler: api.v1.filesystemUsernameNodeId,
         params: { username: 'User1', node_ids: ['id'] },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -154,7 +158,7 @@ describe('api/v1/filesystem/:username', () => {
       });
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameNodeId,
+        pagesHandler: api.v1.filesystemUsernameNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
@@ -163,7 +167,7 @@ describe('api/v1/filesystem/:username', () => {
       });
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameNodeId,
+        pagesHandler: api.v1.filesystemUsernameNodeId,
         params: {},
         test: async ({ fetch }) => {
           const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
@@ -178,7 +182,7 @@ describe('api/v1/filesystem/:username', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameNodeId,
+        pagesHandler: api.v1.filesystemUsernameNodeId,
         params: { username: 'User1', node_ids: ['id'] },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'PUT' }).then(
@@ -198,7 +202,7 @@ describe('api/v1/filesystem/:username', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameNodeId,
+        pagesHandler: api.v1.filesystemUsernameNodeId,
         params: { username: 'User1', node_ids: ['id'] },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'DELETE' }).then(
@@ -212,23 +216,19 @@ describe('api/v1/filesystem/:username', () => {
       });
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameNodeId,
+        pagesHandler: api.v1.filesystemUsernameNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(
-            async (r) => r.status
-          );
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
           expect(status).toBe(200);
         }
       });
 
       await testApiHandler({
-        handler: api.v1.filesystemUsernameNodeId,
+        pagesHandler: api.v1.filesystemUsernameNodeId,
         params: {},
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(
-            async (r) => r.status
-          );
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
           expect(status).toBe(200);
         }
       });
@@ -242,7 +242,7 @@ describe('api/v2/users/:username/filesystem', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystem,
+        pagesHandler: api.v2.usersUsernameFilesystem,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(
@@ -263,7 +263,7 @@ describe('api/v2/users/:username/filesystem', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemSearch,
+        pagesHandler: api.v2.usersUsernameFilesystemSearch,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -278,7 +278,7 @@ describe('api/v2/users/:username/filesystem', () => {
       });
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemSearch,
+        pagesHandler: api.v2.usersUsernameFilesystemSearch,
         params: {
           username: 'User1',
           after: 'id',
@@ -298,7 +298,7 @@ describe('api/v2/users/:username/filesystem', () => {
       });
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemSearch,
+        pagesHandler: api.v2.usersUsernameFilesystemSearch,
         params: { username: 'User1', match: 'x' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -313,7 +313,7 @@ describe('api/v2/users/:username/filesystem', () => {
       });
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemSearch,
+        pagesHandler: api.v2.usersUsernameFilesystemSearch,
         params: { username: 'User1', regexMatch: 'x' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -336,7 +336,7 @@ describe('api/v2/users/:username/filesystem', () => {
       );
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemSearch,
+        pagesHandler: api.v2.usersUsernameFilesystemSearch,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -357,7 +357,7 @@ describe('api/v2/users/:username/filesystem', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemNodeId,
+        pagesHandler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1', node_ids: ['id'] },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -372,7 +372,7 @@ describe('api/v2/users/:username/filesystem', () => {
       });
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemNodeId,
+        pagesHandler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
@@ -381,7 +381,7 @@ describe('api/v2/users/:username/filesystem', () => {
       });
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemNodeId,
+        pagesHandler: api.v2.usersUsernameFilesystemNodeId,
         params: {},
         test: async ({ fetch }) => {
           const status = await fetch({ method: 'GET' }).then(async (r) => r.status);
@@ -396,7 +396,7 @@ describe('api/v2/users/:username/filesystem', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemNodeId,
+        pagesHandler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1', node_ids: ['id'] },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'PUT' }).then(
@@ -416,7 +416,7 @@ describe('api/v2/users/:username/filesystem', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemNodeId,
+        pagesHandler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1', node_ids: ['id'] },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'DELETE' }).then(
@@ -430,23 +430,19 @@ describe('api/v2/users/:username/filesystem', () => {
       });
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemNodeId,
+        pagesHandler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(
-            async (r) => r.status
-          );
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
           expect(status).toBe(200);
         }
       });
 
       await testApiHandler({
-        handler: api.v2.usersUsernameFilesystemNodeId,
+        pagesHandler: api.v2.usersUsernameFilesystemNodeId,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
-          const status = await fetch({ method: 'DELETE' }).then(
-            async (r) => r.status
-          );
+          const status = await fetch({ method: 'DELETE' }).then(async (r) => r.status);
           expect(status).toBe(200);
         }
       });

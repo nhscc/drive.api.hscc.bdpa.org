@@ -1,28 +1,37 @@
-/* eslint-disable no-global-assign */
-import { testApiHandler } from 'next-test-api-route-handler';
-import AuthEndpoint, { config as AuthConfig } from 'universe/pages/api/sys/auth';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { useMockDateNow } from 'multiverse/jest-mock-date';
-import { getDb } from 'multiverse/mongo-schema';
-import { dummyRootData } from 'multiverse/mongo-common';
+/* eslint-disable unicorn/no-array-callback-reference */
+/* eslint-disable unicorn/no-keyword-prefix */
 import { randomUUID } from 'node:crypto';
-import { ObjectId } from 'mongodb';
 
-import {
-  BANNED_BEARER_TOKEN,
-  DEV_BEARER_TOKEN,
-  DUMMY_BEARER_TOKEN,
-  PublicAuthEntry,
-  toPublicAuthEntry
-} from 'multiverse/next-auth';
+import { ObjectId } from 'mongodb';
+import { testApiHandler } from 'next-test-api-route-handler';
+
+import AuthEndpoint, { config as AuthConfig } from 'universe/pages/api/sys/auth';
 
 import AuthUnbanEndpoint, {
   config as AuthUnbanConfig
 } from 'universe/pages/api/sys/auth/unban';
 
-import type { NextApiHandlerMixin } from 'testverse/fixtures';
-import type { InternalAuthBearerEntry, TokenAttributes } from 'multiverse/next-auth';
+import { useMockDateNow } from 'multiverse/jest-mock-date';
+import { dummyRootData } from 'multiverse/mongo-common';
+import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+
+import {
+  BANNED_BEARER_TOKEN,
+  DEV_BEARER_TOKEN,
+  DUMMY_BEARER_TOKEN,
+  toPublicAuthEntry
+} from 'multiverse/next-auth';
+
 import type { Collection, Db } from 'mongodb';
+import type { NextApiHandlerMixin } from 'testverse/fixtures';
+
+import type {
+  InternalAuthBearerEntry,
+  PublicAuthEntry,
+  TokenAttributes
+} from 'multiverse/next-auth';
+
 import type { InternalLimitedLogEntry } from 'multiverse/next-limit';
 
 setupMemoryServerOverride();
@@ -43,14 +52,14 @@ describe('middleware correctness tests', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: authHandler,
+      pagesHandler: authHandler,
       test: async ({ fetch }) => {
         await expect(fetch().then((r) => r.status)).resolves.toBe(401);
       }
     });
 
     await testApiHandler({
-      handler: authUnbanHandler,
+      pagesHandler: authUnbanHandler,
       test: async ({ fetch }) => {
         await expect(fetch().then((r) => r.status)).resolves.toBe(401);
       }
@@ -61,7 +70,7 @@ describe('middleware correctness tests', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: authHandler,
+      pagesHandler: authHandler,
       test: async ({ fetch }) => {
         await expect(
           fetch({
@@ -72,7 +81,7 @@ describe('middleware correctness tests', () => {
     });
 
     await testApiHandler({
-      handler: authUnbanHandler,
+      pagesHandler: authUnbanHandler,
       test: async ({ fetch }) => {
         await expect(
           fetch({
@@ -94,7 +103,7 @@ describe('middleware correctness tests', () => {
       );
 
     await testApiHandler({
-      handler: authHandler,
+      pagesHandler: authHandler,
       test: async ({ fetch }) => {
         await expect(
           fetch({
@@ -105,7 +114,7 @@ describe('middleware correctness tests', () => {
     });
 
     await testApiHandler({
-      handler: authUnbanHandler,
+      pagesHandler: authUnbanHandler,
       test: async ({ fetch }) => {
         await expect(
           fetch({
@@ -146,7 +155,7 @@ describe('api/sys/auth', () => {
       await authDb.insertOne(newEntry);
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -189,7 +198,7 @@ describe('api/sys/auth', () => {
       await authDb.insertMany([newEntry1, newEntry2]);
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -219,7 +228,7 @@ describe('api/sys/auth', () => {
       });
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -252,7 +261,7 @@ describe('api/sys/auth', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -274,7 +283,7 @@ describe('api/sys/auth', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -297,7 +306,7 @@ describe('api/sys/auth', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -329,7 +338,7 @@ describe('api/sys/auth', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -351,7 +360,7 @@ describe('api/sys/auth', () => {
       ).resolves.toBe(1);
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -382,7 +391,7 @@ describe('api/sys/auth', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -392,7 +401,7 @@ describe('api/sys/auth', () => {
       });
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -411,7 +420,7 @@ describe('api/sys/auth', () => {
       });
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -443,7 +452,7 @@ describe('api/sys/auth', () => {
       ).resolves.toBe(1);
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -472,7 +481,7 @@ describe('api/sys/auth', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -482,7 +491,7 @@ describe('api/sys/auth', () => {
       });
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -494,7 +503,7 @@ describe('api/sys/auth', () => {
       });
 
       await testApiHandler({
-        handler: authHandler,
+        pagesHandler: authHandler,
         requestPatcher(req) {
           req.headers = { ...req.headers, ...headerOverrides };
         },
@@ -513,23 +522,23 @@ describe('api/sys/auth', () => {
         expect.hasAssertions();
 
         await testApiHandler({
-          handler: authUnbanHandler,
+          pagesHandler: authUnbanHandler,
           requestPatcher(req) {
             req.headers = { ...req.headers, ...headerOverrides };
           },
           async test({ fetch }) {
-            await expect(
-              (await fetch({ method: 'GET' })).json()
-            ).resolves.toStrictEqual({
-              success: true,
-              entries: dummyRootData['limited-log']
-                .slice()
-                .reverse()
-                .map((ent) => {
-                  const { _id, ...entry } = ent;
-                  return entry;
-                })
-            });
+            await expect((await fetch({ method: 'GET' })).json()).resolves.toStrictEqual(
+              {
+                success: true,
+                entries: dummyRootData['limited-log']
+                  .slice()
+                  .reverse()
+                  .map((ent) => {
+                    const { _id, ...entry } = ent;
+                    return entry;
+                  })
+              }
+            );
           }
         });
       });
@@ -547,7 +556,7 @@ describe('api/sys/auth', () => {
         ).resolves.toBe(1);
 
         await testApiHandler({
-          handler: authUnbanHandler,
+          pagesHandler: authUnbanHandler,
           requestPatcher(req) {
             req.headers = { ...req.headers, ...headerOverrides };
           },
@@ -585,7 +594,7 @@ describe('api/sys/auth', () => {
         ).resolves.toBe(1);
 
         await testApiHandler({
-          handler: authUnbanHandler,
+          pagesHandler: authUnbanHandler,
           requestPatcher(req) {
             req.headers = { ...req.headers, ...headerOverrides };
           },
@@ -614,7 +623,7 @@ describe('api/sys/auth', () => {
         expect.hasAssertions();
 
         await testApiHandler({
-          handler: authUnbanHandler,
+          pagesHandler: authUnbanHandler,
           requestPatcher(req) {
             req.headers = { ...req.headers, ...headerOverrides };
           },
@@ -624,7 +633,7 @@ describe('api/sys/auth', () => {
         });
 
         await testApiHandler({
-          handler: authUnbanHandler,
+          pagesHandler: authUnbanHandler,
           requestPatcher(req) {
             req.headers = { ...req.headers, ...headerOverrides };
           },

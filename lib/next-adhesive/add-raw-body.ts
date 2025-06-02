@@ -1,16 +1,19 @@
-import { sendHttpTooLarge } from 'multiverse/next-api-respond';
-import {
-  ClientValidationError,
-  InvalidAppConfigurationError
-} from 'named-app-errors';
-import { debugFactory } from 'multiverse/debug-extended';
-import { parse } from 'content-type';
-import getRawBody, { RawBodyError } from 'raw-body';
+/* eslint-disable eqeqeq */
+/* eslint-disable unicorn/no-anonymous-default-export */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable unicorn/prevent-abbreviations */
 import querystring from 'node:querystring';
-import { isError } from '@xunnamius/types';
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { isError } from '@xunnamius/types';
+import { parse } from 'content-type';
+import { debugFactory } from 'multiverse/debug-extended';
+import { sendHttpTooLarge } from 'multiverse/next-api-respond';
+import { ClientValidationError, InvalidAppConfigurationError } from 'named-app-errors';
+import getRawBody from 'raw-body';
+
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import type { RawBodyError } from 'raw-body';
 
 const debug = debugFactory('next-adhesive:add-raw-body');
 
@@ -18,7 +21,7 @@ const debug = debugFactory('next-adhesive:add-raw-body');
 const defaultRequestBodySizeLimit = '1mb';
 
 const isRawBodyError = (e: unknown): e is RawBodyError => {
-  return isError(e) && typeof (e as RawBodyError).type == 'string';
+  return isError(e) && typeof (e as RawBodyError).type === 'string';
 };
 
 /**
@@ -124,15 +127,15 @@ export default async function (
     }
 
     const { type, parameters } = contentType;
-    const encoding = parameters.charset || 'utf-8';
+    const encoding = parameters.charset || 'utf8';
     const limit = context.options.requestBodySizeLimit || defaultRequestBodySizeLimit;
 
     let buffer;
 
     try {
       buffer = (await getRawBody(req, { encoding, limit })).toString();
-    } catch (e) {
-      if (isRawBodyError(e) && e.type == 'entity.too.large') {
+    } catch (error) {
+      if (isRawBodyError(error) && error.type == 'entity.too.large') {
         sendHttpTooLarge(res, { error: `body exceeded ${limit} size limit` });
       } else {
         throw new ClientValidationError('invalid body');

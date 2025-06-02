@@ -1,13 +1,16 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { parse as parseAsBytes } from 'bytes';
-import { getEnv as getDefaultEnv } from 'multiverse/next-env';
+
 import { InvalidAppEnvironmentError } from 'universe/error';
+
+import { getEnv as getDefaultEnv } from 'multiverse/next-env';
 
 import type { Environment } from 'multiverse/next-env';
 
 /**
  * Returns an object representing the application's runtime environment.
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 export function getEnv<T extends Environment = Environment>() {
   const env = getDefaultEnv({
     MAX_PARAMS_PER_REQUEST: Number(process.env.MAX_PARAMS_PER_REQUEST) || 100,
@@ -25,15 +28,15 @@ export function getEnv<T extends Environment = Environment>() {
     MAX_NODE_PERMISSIONS: Number(process.env.MAX_NODE_PERMISSIONS) || 10,
     MAX_NODE_CONTENTS: Number(process.env.MAX_NODE_CONTENTS) || 10,
     MAX_NODE_TEXT_LENGTH_BYTES:
-      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10240,
+      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10_240,
 
-    PRUNE_DATA_MAX_FILE_NODES: !!process.env.PRUNE_DATA_MAX_FILE_NODES
+    PRUNE_DATA_MAX_FILE_NODES: process.env.PRUNE_DATA_MAX_FILE_NODES
       ? Number(process.env.PRUNE_DATA_MAX_FILE_NODES)
       : null,
-    PRUNE_DATA_MAX_META_NODES: !!process.env.PRUNE_DATA_MAX_META_NODES
+    PRUNE_DATA_MAX_META_NODES: process.env.PRUNE_DATA_MAX_META_NODES
       ? Number(process.env.PRUNE_DATA_MAX_META_NODES)
       : null,
-    PRUNE_DATA_MAX_USERS: !!process.env.PRUNE_DATA_MAX_USERS
+    PRUNE_DATA_MAX_USERS: process.env.PRUNE_DATA_MAX_USERS
       ? Number(process.env.PRUNE_DATA_MAX_USERS)
       : null
   });
@@ -66,11 +69,9 @@ export function getEnv<T extends Environment = Environment>() {
         'MAX_NODE_TEXT_LENGTH_BYTES'
       ] as (keyof typeof env)[]
     ).forEach((name) => {
-      const value = env[name];
+      const value = env[name] as number;
       if (!value || value <= 0) {
-        errors.push(
-          `bad ${name}, saw "${env[name]}" (expected a non-negative number)`
-        );
+        errors.push(`bad ${name}, saw "${env[name]}" (expected a non-negative number)`);
       }
     });
 
@@ -89,9 +90,7 @@ export function getEnv<T extends Environment = Environment>() {
     // TODO: make it easier to reuse error code from getDefaultEnv. Or is it
     // TODO: obsoleted by expect-env package? Either way, factor this logic out!
     if (errors.length) {
-      throw new InvalidAppEnvironmentError(
-        `bad variables:\n - ${errors.join('\n - ')}`
-      );
+      throw new InvalidAppEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
     }
   }
 

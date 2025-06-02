@@ -1,44 +1,49 @@
-import { useMockDateNow, dummyRootData } from 'multiverse/mongo-common';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { getDb } from 'multiverse/mongo-schema';
-import { ObjectId } from 'mongodb';
-import { asMockedFunction } from '@xunnamius/jest-types';
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-base-to-string */
+/* eslint-disable unicorn/no-array-callback-reference */
+/* eslint-disable unicorn/no-keyword-prefix */
 import { randomUUID } from 'node:crypto';
 
+import { asMockedFunction } from '@xunnamius/jest-types';
+import { ObjectId } from 'mongodb';
+import { dummyRootData, useMockDateNow } from 'multiverse/mongo-common';
+import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+
 import {
+  authConstraints,
+  authenticateHeader,
+  authorizeHeader,
+  authSchemes,
   BANNED_BEARER_TOKEN,
+  createEntry,
+  deleteEntry,
+  deriveSchemeAndToken,
   DEV_BEARER_TOKEN,
   DUMMY_BEARER_TOKEN,
-  NULL_BEARER_TOKEN,
-  deriveSchemeAndToken,
-  authenticateHeader,
   getAttributes,
-  authSchemes,
-  authConstraints,
-  authorizeHeader,
-  updateAttributes,
-  isAllowedScheme,
-  isTokenAttributes,
-  isNewAuthEntry,
   getOwnersEntries,
-  deleteEntry,
-  createEntry,
-  toPublicAuthEntry
+  isAllowedScheme,
+  isNewAuthEntry,
+  isTokenAttributes,
+  NULL_BEARER_TOKEN,
+  toPublicAuthEntry,
+  updateAttributes
 } from 'multiverse/next-auth';
 
 import * as NextAuthSpyTarget from 'multiverse/next-auth';
 
-import type {
-  AuthScheme,
-  AuthAttribute,
-  TokenAttributes,
-  AuthConstraint,
-  TargetToken,
-  InternalAuthEntry,
-  PublicAuthEntry
-} from 'multiverse/next-auth';
-
 import type { WithoutId } from 'mongodb';
+
+import type {
+  AuthAttribute,
+  AuthConstraint,
+  AuthScheme,
+  InternalAuthEntry,
+  PublicAuthEntry,
+  TargetToken,
+  TokenAttributes
+} from 'multiverse/next-auth';
 
 setupMemoryServerOverride();
 useMockDateNow();
@@ -58,11 +63,7 @@ beforeEach(() => {
 
 afterEach(() => {
   mutableAuthSchemes.splice(0, mutableAuthSchemes.length, ..._authSchemes);
-  mutableAuthConstraints.splice(
-    0,
-    mutableAuthConstraints.length,
-    ..._authConstraints
-  );
+  mutableAuthConstraints.splice(0, mutableAuthConstraints.length, ..._authConstraints);
 });
 
 test('ensure authSchemes contains only lowercase alphanumeric strings', () => {
@@ -71,7 +72,7 @@ test('ensure authSchemes contains only lowercase alphanumeric strings', () => {
 
   expect(
     authSchemes.every(
-      (scheme) => typeof scheme == 'string' && isLowercaseAlphanumeric.test(scheme)
+      (scheme) => typeof scheme === 'string' && isLowercaseAlphanumeric.test(scheme)
     )
   ).toBeTrue();
 });
@@ -376,9 +377,9 @@ describe('::deriveSchemeAndToken', () => {
       'invalid auth string'
     );
 
-    await expect(
-      deriveSchemeAndToken({ authString: 'bearer-bearer' })
-    ).rejects.toThrow('invalid auth string');
+    await expect(deriveSchemeAndToken({ authString: 'bearer-bearer' })).rejects.toThrow(
+      'invalid auth string'
+    );
   });
 
   it('rejects on unknown schemes', async () => {
@@ -567,9 +568,7 @@ describe('::authorizeHeader', () => {
         constraints: ['isGlobalAdmin', 'isGlobalAdmin']
       })
     ).rejects.toMatchObject({
-      message: expect.stringContaining(
-        'encountered duplicate authorization constraints'
-      )
+      message: expect.stringContaining('encountered duplicate authorization constraints')
     });
   });
 
@@ -634,9 +633,7 @@ describe('::updateAttributes', () => {
   it('updates (patches) an existing auth entry', async () => {
     expect.hasAssertions();
 
-    const authDb = (await getDb({ name: 'root' })).collection<InternalAuthEntry>(
-      'auth'
-    );
+    const authDb = (await getDb({ name: 'root' })).collection<InternalAuthEntry>('auth');
 
     await expect(
       updateAttributes({
@@ -930,7 +927,7 @@ describe('::getOwnersEntries', () => {
 
     await Promise.all(
       errors.map(async ([params, error]) => {
-        await expect(getOwnersEntries(params as Params)).rejects.toMatchObject({
+        await expect(getOwnersEntries(params)).rejects.toMatchObject({
           message: expect.stringContaining(error)
         });
       })
@@ -949,9 +946,7 @@ describe('::createEntry', () => {
     mockRandomUUID.mockReturnValueOnce(newToken1);
     mockRandomUUID.mockReturnValueOnce(newToken2);
 
-    const authDb = (await getDb({ name: 'root' })).collection<InternalAuthEntry>(
-      'auth'
-    );
+    const authDb = (await getDb({ name: 'root' })).collection<InternalAuthEntry>('auth');
 
     await expect(
       authDb.countDocuments({ 'attributes.owner': 'new-owner' })
@@ -1009,97 +1004,95 @@ describe('::createEntry', () => {
   it('rejects if passed invalid data', async () => {
     expect.hasAssertions();
 
-    const errors: [
-      params: Partial<Parameters<typeof createEntry>[0]>,
-      error: string
-    ][] = [
-      [{}, 'invalid entry data'],
-      [{ entry: { attributes: undefined } }, 'invalid entry data'],
+    const errors: [params: Partial<Parameters<typeof createEntry>[0]>, error: string][] =
       [
-        { entry: { attributes: null as unknown as TokenAttributes } },
-        'invalid entry data'
-      ],
-      [
-        { entry: { attributes: false as unknown as TokenAttributes } },
-        'invalid entry data'
-      ],
-      [
-        { entry: { attributes: true as unknown as TokenAttributes } },
-        'invalid entry data'
-      ],
-      [
-        { entry: { attributes: {} as unknown as TokenAttributes } },
-        'invalid entry data'
-      ],
-      [
-        {
-          entry: { attributes: { isGlobalAdmin: null } as unknown as TokenAttributes }
-        },
-        'invalid entry data'
-      ],
-      [
-        { entry: { attributes: { isGlobalAdmin: 1 } as unknown as TokenAttributes } },
-        'invalid entry data'
-      ],
-      [
-        {
-          entry: { attributes: { isGlobalAdmin: true } as unknown as TokenAttributes }
-        },
-        'invalid entry data'
-      ],
-      [
-        { entry: { attributes: { name: 'owner' } as unknown as TokenAttributes } },
-        'invalid entry data'
-      ],
-      [
-        { entry: { attributes: { owner: null } as unknown as TokenAttributes } },
-        'invalid entry data'
-      ],
-      [
-        {
-          entry: {
-            attributes: {
-              owner: 'name',
-              isGlobalAdmin: 1
-            } as unknown as TokenAttributes
-          }
-        },
-        'invalid entry data'
-      ],
-      [
-        {
-          entry: {
-            attributes: {
-              owner: 'name',
-              isGlobalAdmin: null
-            } as unknown as TokenAttributes
-          }
-        },
-        'invalid entry data'
-      ],
-      [
-        {
-          entry: {
-            attributes: {
-              owner: 'name',
-              isGlobalAdmin: 'true'
-            } as unknown as TokenAttributes
-          }
-        },
-        'invalid entry data'
-      ],
-      [
-        {
-          entry: {
-            attributes: {
-              owner: 'name',
-              extra: 1
-            } as unknown as TokenAttributes
-          }
-        },
-        'invalid entry data'
-      ]
-    ];
+        [{}, 'invalid entry data'],
+        [{ entry: { attributes: undefined } }, 'invalid entry data'],
+        [
+          { entry: { attributes: null as unknown as TokenAttributes } },
+          'invalid entry data'
+        ],
+        [
+          { entry: { attributes: false as unknown as TokenAttributes } },
+          'invalid entry data'
+        ],
+        [
+          { entry: { attributes: true as unknown as TokenAttributes } },
+          'invalid entry data'
+        ],
+        [
+          { entry: { attributes: {} as unknown as TokenAttributes } },
+          'invalid entry data'
+        ],
+        [
+          {
+            entry: { attributes: { isGlobalAdmin: null } as unknown as TokenAttributes }
+          },
+          'invalid entry data'
+        ],
+        [
+          { entry: { attributes: { isGlobalAdmin: 1 } as unknown as TokenAttributes } },
+          'invalid entry data'
+        ],
+        [
+          {
+            entry: { attributes: { isGlobalAdmin: true } as unknown as TokenAttributes }
+          },
+          'invalid entry data'
+        ],
+        [
+          { entry: { attributes: { name: 'owner' } as unknown as TokenAttributes } },
+          'invalid entry data'
+        ],
+        [
+          { entry: { attributes: { owner: null } as unknown as TokenAttributes } },
+          'invalid entry data'
+        ],
+        [
+          {
+            entry: {
+              attributes: {
+                owner: 'name',
+                isGlobalAdmin: 1
+              } as unknown as TokenAttributes
+            }
+          },
+          'invalid entry data'
+        ],
+        [
+          {
+            entry: {
+              attributes: {
+                owner: 'name',
+                isGlobalAdmin: null
+              } as unknown as TokenAttributes
+            }
+          },
+          'invalid entry data'
+        ],
+        [
+          {
+            entry: {
+              attributes: {
+                owner: 'name',
+                isGlobalAdmin: 'true'
+              } as unknown as TokenAttributes
+            }
+          },
+          'invalid entry data'
+        ],
+        [
+          {
+            entry: {
+              attributes: {
+                owner: 'name',
+                extra: 1
+              } as unknown as TokenAttributes
+            }
+          },
+          'invalid entry data'
+        ]
+      ];
 
     await Promise.all(
       errors.map(async ([params, error]) => {
@@ -1125,9 +1118,7 @@ describe('::deleteEntry', () => {
       })
     ).resolves.toBeUndefined();
 
-    await expect(authDb.countDocuments()).resolves.toBe(
-      dummyRootData.auth.length - 1
-    );
+    await expect(authDb.countDocuments()).resolves.toBe(dummyRootData.auth.length - 1);
 
     await expect(
       deleteEntry({
@@ -1135,9 +1126,7 @@ describe('::deleteEntry', () => {
       })
     ).resolves.toBeUndefined();
 
-    await expect(authDb.countDocuments()).resolves.toBe(
-      dummyRootData.auth.length - 2
-    );
+    await expect(authDb.countDocuments()).resolves.toBe(dummyRootData.auth.length - 2);
   });
 
   it('rejects if the auth entry is not found', async () => {
@@ -1155,21 +1144,19 @@ describe('::deleteEntry', () => {
   it('rejects if passed invalid data', async () => {
     expect.hasAssertions();
 
-    const errors: [
-      params: Partial<Parameters<typeof deleteEntry>[0]>,
-      error: string
-    ][] = [
-      [{}, 'invalid invocation'],
-      [{ target: undefined }, 'invalid invocation'],
-      [{ target: null as unknown as TargetToken }, 'invalid auth data'],
-      [{ target: false as unknown as TargetToken }, 'invalid auth data'],
-      [{ target: true as unknown as TargetToken }, 'invalid auth data'],
-      [{ target: {} }, 'invalid scheme'],
-      [{ target: { scheme: '' } }, 'invalid scheme'],
-      [{ target: { scheme: 'bearer', token: {} } }, 'token syntax'],
-      [{ target: { scheme: 'bearer', token: { fake: 1 } } }, 'token syntax'],
-      [{ target: { scheme: 'bearer', token: { bearer: null } } }, 'token syntax']
-    ];
+    const errors: [params: Partial<Parameters<typeof deleteEntry>[0]>, error: string][] =
+      [
+        [{}, 'invalid invocation'],
+        [{ target: undefined }, 'invalid invocation'],
+        [{ target: null as unknown as TargetToken }, 'invalid auth data'],
+        [{ target: false as unknown as TargetToken }, 'invalid auth data'],
+        [{ target: true as unknown as TargetToken }, 'invalid auth data'],
+        [{ target: {} }, 'invalid scheme'],
+        [{ target: { scheme: '' } }, 'invalid scheme'],
+        [{ target: { scheme: 'bearer', token: {} } }, 'token syntax'],
+        [{ target: { scheme: 'bearer', token: { fake: 1 } } }, 'token syntax'],
+        [{ target: { scheme: 'bearer', token: { bearer: null } } }, 'token syntax']
+      ];
 
     await Promise.all(
       errors.map(async ([params, error]) => {
@@ -1189,8 +1176,7 @@ it('allows multiple different auth entries of various schemes to coexist', async
   const uuid = randomUUID();
   const authDb = (await getDb({ name: 'root' })).collection('auth');
 
-  mutableAuthSchemes.push('new-scheme-1');
-  mutableAuthSchemes.push('new-scheme-2');
+  mutableAuthSchemes.push('new-scheme-1', 'new-scheme-2');
 
   const newEntryRed: WithoutId<InternalAuthEntry> = {
     attributes: {
@@ -1223,13 +1209,13 @@ it('allows multiple different auth entries of various schemes to coexist', async
       authString?: string;
       authData?: TargetToken;
     }): Promise<NextAuthSpyTarget.Token> {
-      let ret: NextAuthSpyTarget.Token | undefined;
+      let returnValue: NextAuthSpyTarget.Token | undefined;
 
       if (
         authString?.startsWith('new-scheme-1') ||
         authData?.scheme?.startsWith('new-scheme-1')
       ) {
-        ret = {
+        returnValue = {
           scheme: 'new-scheme-1' as AuthScheme,
           token: { id1: uuid.slice(0, 32), id2: uuid.slice(32) }
         };
@@ -1237,7 +1223,7 @@ it('allows multiple different auth entries of various schemes to coexist', async
         authString?.startsWith('new-scheme-2') ||
         authData?.scheme?.startsWith('new-scheme-2')
       ) {
-        ret = {
+        returnValue = {
           scheme: 'new-scheme-2' as AuthScheme,
           token: {
             uuid,
@@ -1247,10 +1233,10 @@ it('allows multiple different auth entries of various schemes to coexist', async
         };
       } else {
         // eslint-disable-next-line prefer-rest-params
-        ret = await actual_deriveSchemeAndToken(arguments[0]);
+        returnValue = await actual_deriveSchemeAndToken(arguments[0]);
       }
 
-      return Promise.resolve(ret);
+      return returnValue;
     } as typeof deriveSchemeAndToken);
 
   jest.spyOn(NextAuthSpyTarget, 'isTokenAttributes').mockReturnValue(true);

@@ -1,8 +1,8 @@
-import { MongoServerError, ObjectId } from 'mongodb';
+/* eslint-disable unicorn/no-array-reduce */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable eqeqeq */
 import { isPlainObject } from 'is-plain-object';
-import { getDb } from 'multiverse/mongo-schema';
-import { itemExists } from 'multiverse/mongo-item';
-import { getEnv } from 'universe/backend/env';
+import { MongoServerError, ObjectId } from 'mongodb';
 import { toss } from 'toss-expression';
 
 import {
@@ -11,32 +11,37 @@ import {
   publicUserProjection
 } from 'universe/backend/db';
 
+import { getEnv } from 'universe/backend/env';
+
 import {
+  ErrorMessage,
+  InvalidItemError,
   ItemNotFoundError,
   ItemsNotFoundError,
-  InvalidItemError,
-  ValidationError,
-  ErrorMessage
+  ValidationError
 } from 'universe/error';
 
+import { itemExists } from 'multiverse/mongo-item';
+import { getDb } from 'multiverse/mongo-schema';
+
 import type {
-  PublicNode,
-  NewNode,
-  PatchNode,
-  PublicUser,
-  NewUser,
-  PatchUser,
-  Username,
-  NodePermission,
-  UserId,
-  InternalUser,
-  InternalNode,
   InternalFileNode,
   InternalMetaNode,
+  InternalNode,
+  InternalUser,
   NewFileNode,
   NewMetaNode,
+  NewNode,
+  NewUser,
+  NodePermission,
   PatchFileNode,
-  PatchMetaNode
+  PatchMetaNode,
+  PatchNode,
+  PatchUser,
+  PublicNode,
+  PublicUser,
+  UserId,
+  Username
 } from 'universe/backend/db';
 
 // TODO: switch to using itemToObjectId from mongo-item library
@@ -119,7 +124,7 @@ const normalizeTags = (tags: string[]) => {
  */
 function validateUsername(username: unknown): username is Username {
   return (
-    typeof username == 'string' &&
+    typeof username === 'string' &&
     usernameRegex.test(username) &&
     username.length >= getEnv().MIN_USER_NAME_LENGTH &&
     username.length <= getEnv().MAX_USER_NAME_LENGTH
@@ -145,8 +150,9 @@ function validateUserData(
   } = getEnv();
 
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     (required || (!required && data.email !== undefined)) &&
-    (typeof data.email != 'string' ||
+    (typeof data.email !== 'string' ||
       !emailRegex.test(data.email) ||
       data.email.length < MIN_USER_EMAIL_LENGTH ||
       data.email.length > MAX_USER_EMAIL_LENGTH)
@@ -162,8 +168,9 @@ function validateUserData(
   }
 
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     (required || (!required && data.salt !== undefined)) &&
-    (typeof data.salt != 'string' ||
+    (typeof data.salt !== 'string' ||
       !hexadecimalRegex.test(data.salt) ||
       data.salt.length != USER_SALT_LENGTH)
   ) {
@@ -173,8 +180,9 @@ function validateUserData(
   }
 
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     (required || (!required && data.key !== undefined)) &&
-    (typeof data.key != 'string' ||
+    (typeof data.key !== 'string' ||
       !hexadecimalRegex.test(data.key) ||
       data.key.length != USER_KEY_LENGTH)
   ) {
@@ -237,29 +245,25 @@ async function validateNodeData(
   const db = await getDb({ name: 'hscc-api-drive' });
   const users = db.collection('users');
 
-  if (isNewNode(data)) {
-    if (
-      typeof data.type != 'string' ||
-      !['file', 'directory', 'symlink'].includes(data.type)
-    ) {
-      throw new ValidationError(ErrorMessage.InvalidFieldValue('type'));
-    }
+  if (
+    isNewNode(data) &&
+    (typeof data.type !== 'string' ||
+      !['file', 'directory', 'symlink'].includes(data.type))
+  ) {
+    throw new ValidationError(ErrorMessage.InvalidFieldValue('type'));
   }
 
-  const typeActual = (isNewNode(data) ? data.type : type) as NonNullable<
-    NewNode['type']
-  >;
+  const typeActual = (isNewNode(data) ? data.type : type)!;
 
-  if (isNewNode(data) || data.name !== undefined) {
-    if (
-      typeof data.name != 'string' ||
+  if (
+    (isNewNode(data) || data.name !== undefined) &&
+    (typeof data.name !== 'string' ||
       !data.name.length ||
-      data.name.length > MAX_NODE_NAME_LENGTH
-    ) {
-      throw new ValidationError(
-        ErrorMessage.InvalidStringLength('name', 1, MAX_NODE_NAME_LENGTH, 'string')
-      );
-    }
+      data.name.length > MAX_NODE_NAME_LENGTH)
+  ) {
+    throw new ValidationError(
+      ErrorMessage.InvalidStringLength('name', 1, MAX_NODE_NAME_LENGTH, 'string')
+    );
   }
 
   if (isNewNode(data) || data.permissions !== undefined) {
@@ -271,7 +275,7 @@ async function validateNodeData(
       if (
         !permsEntries.every(([k, v]) => {
           return (
-            typeof k == 'string' &&
+            typeof k === 'string' &&
             ['view', 'edit'].includes(v) &&
             (k != 'public' || (typeActual == 'file' && v == 'view'))
           );
@@ -295,20 +299,13 @@ async function validateNodeData(
     }
   }
 
-  if (isNewFileNode(data) || (isPatchFileNode(data) && data.text !== undefined)) {
-    if (
-      typeof data.text != 'string' ||
-      data.text.length > MAX_NODE_TEXT_LENGTH_BYTES
-    ) {
-      throw new ValidationError(
-        ErrorMessage.InvalidStringLength(
-          'text',
-          0,
-          MAX_NODE_TEXT_LENGTH_BYTES,
-          'bytes'
-        )
-      );
-    }
+  if (
+    (isNewFileNode(data) || (isPatchFileNode(data) && data.text !== undefined)) &&
+    (typeof data.text !== 'string' || data.text.length > MAX_NODE_TEXT_LENGTH_BYTES)
+  ) {
+    throw new ValidationError(
+      ErrorMessage.InvalidStringLength('text', 0, MAX_NODE_TEXT_LENGTH_BYTES, 'bytes')
+    );
   }
 
   if (isNewFileNode(data) || (isPatchFileNode(data) && data.tags !== undefined)) {
@@ -320,7 +317,7 @@ async function validateNodeData(
       !data.tags.every(
         (tag) =>
           tag &&
-          typeof tag == 'string' &&
+          typeof tag === 'string' &&
           tag.length >= 1 &&
           tag.length <= MAX_NODE_TAG_LENGTH
       )
@@ -338,36 +335,37 @@ async function validateNodeData(
     }
   }
 
-  if (isNewFileNode(data) || (isPatchFileNode(data) && data.lock !== undefined)) {
-    if (data.lock !== null) {
-      if (!data.lock || !isPlainObject(data.lock)) {
-        throw new ValidationError(ErrorMessage.InvalidFieldValue('lock'));
-      } else if (!validateUsername(data.lock.user)) {
-        throw new ValidationError(
-          ErrorMessage.InvalidStringLength(
-            'lock.user',
-            MIN_USER_NAME_LENGTH,
-            MAX_USER_NAME_LENGTH
-          )
-        );
-      } else if (
-        typeof data.lock.client != 'string' ||
-        data.lock.client.length < 1 ||
-        data.lock.client.length > MAX_LOCK_CLIENT_LENGTH
-      ) {
-        throw new ValidationError(
-          ErrorMessage.InvalidStringLength(
-            'lock.client',
-            1,
-            MAX_LOCK_CLIENT_LENGTH,
-            'string'
-          )
-        );
-      } else if (typeof data.lock.createdAt != 'number' || data.lock.createdAt <= 0) {
-        throw new ValidationError(ErrorMessage.InvalidFieldValue('lock.createdAt'));
-      } else if (Object.keys(data.lock).length != 3) {
-        throw new ValidationError(ErrorMessage.InvalidObjectKeyValue('lock'));
-      }
+  if (
+    (isNewFileNode(data) || (isPatchFileNode(data) && data.lock !== undefined)) &&
+    data.lock !== null
+  ) {
+    if (!data.lock || !isPlainObject(data.lock)) {
+      throw new ValidationError(ErrorMessage.InvalidFieldValue('lock'));
+    } else if (!validateUsername(data.lock.user)) {
+      throw new ValidationError(
+        ErrorMessage.InvalidStringLength(
+          'lock.user',
+          MIN_USER_NAME_LENGTH,
+          MAX_USER_NAME_LENGTH
+        )
+      );
+    } else if (
+      typeof data.lock.client !== 'string' ||
+      data.lock.client.length < 1 ||
+      data.lock.client.length > MAX_LOCK_CLIENT_LENGTH
+    ) {
+      throw new ValidationError(
+        ErrorMessage.InvalidStringLength(
+          'lock.client',
+          1,
+          MAX_LOCK_CLIENT_LENGTH,
+          'string'
+        )
+      );
+    } else if (typeof data.lock.createdAt !== 'number' || data.lock.createdAt <= 0) {
+      throw new ValidationError(ErrorMessage.InvalidFieldValue('lock.createdAt'));
+    } else if (Object.keys(data.lock).length != 3) {
+      throw new ValidationError(ErrorMessage.InvalidObjectKeyValue('lock'));
     }
   }
 
@@ -378,9 +376,7 @@ async function validateNodeData(
       data.contents.length > MAX_NODE_CONTENTS ||
       (typeActual == 'symlink' && data.contents.length > 1)
     ) {
-      throw new ValidationError(
-        ErrorMessage.TooManyItemsRequested('content node_ids')
-      );
+      throw new ValidationError(ErrorMessage.TooManyItemsRequested('content node_ids'));
     } else {
       const fileNodes = db.collection('file-nodes');
       const metaNodes = db.collection('meta-nodes');
@@ -394,24 +390,26 @@ async function validateNodeData(
             ) {
               throw new ItemNotFoundError(node_id, 'node_id');
             }
-          } catch (e) {
-            if (e instanceof ItemNotFoundError) {
-              throw e;
-            } else {
-              throw new ValidationError(
-                ErrorMessage.InvalidArrayValue('contents', node_id)
-              );
-            }
+          } catch (error) {
+            const error_ =
+              error instanceof ItemNotFoundError
+                ? error
+                : new ValidationError(
+                    ErrorMessage.InvalidArrayValue('contents', node_id)
+                  );
+            throw error_;
           }
         })
       );
     }
   }
 
-  if (isPatchNode(data) && data.owner !== undefined) {
-    if (!(await itemExists(users, { key: 'username', id: data.owner }))) {
-      throw new ItemNotFoundError(data.owner, 'user');
-    }
+  if (
+    isPatchNode(data) &&
+    data.owner !== undefined &&
+    !(await itemExists(users, { key: 'username', id: data.owner }))
+  ) {
+    throw new ItemNotFoundError(data.owner, 'user');
   }
 
   return true;
@@ -433,7 +431,7 @@ export async function getAllUsers({
     try {
       return after ? new ObjectId(after) : undefined;
     } catch {
-      throw new ValidationError(ErrorMessage.InvalidObjectId(after as string));
+      throw new ValidationError(ErrorMessage.InvalidObjectId(after!));
     }
   })();
 
@@ -465,10 +463,8 @@ export async function getUser({
   const users = db.collection<InternalUser>('users');
 
   return (
-    (await users
-      .find({ username })
-      .project<PublicUser>(publicUserProjection)
-      .next()) || toss(new ItemNotFoundError(username, 'user'))
+    (await users.find({ username }).project<PublicUser>(publicUserProjection).next()) ||
+    toss(new ItemNotFoundError(username, 'user'))
   );
 }
 
@@ -515,21 +511,21 @@ export async function createUser({
       salt: salt.toLowerCase(),
       key: key.toLowerCase()
     });
-  } catch (e) {
+  } catch (error) {
     /* istanbul ignore else */
-    if (e instanceof MongoServerError && e.code == 11000) {
-      if (e.keyPattern?.username !== undefined) {
+    if (error instanceof MongoServerError && error.code == 11_000) {
+      if (error.keyPattern?.username !== undefined) {
         throw new ValidationError(ErrorMessage.DuplicateFieldValue('username'));
       }
 
       /* istanbul ignore else */
-      if (e.keyPattern?.email !== undefined) {
+      if (error.keyPattern?.email !== undefined) {
         throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
       }
     }
 
     /* istanbul ignore next */
-    throw e;
+    throw error;
   }
 
   return getUser({ username });
@@ -577,15 +573,16 @@ export async function updateUser({
     if (!result.matchedCount) {
       throw new ItemNotFoundError(username, 'user');
     }
-  } catch (e) {
-    if (e instanceof MongoServerError && e.code == 11000) {
-      /* istanbul ignore else */
-      if (e.keyPattern?.email !== undefined) {
-        throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
-      }
+  } catch (error) {
+    if (
+      error instanceof MongoServerError &&
+      error.code == 11_000 /* istanbul ignore else */ &&
+      error.keyPattern?.email !== undefined
+    ) {
+      throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
     }
 
-    throw e;
+    throw error;
   }
 }
 
@@ -723,7 +720,7 @@ export async function searchNodes({
     try {
       return after ? new ObjectId(after) : undefined;
     } catch {
-      throw new ValidationError(ErrorMessage.InvalidObjectId(after as string));
+      throw new ValidationError(ErrorMessage.InvalidObjectId(after!));
     }
   })();
 
@@ -736,7 +733,7 @@ export async function searchNodes({
 
   // ? Handle aliasing/proxying
   [regexMatch, match].forEach((matchSpec) => {
-    if (typeof matchSpec.name == 'string') {
+    if (typeof matchSpec.name === 'string') {
       matchSpec['name-lowercase'] = matchSpec.name.toLowerCase();
       delete matchSpec.name;
     }
@@ -776,9 +773,7 @@ export async function searchNodes({
       }
 
       if (val.length > MAX_SEARCHABLE_TAGS) {
-        throw new ValidationError(
-          ErrorMessage.TooManyItemsRequested('searchable tags')
-        );
+        throw new ValidationError(ErrorMessage.TooManyItemsRequested('searchable tags'));
       }
     } else if (key == 'permissions') {
       throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
@@ -827,7 +822,7 @@ export async function searchNodes({
                     );
                   }
 
-                  if (typeof v != 'number') {
+                  if (typeof v !== 'number') {
                     throw new ValidationError(
                       ErrorMessage.InvalidOrSpecifierInvalidValueType(ndx, k)
                     );
@@ -845,7 +840,7 @@ export async function searchNodes({
               throw new ValidationError(ErrorMessage.UnknownSpecifier(subkey, true));
             }
 
-            if (typeof subval != 'number') {
+            if (typeof subval !== 'number') {
               throw new ValidationError(
                 ErrorMessage.InvalidSpecifierValueType(subkey, 'a number', true)
               );
@@ -857,10 +852,8 @@ export async function searchNodes({
           throw new ValidationError(
             ErrorMessage.InvalidSpecifierValueType(key, 'a non-empty object')
           );
-      } else if (
-        val !== null &&
-        !['number', 'string', 'boolean'].includes(typeof val)
-      ) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      } else if (val !== null && !['number', 'string', 'boolean'].includes(typeof val)) {
         throw new ValidationError(
           ErrorMessage.InvalidSpecifierValueType(
             key,
@@ -873,7 +866,7 @@ export async function searchNodes({
 
   // ? Validate the regexMatch object
   for (const [key, val] of Object.entries(regexMatch)) {
-    if (key == 'permissions') {
+    if (key === 'permissions') {
       throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
     } else if (key.startsWith('permissions.')) {
       if (sawPermissionsSpecifier) {
@@ -887,7 +880,7 @@ export async function searchNodes({
         throw new ValidationError(ErrorMessage.UnknownSpecifier(key));
       }
 
-      if (!val || typeof val != 'string') {
+      if (!val || typeof val !== 'string') {
         throw new ValidationError(ErrorMessage.InvalidRegexString(key));
       }
     }
@@ -895,10 +888,13 @@ export async function searchNodes({
 
   // ? Construct aggregation primitives
 
-  const finalRegexMatch = Object.entries(regexMatch).reduce((obj, [spec, val]) => {
-    obj[spec] = { $regex: val, $options: 'mi' };
-    return obj;
-  }, {} as Record<string, unknown>);
+  const finalRegexMatch = Object.entries(regexMatch).reduce<Record<string, unknown>>(
+    (obj, [spec, val]) => {
+      obj[spec] = { $regex: val, $options: 'mi' };
+      return obj;
+    },
+    {}
+  );
 
   const orMatcher: { [key: string]: SubSpecifierObject }[] = [];
   const tagsMatcher: { tags?: { $in: string[] } } = {};
@@ -924,6 +920,7 @@ export async function searchNodes({
       }
 
       // ? Delete useless matchers if they've been emptied out
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-dynamic-delete
       if (obj && !Object.keys(obj).length) delete match[spec];
     }
   });
@@ -947,10 +944,7 @@ export async function searchNodes({
     {
       $unionWith: {
         coll: 'meta-nodes',
-        pipeline: [
-          { $match },
-          { $project: { ...publicMetaNodeProjection, _id: true } }
-        ]
+        pipeline: [{ $match }, { $project: { ...publicMetaNodeProjection, _id: true } }]
       }
     },
     { $sort: { _id: -1 } },
@@ -1011,8 +1005,7 @@ export async function createNode({
     });
   } else {
     const metaNodes = db.collection<InternalMetaNode>('meta-nodes');
-    const { type, name, contents, permissions, ...rest } =
-      data as Required<NewMetaNode>;
+    const { type, name, contents, permissions, ...rest } = data as Required<NewMetaNode>;
     const restKeys = Object.keys(rest);
 
     if (restKeys.length != 0) {

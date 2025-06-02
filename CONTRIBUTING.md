@@ -23,32 +23,32 @@ To get debugging output for just this project's components, [export
 
 The ideal contributor flow is as follows:
 
-1.  [Fork][10] this repository and [clone it locally][11].
-2.  Configure and install dependencies with `npm ci`.
-    - You use `npm ci` here instead of `npm install` to [prevent unnecessary
-      updates to `package.json` and `package-lock.json`][12], but if it makes
-      more sense to use `npm install` feel free to use that instead.
-    - If `.env.example` exists, consider copying it to `.env` and configuring
-      sensible defaults.
-    - If you're using `npm@<=6`, you'll need to install any [peer
-      dependencies][13] manually. If you're using `npm@>=7`, you may have to
-      [forcefully][14] allow peer deps to be satisfied by custom forks of
-      certain packages.
-3.  Before making any changes, ensure all unit tests are passing with
-    `npm run test`.
-4.  _(optional but recommended)_ Create a new branch, usually off `main`.
-    - Example: `git checkout -b contrib-feature-1`
-5.  Make your changes and commit. Thanks to CL, your work will be checked as you
-    commit it; any problems will abort the commit attempt
-    - Ensure any new tests still pass even when the `DEBUG` environment variable
-      is defined.
-    - Various [import aliases][24] are available in some projects. Check the
-      [tsconfig.json][25] `"paths"` key to see which if any aliases this project
-      supports.
-6.  Push your commits to your fork and, when you're ready, [_fearlessly_ submit
-    your PR][15]! Your changes will be tested in our CI pipeline.
-7.  Pat yourself on the back! Your hard work is well on its way to being
-    reviewed and, if everything looks good, merged and released 🚀
+1. [Fork][10] this repository and [clone it locally][11].
+2. Configure and install dependencies with `npm ci`.
+   - You use `npm ci` here instead of `npm install` to [prevent unnecessary
+     updates to `package.json` and `package-lock.json`][12], but if it makes
+     more sense to use `npm install` feel free to use that instead.
+   - If `.env.example` exists, consider copying it to `.env` and configuring
+     sensible defaults.
+   - If you're using `npm@<=6`, you'll need to install any [peer
+     dependencies][13] manually. If you're using `npm@>=7`, you may have to
+     [forcefully][14] allow peer deps to be satisfied by custom forks of certain
+     packages.
+3. Before making any changes, ensure all unit tests are passing with
+   `npm run test`.
+4. _(optional but recommended)_ Create a new branch, usually off `main`.
+   - Example: `git checkout -b contrib-feature-1`
+5. Make your changes and commit. Thanks to CL, your work will be checked as you
+   commit it; any problems will abort the commit attempt
+   - Ensure any new tests still pass even when the `DEBUG` environment variable
+     is defined.
+   - Various [import aliases][24] are available in some projects. Check the
+     [tsconfig.json][25] `"paths"` key to see which if any aliases this project
+     supports.
+6. Push your commits to your fork and, when you're ready, [_fearlessly_ submit
+   your PR][15]! Your changes will be tested in our CI pipeline.
+7. Pat yourself on the back! Your hard work is well on its way to being reviewed
+   and, if everything looks good, merged and released 🚀
 
 Additionally, there are a few things you can do to increase the likelihood your
 PR passes review:

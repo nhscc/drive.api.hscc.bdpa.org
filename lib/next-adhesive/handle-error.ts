@@ -1,22 +1,25 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable unicorn/no-anonymous-default-export */
 import { debugFactory } from 'multiverse/debug-extended';
 
 import {
-  NotImplementedError,
-  GuruMeditationError,
-  ValidationError,
-  NotFoundError,
-  AuthError,
-  AppError,
-  AppValidationError
-} from 'named-app-errors';
-
-import {
+  sendHttpBadRequest,
   sendHttpError,
   sendHttpNotFound,
   sendHttpUnauthorized,
-  sendHttpBadRequest,
   sendNotImplemented
 } from 'multiverse/next-api-respond';
+
+import {
+  AppError,
+  AppValidationError,
+  AuthError,
+  GuruMeditationError,
+  NotFoundError,
+  NotImplementedError,
+  ValidationError
+} from 'named-app-errors';
 
 import type { JsonError } from '@xunnamius/types';
 import type { MiddlewareContext } from 'multiverse/next-api-glue';

@@ -1,10 +1,12 @@
-import { getEnv } from 'multiverse/next-env';
-import { sendHttpBadMethod } from 'multiverse/next-api-respond';
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable unicorn/no-anonymous-default-export */
 import { debugFactory } from 'multiverse/debug-extended';
+import { sendHttpBadMethod } from 'multiverse/next-api-respond';
+import { getEnv } from 'multiverse/next-env';
 
 import type { ValidHttpMethod } from '@xunnamius/types';
-import type { NextApiRequest, NextApiResponse } from 'next';
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-adhesive:check-method');
 
@@ -34,8 +36,7 @@ export default async function (
     !method ||
     // ? Already guaranteed uppercase thanks to next-env
     getEnv().DISALLOWED_METHODS.includes(method) ||
-    !allowedMethods ||
-    !allowedMethods.includes(method as ValidHttpMethod)
+    !allowedMethods?.includes(method as ValidHttpMethod)
   ) {
     debug(
       `method check failed: unrecognized or disallowed method "${method || '(none)'}"`

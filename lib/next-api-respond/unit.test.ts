@@ -1,28 +1,29 @@
+import { testApiHandler } from 'next-test-api-route-handler';
+
 import {
   sendGenericHttpResponse,
+  sendHttpBadContentType,
   sendHttpBadMethod,
   sendHttpBadRequest,
   sendHttpContrivedError,
   sendHttpError,
-  sendHttpOk,
   sendHttpErrorResponse,
   sendHttpNotFound,
+  sendHttpOk,
   sendHttpRateLimited,
   sendHttpSuccessResponse,
   sendHttpTooLarge,
   sendHttpUnauthenticated,
   sendHttpUnauthorized,
-  sendNotImplemented,
-  sendHttpBadContentType
+  sendNotImplemented
 } from 'multiverse/next-api-respond';
-import { testApiHandler } from 'next-test-api-route-handler';
 
 describe('::sendGenericHttpResponse', () => {
   it('sends appropriate response given arguments', async () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendGenericHttpResponse(res, 201);
       },
       test: async ({ fetch }) => {
@@ -33,7 +34,7 @@ describe('::sendGenericHttpResponse', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendGenericHttpResponse(res, 201, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -48,7 +49,7 @@ describe('::sendGenericHttpResponse', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendGenericHttpResponse(res, 200);
       },
       test: async ({ fetch }) => {
@@ -65,7 +66,7 @@ describe('::sendHttpBadMethod', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpBadMethod(res);
       },
       test: async ({ fetch }) => {
@@ -79,7 +80,7 @@ describe('::sendHttpBadMethod', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpBadMethod(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -100,7 +101,7 @@ describe('::sendHttpBadRequest', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpBadRequest(res);
       },
       test: async ({ fetch }) => {
@@ -114,7 +115,7 @@ describe('::sendHttpBadRequest', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpBadRequest(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -135,7 +136,7 @@ describe('::sendHttpContrivedError', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpContrivedError(res);
       },
       test: async ({ fetch }) => {
@@ -149,7 +150,7 @@ describe('::sendHttpContrivedError', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpContrivedError(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -170,7 +171,7 @@ describe('::sendHttpError', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpError(res);
       },
       test: async ({ fetch }) => {
@@ -184,7 +185,7 @@ describe('::sendHttpError', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpError(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -205,7 +206,7 @@ describe('::sendHttpOk', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpOk(res);
       },
       test: async ({ fetch }) => {
@@ -218,7 +219,7 @@ describe('::sendHttpOk', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpOk(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -238,7 +239,7 @@ describe('::sendHttpErrorResponse', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpErrorResponse(res, 400, { json: 'data', error: 'error' });
       },
       test: async ({ fetch }) => {
@@ -259,7 +260,7 @@ describe('::sendHttpNotFound', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpNotFound(res);
       },
       test: async ({ fetch }) => {
@@ -273,7 +274,7 @@ describe('::sendHttpNotFound', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpNotFound(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -294,7 +295,7 @@ describe('::sendHttpRateLimited', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpRateLimited(res);
       },
       test: async ({ fetch }) => {
@@ -308,7 +309,7 @@ describe('::sendHttpRateLimited', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpRateLimited(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -329,7 +330,7 @@ describe('::sendHttpSuccessResponse', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpSuccessResponse(res, 202);
       },
       test: async ({ fetch }) => {
@@ -342,7 +343,7 @@ describe('::sendHttpSuccessResponse', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpSuccessResponse(res, 202, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -362,7 +363,7 @@ describe('::sendHttpTooLarge', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpTooLarge(res);
       },
       test: async ({ fetch }) => {
@@ -376,7 +377,7 @@ describe('::sendHttpTooLarge', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpTooLarge(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -397,7 +398,7 @@ describe('::sendHttpBadContentType', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpBadContentType(res);
       },
       test: async ({ fetch }) => {
@@ -411,7 +412,7 @@ describe('::sendHttpBadContentType', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpBadContentType(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -432,7 +433,7 @@ describe('::sendHttpUnauthenticated', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpUnauthenticated(res);
       },
       test: async ({ fetch }) => {
@@ -446,7 +447,7 @@ describe('::sendHttpUnauthenticated', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpUnauthenticated(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -467,7 +468,7 @@ describe('::sendHttpUnauthorized', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpUnauthorized(res);
       },
       test: async ({ fetch }) => {
@@ -481,7 +482,7 @@ describe('::sendHttpUnauthorized', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendHttpUnauthorized(res, { json: 'data' });
       },
       test: async ({ fetch }) => {
@@ -502,7 +503,7 @@ describe('::sendNotImplemented', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendNotImplemented(res);
       },
       test: async ({ fetch }) => {
@@ -516,7 +517,7 @@ describe('::sendNotImplemented', () => {
     });
 
     await testApiHandler({
-      handler: (_, res) => {
+      pagesHandler: (_, res) => {
         sendNotImplemented(res, { json: 'data' });
       },
       test: async ({ fetch }) => {

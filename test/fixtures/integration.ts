@@ -107,7 +107,7 @@ export type TestFixture = {
   /**
    * The handler under test.
    */
-  handler?: NextApiHandlerMixin;
+  pagesHandler?: NextApiHandlerMixin;
   /**
    * The method of the mock request.
    */
@@ -135,10 +135,7 @@ export type TestFixture = {
      */
     status?:
       | number
-      | ((
-          status: number,
-          prevResults: TestResultset
-        ) => Promisable<number | undefined>);
+      | ((status: number, prevResults: TestResultset) => Promisable<number | undefined>);
     /**
      * The expected JSON response body. No need to test for `success` as that is
      * handled automatically (unless a status callback was used and it returned
@@ -152,9 +149,7 @@ export type TestFixture = {
       | ((
           json: Record<string, unknown> | undefined,
           prevResults: TestResultset
-        ) => Promisable<
-          Record<string, unknown> | jest.AsymmetricMatcher | undefined
-        >);
+        ) => Promisable<Record<string, unknown> | jest.AsymmetricMatcher | undefined>);
   };
 };
 
@@ -192,7 +187,7 @@ export function getFixtures(
     {
       id: 'user-hillary',
       subject: 'valid create user #1',
-      handler: api.v1.users,
+      pagesHandler: api.v1.users,
       method: 'POST',
       body: {
         username: 'the-hill',
@@ -214,7 +209,7 @@ export function getFixtures(
     },
     {
       subject: 'fetch created user',
-      handler: api.v1.usersUsername,
+      pagesHandler: api.v1.usersUsername,
       params: { username: 'the-hill' },
       method: 'GET',
       response: {
@@ -226,7 +221,7 @@ export function getFixtures(
     },
     {
       subject: 'get all users in LIFO order',
-      handler: api.v1.users,
+      pagesHandler: api.v1.users,
       method: 'GET',
       response: {
         status: 200,
@@ -242,7 +237,7 @@ export function getFixtures(
     },
     {
       subject: 'update user',
-      handler: api.v1.usersUsername,
+      pagesHandler: api.v1.usersUsername,
       method: 'PUT',
       params: { username: 'the-hill' },
       body: {
@@ -254,14 +249,14 @@ export function getFixtures(
     {
       id: 'updated-user-hillary',
       subject: 'get updated user #1',
-      handler: api.v1.usersUsername,
+      pagesHandler: api.v1.usersUsername,
       params: { username: 'the-hill' },
       method: 'GET',
       response: { status: 200 }
     },
     {
       subject: 'auth user',
-      handler: api.v1.usersUsernameAuth,
+      pagesHandler: api.v1.usersUsernameAuth,
       method: 'POST',
       params: { username: 'the-hill' },
       body: {
@@ -271,7 +266,7 @@ export function getFixtures(
     },
     {
       subject: 'auth user (case-insensitively)',
-      handler: api.v1.usersUsernameAuth,
+      pagesHandler: api.v1.usersUsernameAuth,
       method: 'POST',
       params: { username: 'the-hill' },
       body: {
@@ -281,7 +276,7 @@ export function getFixtures(
     },
     {
       subject: 'bad auth',
-      handler: api.v1.usersUsernameAuth,
+      pagesHandler: api.v1.usersUsernameAuth,
       method: 'POST',
       params: { username: 'the-hill' },
       body: { key: 'x' },
@@ -289,21 +284,21 @@ export function getFixtures(
     },
     {
       subject: 'attempt to delete non-existent user',
-      handler: api.v1.usersUsername,
+      pagesHandler: api.v1.usersUsername,
       method: 'DELETE',
       params: { username: 'does-not-exist' },
       response: { status: 404 }
     },
     {
       subject: 'delete user',
-      handler: api.v1.usersUsername,
+      pagesHandler: api.v1.usersUsername,
       method: 'DELETE',
       params: { username: dummyAppData.users[0].username },
       response: { status: 200 }
     },
     {
       subject: 'get all users in LIFO order',
-      handler: api.v1.users,
+      pagesHandler: api.v1.users,
       method: 'GET',
       response: {
         status: 200,
@@ -319,7 +314,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to fetch deleted user',
-      handler: api.v1.usersUsername,
+      pagesHandler: api.v1.usersUsername,
       params: { username: dummyAppData.users[0].username },
       method: 'GET',
       response: { status: 404 }
@@ -327,7 +322,7 @@ export function getFixtures(
     {
       id: 'user-obama',
       subject: 'valid create user #2',
-      handler: api.v2.users,
+      pagesHandler: api.v2.users,
       method: 'POST',
       body: {
         username: 'baracko',
@@ -349,7 +344,7 @@ export function getFixtures(
     },
     {
       subject: 'invalid create user (duplicate username)',
-      handler: api.v1.users,
+      pagesHandler: api.v1.users,
       method: 'POST',
       body: {
         username: 'baracko',
@@ -361,7 +356,7 @@ export function getFixtures(
     },
     {
       subject: 'invalid create user (duplicate email)',
-      handler: api.v2.users,
+      pagesHandler: api.v2.users,
       method: 'POST',
       body: {
         username: 'xyz-abc',
@@ -373,7 +368,7 @@ export function getFixtures(
     },
     {
       subject: 'fetch created user',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: 'baracko' },
       method: 'GET',
       response: {
@@ -385,7 +380,7 @@ export function getFixtures(
     },
     {
       subject: 'get all users in LIFO order',
-      handler: api.v2.users,
+      pagesHandler: api.v2.users,
       method: 'GET',
       response: {
         status: 200,
@@ -402,7 +397,7 @@ export function getFixtures(
     },
     {
       subject: 'update user',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       method: 'PUT',
       params: { username: 'baracko' },
       body: {
@@ -414,14 +409,14 @@ export function getFixtures(
     {
       id: 'updated-user-obama',
       subject: 'get updated user #1',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: 'baracko' },
       method: 'GET',
       response: { status: 200 }
     },
     {
       subject: 'auth user',
-      handler: api.v2.usersUsernameAuth,
+      pagesHandler: api.v2.usersUsernameAuth,
       method: 'POST',
       params: { username: 'baracko' },
       body: {
@@ -431,7 +426,7 @@ export function getFixtures(
     },
     {
       subject: 'bad auth',
-      handler: api.v2.usersUsernameAuth,
+      pagesHandler: api.v2.usersUsernameAuth,
       method: 'POST',
       params: { username: 'baracko' },
       body: { key: 'x' },
@@ -439,7 +434,7 @@ export function getFixtures(
     },
     {
       subject: 'worse auth',
-      handler: api.v2.usersUsernameAuth,
+      pagesHandler: api.v2.usersUsernameAuth,
       method: 'POST',
       params: { username: 'baracko' },
       body: {},
@@ -447,21 +442,21 @@ export function getFixtures(
     },
     {
       subject: 'attempt to delete non-existent user',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       method: 'DELETE',
       params: { username: 'does-not-exist' },
       response: { status: 404 }
     },
     {
       subject: 'delete user',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       method: 'DELETE',
       params: { username: dummyAppData.users[1].username },
       response: { status: 200 }
     },
     {
       subject: 'get all users in LIFO order with quasi-pagination',
-      handler: api.v2.users,
+      pagesHandler: api.v2.users,
       method: 'GET',
       params: { after: '' },
       response: {
@@ -479,28 +474,28 @@ export function getFixtures(
     },
     {
       subject: 'attempt to get all users in LIFO order using bad id',
-      handler: api.v2.users,
+      pagesHandler: api.v2.users,
       method: 'GET',
       params: { after: 'bad-id' },
       response: { status: 400 }
     },
     {
       subject: 'attempt to get all users in LIFO order using non-existent id',
-      handler: api.v2.users,
+      pagesHandler: api.v2.users,
       method: 'GET',
       params: { after: new ObjectId().toString() },
       response: { status: 404 }
     },
     {
       subject: 'attempt to fetch deleted user',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: dummyAppData.users[1].username },
       method: 'GET',
       response: { status: 404 }
     },
     {
       subject: 'attempt to update deleted user',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: dummyAppData.users[1].username },
       method: 'PUT',
       body: { email: 'some@new.email' },
@@ -508,7 +503,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to update using a bad email',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: dummyAppData.users[2].username },
       method: 'PUT',
       body: { email: 'bad email address' },
@@ -516,7 +511,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to update using a too-long email',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: dummyAppData.users[2].username },
       method: 'PUT',
       body: { email: 'x'.repeat(getEnv().MAX_USER_EMAIL_LENGTH) + '@aol.com' },
@@ -524,7 +519,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to update using a short non-hex salt',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: dummyAppData.users[2].username },
       method: 'PUT',
       body: { salt: 'xyz' },
@@ -532,7 +527,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to update using a short non-hex key',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: dummyAppData.users[2].username },
       method: 'PUT',
       body: { key: 'xyz' },
@@ -540,7 +535,7 @@ export function getFixtures(
     },
     {
       subject: 'no-op updates are okay',
-      handler: api.v2.usersUsername,
+      pagesHandler: api.v2.usersUsername,
       params: { username: dummyAppData.users[2].username },
       method: 'PUT',
       body: {},
@@ -548,7 +543,7 @@ export function getFixtures(
     },
     {
       subject: 'get all users in LIFO order using pagination',
-      handler: api.v2.users,
+      pagesHandler: api.v2.users,
       method: 'GET',
       params: ({ getResultAt }) => {
         return { after: getResultAt<string>('updated-user-hillary', 'user.user_id') };
@@ -561,7 +556,7 @@ export function getFixtures(
     {
       id: 'lifo-nodes',
       subject: `count ${dummyAppData.users[2].username}'s nodes`,
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: { username: dummyAppData.users[2].username },
       response: {
@@ -577,7 +572,7 @@ export function getFixtures(
     },
     {
       subject: `ensure LIFO nodes have had permissions of deleted users removed #1`,
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
         username: dummyAppData.users[2].username,
@@ -589,7 +584,7 @@ export function getFixtures(
     },
     {
       subject: `ensure LIFO nodes have had permissions of deleted users removed #2`,
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
         username: dummyAppData.users[2].username,
@@ -603,7 +598,7 @@ export function getFixtures(
     {
       id: 'target-node',
       subject: 'search for target node by tag (case-insensitive)',
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
         username: dummyAppData.users[2].username,
@@ -624,7 +619,7 @@ export function getFixtures(
     },
     {
       subject: 'get target node',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -641,7 +636,7 @@ export function getFixtures(
     },
     {
       subject: 'update target node name and lock',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -661,7 +656,7 @@ export function getFixtures(
     },
     {
       subject: 'update target node permissions (v2)',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -674,7 +669,7 @@ export function getFixtures(
     },
     {
       subject: 'no-op updates are ok',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -687,7 +682,7 @@ export function getFixtures(
     },
     {
       subject: 'get updated target node',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -724,7 +719,7 @@ export function getFixtures(
     },
     {
       subject: 'delete updated target node',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'DELETE',
       params: ({ getResultAt }) => {
         return {
@@ -736,7 +731,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to search for deleted updated target node by tag',
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
         username: dummyAppData.users[2].username,
@@ -746,7 +741,7 @@ export function getFixtures(
     },
     {
       subject: 'ensure LIFO meta nodes have had deleted nodes removed from contents',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'GET',
       params: {
         username: dummyAppData.users[2].username,
@@ -765,7 +760,7 @@ export function getFixtures(
     },
     {
       subject: 'search fails when attempting to match by permissions twice #1',
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
         username: dummyAppData.users[2].username,
@@ -778,7 +773,7 @@ export function getFixtures(
     },
     {
       subject: 'search fails when attempting to match by permissions twice #2',
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
         username: dummyAppData.users[2].username,
@@ -793,14 +788,14 @@ export function getFixtures(
     },
     {
       subject: "attempt to get non-existent user's nodes",
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: { username: dummyAppData.users[1].username },
       response: { status: 404 }
     },
     {
       subject: "get all the-hill's nodes in LIFO order",
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: { username: 'the-hill' },
       response: { status: 200, json: { nodes: [] } }
@@ -808,7 +803,7 @@ export function getFixtures(
     {
       id: 'node-1',
       subject: 'create file node #1 (v1) owned by baracko (the-hill has view perms)',
-      handler: api.v1.filesystemUsername,
+      pagesHandler: api.v1.filesystemUsername,
       method: 'POST',
       params: { username: 'baracko' },
       body: {
@@ -848,7 +843,7 @@ export function getFixtures(
     {
       id: 'node-2',
       subject: 'create file node #2 (v2) owned by baracko (the-hill has edit perms)',
-      handler: api.v2.usersUsernameFilesystem,
+      pagesHandler: api.v2.usersUsernameFilesystem,
       method: 'POST',
       params: { username: 'baracko' },
       body: {
@@ -886,7 +881,7 @@ export function getFixtures(
     },
     {
       subject: 'add permissions to file node #1 for the-hill as baracko',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -899,7 +894,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to edit file node #1 as the-hill',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -912,7 +907,7 @@ export function getFixtures(
     },
     {
       subject: 'edit file node #2 as the-hill',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -926,7 +921,7 @@ export function getFixtures(
     {
       subject:
         'create symlink node owned by the-hill with unowned contents (bad on frontend)',
-      handler: api.v1.filesystemUsername,
+      pagesHandler: api.v1.filesystemUsername,
       method: 'POST',
       params: { username: 'the-hill' },
       body: {
@@ -952,7 +947,7 @@ export function getFixtures(
     {
       subject:
         'attempt to create symlink node owned by the-hill with illegal contents (too many)',
-      handler: api.v2.usersUsernameFilesystem,
+      pagesHandler: api.v2.usersUsernameFilesystem,
       method: 'POST',
       params: { username: 'the-hill' },
       body: ({ getResultAt }) => {
@@ -971,7 +966,7 @@ export function getFixtures(
     {
       id: 'hill-symlink',
       subject: 'create empty symlink node owned by the-hill',
-      handler: api.v1.filesystemUsername,
+      pagesHandler: api.v1.filesystemUsername,
       method: 'POST',
       params: { username: 'the-hill' },
       body: {
@@ -995,9 +990,8 @@ export function getFixtures(
       }
     },
     {
-      subject:
-        "attempt to update the-hill's symlink to point to file nodes #1 and #2",
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      subject: "attempt to update the-hill's symlink to point to file nodes #1 and #2",
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -1017,7 +1011,7 @@ export function getFixtures(
     },
     {
       subject: "update the-hill's symlink to point to file node #1",
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -1035,7 +1029,7 @@ export function getFixtures(
     {
       id: 'hill-dir',
       subject: 'create empty dir node owned by the-hill',
-      handler: api.v2.usersUsernameFilesystem,
+      pagesHandler: api.v2.usersUsernameFilesystem,
       method: 'POST',
       params: { username: 'the-hill' },
       body: {
@@ -1060,9 +1054,8 @@ export function getFixtures(
       }
     },
     {
-      subject:
-        'update dir node name, permissions, and make dir node self-referential',
-      handler: api.v1.filesystemUsernameNodeId,
+      subject: 'update dir node name, permissions, and make dir node self-referential',
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -1081,7 +1074,7 @@ export function getFixtures(
     },
     {
       subject: 'get dir node as the-hill',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -1106,7 +1099,7 @@ export function getFixtures(
     },
     {
       subject: 'update dir node to contain file nodes #1 and #2',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -1126,7 +1119,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to update dir node to contain non-existent node_ids',
-      handler: api.v1.filesystemUsernameNodeId,
+      pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
@@ -1139,7 +1132,7 @@ export function getFixtures(
     },
     {
       subject: 'get dir node as the-hill',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -1167,7 +1160,7 @@ export function getFixtures(
     },
     {
       subject: 'attempt to delete file nodes #1 and #2 as the-hill (fails silently)',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'DELETE',
       params: ({ getResultAt }) => {
         return {
@@ -1182,7 +1175,7 @@ export function getFixtures(
     },
     {
       subject: 'search for file nodes #1 and #2 as the-hill (using V2 api)',
-      handler: api.v2.usersUsernameFilesystemSearch,
+      pagesHandler: api.v2.usersUsernameFilesystemSearch,
       method: 'GET',
       params: {
         username: 'the-hill',
@@ -1212,7 +1205,7 @@ export function getFixtures(
     {
       subject:
         'search for file nodes #1 and #2 as the-hill using pagination (using V2 api)',
-      handler: api.v2.usersUsernameFilesystemSearch,
+      pagesHandler: api.v2.usersUsernameFilesystemSearch,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -1238,7 +1231,7 @@ export function getFixtures(
     },
     {
       subject: 'V1 search does not return shared nodes',
-      handler: api.v1.filesystemUsernameSearch,
+      pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
         username: 'the-hill',
@@ -1251,7 +1244,7 @@ export function getFixtures(
     },
     {
       subject: 'V2 search returns shared nodes matched case-insensitively (name)',
-      handler: api.v2.usersUsernameFilesystemSearch,
+      pagesHandler: api.v2.usersUsernameFilesystemSearch,
       method: 'GET',
       params: {
         username: 'the-hill',
@@ -1275,7 +1268,7 @@ export function getFixtures(
     },
     {
       subject: 'get file nodes #1 and #2 as baracko',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -1309,7 +1302,7 @@ export function getFixtures(
     },
     {
       subject: 'get file nodes #1 and #2 as the-hill',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -1343,7 +1336,7 @@ export function getFixtures(
     },
     {
       subject: `attempt to get file nodes #1 and #2 as ${dummyAppData.users[2].username}`,
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
@@ -1358,7 +1351,7 @@ export function getFixtures(
     },
     {
       subject: 'delete file node #1 as baracko',
-      handler: api.v2.usersUsernameFilesystemNodeId,
+      pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'DELETE',
       params: ({ getResultAt }) => {
         return {
@@ -1378,8 +1371,8 @@ export function getFixtures(
       if (runOnly && !runOnly.includes(displayIndex)) return false;
       (test as TestFixture).displayIndex = !runOnly
         ? displayIndex
-        : runOnly.shift() ??
-          toss(new GuruMeditationError('ran out of RUN_ONLY indices'));
+        : (runOnly.shift() ??
+          toss(new GuruMeditationError('ran out of RUN_ONLY indices')));
       return true;
     }
   );
@@ -1404,7 +1397,7 @@ export function getFixtures(
     filteredFixtures.splice(i, 0, {
       displayIndex: -1,
       subject: 'handle contrived',
-      handler: api.v1.users,
+      pagesHandler: api.v1.users,
       method: 'POST',
       body: {},
       response: {

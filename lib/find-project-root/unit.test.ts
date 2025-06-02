@@ -1,6 +1,7 @@
-import { findProjectRoot, setProjectRoot } from 'multiverse/find-project-root';
-import { sync as findUpSync } from 'find-up';
 import { asMockedFunction } from '@xunnamius/jest-types';
+import { sync as findUpSync } from 'find-up';
+
+import { findProjectRoot, setProjectRoot } from 'multiverse/find-project-root';
 
 jest.mock('find-up');
 

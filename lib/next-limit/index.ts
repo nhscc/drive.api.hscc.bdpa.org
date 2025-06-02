@@ -1,11 +1,12 @@
 import { getDb } from 'multiverse/mongo-schema';
 import { getEnv } from 'multiverse/next-env';
 import { getClientIp } from 'request-ip';
+
 import { ValidationError } from 'universe/error';
 
-import type { NextApiRequest } from 'next';
 import type { UnixEpochMs } from '@xunnamius/types';
 import type { UpdateResult, WithId, WithoutId } from 'mongodb';
+import type { NextApiRequest } from 'next';
 
 /**
  * The shape of an entry in the well-known "limited log" collection.
@@ -53,10 +54,7 @@ export async function clientIsRateLimited(req: NextApiRequest) {
 
   return {
     isLimited: !!limited,
-    retryAfter: Math.max(
-      0,
-      ((limited?.until as number) || Date.now()) - Date.now()
-    ) as UnixEpochMs
+    retryAfter: Math.max(0, (limited?.until || Date.now()) - Date.now())
   };
 }
 
@@ -75,11 +73,11 @@ export async function removeRateLimit({
     const { ip, header } = target;
 
     if (ip !== undefined || header !== undefined) {
-      if (ip !== undefined && (typeof ip != 'string' || !ip)) {
+      if (ip !== undefined && (typeof ip !== 'string' || !ip)) {
         throw new ValidationError('ip must be a non-empty string');
       }
 
-      if (header !== undefined && (typeof header != 'string' || !header)) {
+      if (header !== undefined && (typeof header !== 'string' || !header)) {
         throw new ValidationError('header must be a non-empty string');
       }
 

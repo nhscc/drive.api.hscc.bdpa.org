@@ -1,9 +1,12 @@
-import { testApiHandler } from 'next-test-api-route-handler';
-import { noopHandler, wrapHandler, mockEnvFactory } from 'testverse/setup';
 import { withMiddleware } from 'multiverse/next-api-glue';
-import checkMethod, { Options } from 'multiverse/next-adhesive/check-method';
+import { testApiHandler } from 'next-test-api-route-handler';
+
+import { mockEnvFactory, noopHandler, wrapHandler } from 'testverse/setup';
+
+import checkMethod from 'multiverse/next-adhesive/check-method';
 
 import type { ValidHttpMethod } from '@xunnamius/types';
+import type { Options } from 'multiverse/next-adhesive/check-method';
 
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
 
@@ -11,7 +14,7 @@ it('sends 200 for allowed methods', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkMethod],
         options: { allowedMethods: ['GET', 'DELETE', 'POST', 'PUT'] }
@@ -30,7 +33,7 @@ it('is restrictive by default', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [checkMethod] })
     ),
     test: async ({ fetch }) => {
@@ -47,7 +50,7 @@ it('sends 405 when request.method is undefined', async () => {
 
   await testApiHandler({
     requestPatcher: (req) => (req.method = undefined),
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [checkMethod] })
     ),
     test: async ({ fetch }) => {
@@ -60,7 +63,7 @@ it('sends 405 when encountering unlisted methods', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkMethod],
         options: { allowedMethods: ['POST', 'PUT'] }
@@ -81,7 +84,7 @@ it('sends 405 when encountering globally disallowed methods', async () => {
   await withMockedEnv(
     async () => {
       await testApiHandler({
-        handler: wrapHandler(
+        pagesHandler: wrapHandler(
           withMiddleware<Options>(noopHandler, {
             use: [checkMethod],
             options: { allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'] }
@@ -105,7 +108,7 @@ it('ignores spacing when parsing DISALLOWED_METHODS', async () => {
   await withMockedEnv(
     async () => {
       await testApiHandler({
-        handler: wrapHandler(
+        pagesHandler: wrapHandler(
           withMiddleware<Options>(noopHandler, {
             use: [checkMethod],
             options: { allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'] }
@@ -127,7 +130,7 @@ it('sends an Allow header in 405 responses', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkMethod],
         options: { allowedMethods: ['GET', 'POST', 'HEAD'] }
@@ -145,7 +148,7 @@ it('works even if allowedMethods specified in lowercase', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkMethod],
         options: {

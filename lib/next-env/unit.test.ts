@@ -1,5 +1,6 @@
+import { withMockedEnv } from '@-xun/jest';
+
 import { getEnv } from 'multiverse/next-env';
-import { withMockedEnv } from 'testverse/setup';
 
 describe('::getEnv', () => {
   it('returns object with respect to process.env', async () => {
@@ -112,7 +113,7 @@ describe('::getEnv', () => {
       },
       {
         OVERRIDE_EXPECT_ENV: 'force-check',
-        NODE_ENV: 'test',
+        NODE_ENV: 'production',
         MONGODB_URI: 'uri',
         MONGODB_MS_PORT: '1234',
         DISABLED_API_VERSIONS: 'one, 2, three',
@@ -141,7 +142,7 @@ describe('::getEnv', () => {
       },
       {
         OVERRIDE_EXPECT_ENV: 'force-no-check',
-        NODE_ENV: 'test',
+        NODE_ENV: 'production',
         MONGODB_URI: 'uri',
         MONGODB_MS_PORT: '1234',
         DISABLED_API_VERSIONS: 'one, 2, three',

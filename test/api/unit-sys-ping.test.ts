@@ -1,16 +1,18 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable no-global-assign */
-import { useMockDateNow } from 'multiverse/jest-mock-date';
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
 import { testApiHandler } from 'next-test-api-route-handler';
 
 import Endpoint, { config as Config } from 'universe/pages/api/sys/ping';
 
+import { useMockDateNow } from 'multiverse/jest-mock-date';
+import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
+
 import type { InternalAuthBearerEntry, TokenAttributes } from 'multiverse/next-auth';
 
-const handler = Endpoint as typeof Endpoint & { config?: typeof Config };
-handler.config = Config;
+const pagesHandler = Endpoint as typeof Endpoint & { config?: typeof Config };
+pagesHandler.config = Config;
 
 setupMemoryServerOverride();
 useMockDateNow();
@@ -24,7 +26,7 @@ describe('middleware correctness tests', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => {
         await expect(fetch().then((r) => r.status)).resolves.toBe(200);
       }
@@ -35,7 +37,7 @@ describe('middleware correctness tests', () => {
     expect.hasAssertions();
 
     await testApiHandler({
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => {
         await expect(
           fetch({
@@ -57,7 +59,7 @@ describe('middleware correctness tests', () => {
       );
 
     await testApiHandler({
-      handler,
+      pagesHandler,
       test: async ({ fetch }) => {
         await expect(
           fetch({
@@ -94,7 +96,7 @@ describe('api/sys/ping', () => {
       };
 
       await testApiHandler({
-        handler,
+        pagesHandler,
         test: async ({ fetch }) => {
           const res = await fetch();
           expect(res.status).toBe(200);
@@ -106,7 +108,7 @@ describe('api/sys/ping', () => {
       });
 
       await testApiHandler({
-        handler,
+        pagesHandler,
         params: { name: 'Ms. Universe' },
         test: async ({ fetch }) => {
           const res = await fetch();

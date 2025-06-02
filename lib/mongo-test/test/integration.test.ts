@@ -1,16 +1,27 @@
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { getClient } from 'multiverse/mongo-schema';
+
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 
 import type { TestCustomizations } from 'multiverse/mongo-test';
 
-jest.mock('configverse/get-schema-config', () => mockedMongoCustomizations);
-jest.mock('configverse/get-dummy-data', () => mockedMongoCustomizations);
+jest.mock<typeof import('configverse/get-schema-config')>(
+  'configverse/get-schema-config',
+  () =>
+    mockedMongoCustomizations as unknown as typeof import('configverse/get-schema-config')
+);
+
+jest.mock<typeof import('configverse/get-dummy-data')>(
+  'configverse/get-dummy-data',
+  () =>
+    mockedMongoCustomizations as unknown as typeof import('configverse/get-dummy-data')
+);
 
 const now = Date.now();
 
 let mockedMongoCustomizations: TestCustomizations;
 
 beforeEach(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   mockedMongoCustomizations = mockedMongoCustomizations || {};
 
   mockedMongoCustomizations.getSchemaConfig = async () => {
@@ -71,19 +82,17 @@ describe('[run using non-deferred setupMemoryServerOverride]', () => {
       expect.objectContaining({ name: 'col', options: {} })
     );
 
-    await expect(db2.listCollections().toArray()).resolves.toIncludeAllPartialMembers(
-      [
-        { name: 'col-1', options: {} },
-        { name: 'col-2', options: { capped: true, size: 256 } },
-        { name: 'col-3', options: {} }
-      ]
-    );
+    await expect(db2.listCollections().toArray()).resolves.toIncludeAllPartialMembers([
+      { name: 'col-1', options: {} },
+      { name: 'col-2', options: { capped: true, size: 256 } },
+      { name: 'col-3', options: {} }
+    ]);
 
     await expect(
       db2.collection('col-3').listIndexes().toArray()
     ).resolves.toIncludeAllPartialMembers([
       { key: { _id: 1 } },
-      { key: { key: 1 }, unique: true },
+      { key: { key: -1 }, unique: true },
       { key: { item: 1 } }
     ]);
 

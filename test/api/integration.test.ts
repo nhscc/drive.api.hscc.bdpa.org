@@ -1,16 +1,23 @@
+/* eslint-disable eqeqeq */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable jest/no-standalone-expect */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable jest/require-hook */
-import { testApiHandler } from 'next-test-api-route-handler';
 import { get as dotPath } from 'dot-prop';
+import { testApiHandler } from 'next-test-api-route-handler';
 import { toss } from 'toss-expression';
-import { GuruMeditationError } from 'universe/error';
-import { mockEnvFactory } from 'testverse/setup';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { getFixtures } from 'testverse/fixtures/integration';
-import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
-import { api } from 'testverse/fixtures';
-import { getDb } from 'multiverse/mongo-schema';
 
-import type { TestResultset, TestResult } from 'testverse/fixtures/integration';
+import { GuruMeditationError } from 'universe/error';
+
+import { api } from 'testverse/fixtures';
+import { getFixtures } from 'testverse/fixtures/integration';
+import { mockEnvFactory } from 'testverse/setup';
+
+import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
+
+import type { TestResult, TestResultset } from 'testverse/fixtures/integration';
 
 setupMemoryServerOverride({
   // ? Ensure all tests share the same database state
@@ -42,7 +49,7 @@ describe('> middleware correctness tests', () => {
       await withMockedEnv(
         async () => {
           await testApiHandler({
-            handler: endpoint,
+            pagesHandler: endpoint,
             test: async ({ fetch }) => {
               await expect(fetch().then((r) => r.status)).resolves.toBe(401);
             }
@@ -61,7 +68,7 @@ describe('> middleware correctness tests', () => {
       await withMockedEnv(
         async () => {
           await testApiHandler({
-            handler: endpoint,
+            pagesHandler: endpoint,
             test: async ({ fetch }) => {
               await expect(
                 fetch({
@@ -98,7 +105,7 @@ describe('> fable integration tests', () => {
     ({
       displayIndex,
       subject,
-      handler,
+      pagesHandler: handler,
       method,
       response,
       body,
@@ -119,12 +126,11 @@ describe('> fable integration tests', () => {
         (!invisible &&
           (!response || !['number', 'function'].includes(typeof response.status)));
 
-      // eslint-disable-next-line jest/prefer-expect-assertions
       (process.env.RUN_ONLY ? it.only : it)(
         `${shouldSkip ? '<SKIPPED> ' : ''}${
-          displayIndex <= 0 ? '###' : '#' + displayIndex
+          displayIndex <= 0 ? '###' : `#${displayIndex}`
         } ${method ? '[' + method + '] ' : ''}${
-          handler?.uri ? handler.uri + ' ' : ''
+          handler?.uri ? `${handler.uri} ` : ''
         }${subject || ''}`,
         async () => {
           if (shouldSkip || (!lastRunSuccess && process.env.FAIL_FAST)) {
@@ -137,36 +143,37 @@ describe('> fable integration tests', () => {
 
           memory.getResultAt = <T = unknown>(
             index: number | string,
-            prop?: string
+            property?: string
           ): TestResult<T> | T => {
             const result: TestResult<T> =
-              typeof index == 'string'
+              typeof index === 'string'
                 ? memory.idMap[index]
                 : memory[index + (index < 0 ? displayIndex : 1)];
 
-            const retval = prop ? dotPath<T>(result?.json, prop) : result;
+            // @ts-expect-error: delete this
+            const returnValue = property ? dotPath<T>(result?.json, property) : result;
 
             if (!result) {
               throw new GuruMeditationError(`no result at index "${index}"`);
-            } else if (retval === undefined) {
+            } else if (returnValue === undefined) {
               throw new GuruMeditationError(
                 `${
-                  prop ? 'prop path "' + prop + '" ' : ''
+                  property ? 'prop path "' + property + '" ' : ''
                 }return value cannot be undefined`
               );
             }
 
-            return retval;
+            return returnValue;
           };
 
           const requestParams =
-            typeof params == 'function' ? await params(memory) : params;
-          const requestBody = typeof body == 'function' ? await body(memory) : body;
+            typeof params === 'function' ? await params(memory) : params;
+          const requestBody = typeof body === 'function' ? await body(memory) : body;
 
           await withMockedEnv(
             async () => {
               await testApiHandler({
-                handler: handler || toss(new GuruMeditationError()),
+                pagesHandler: handler || toss(new GuruMeditationError()),
                 params: requestParams,
                 requestPatcher: (req) => {
                   req.headers.authorization = `bearer ${DUMMY_BEARER_TOKEN}`;
@@ -179,7 +186,7 @@ describe('> fable integration tests', () => {
                   });
 
                   const expectedStatus =
-                    typeof response?.status == 'function'
+                    typeof response?.status === 'function'
                       ? await response.status(res.status, memory)
                       : response?.status;
 
@@ -197,22 +204,18 @@ describe('> fable integration tests', () => {
                       console.warn('unexpected status for result:', json);
                     }
 
-                    // eslint-disable-next-line jest/no-conditional-expect
                     expect(res.status).toBe(expectedStatus);
-                    // eslint-disable-next-line jest/no-conditional-expect
-                    expect(json.success)[
-                      res.status == 200 ? 'toBeTrue' : 'toBeFalsy'
-                    ]();
+
+                    expect(json.success)[res.status == 200 ? 'toBeTrue' : 'toBeFalsy']();
                     delete json.success;
                   }
 
                   const expectedJson =
-                    typeof response?.json == 'function'
+                    typeof response?.json === 'function'
                       ? await response.json(json, memory)
                       : response?.json;
 
                   if (expectedJson) {
-                    // eslint-disable-next-line jest/no-conditional-expect
                     expect(json).toStrictEqual(expectedJson);
                   }
 

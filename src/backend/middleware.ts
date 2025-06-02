@@ -1,40 +1,23 @@
+import authRequest from 'multiverse/next-adhesive/auth-request';
+import checkContentType from 'multiverse/next-adhesive/check-content-type';
+import checkMethod from 'multiverse/next-adhesive/check-method';
+import checkVersion from 'multiverse/next-adhesive/check-version';
+import contriveError from 'multiverse/next-adhesive/contrive-error';
+import handleError from 'multiverse/next-adhesive/handle-error';
+import limitRequest from 'multiverse/next-adhesive/limit-request';
+import logRequest from 'multiverse/next-adhesive/log-request';
+import useCors from 'multiverse/next-adhesive/use-cors';
 import { middlewareFactory } from 'multiverse/next-api-glue';
 
-import logRequest, {
-  Options as LogRequestOptions
-} from 'multiverse/next-adhesive/log-request';
-
-import checkVersion, {
-  Options as CheckVersionOptions
-} from 'multiverse/next-adhesive/check-version';
-
-import useCors, {
-  Options as UseCorsOptions
-} from 'multiverse/next-adhesive/use-cors';
-
-import authRequest, {
-  Options as AuthRequestOptions
-} from 'multiverse/next-adhesive/auth-request';
-
-import limitRequest, {
-  Options as LimitRequestOptions
-} from 'multiverse/next-adhesive/limit-request';
-
-import checkMethod, {
-  Options as CheckMethodOptions
-} from 'multiverse/next-adhesive/check-method';
-
-import checkContentType, {
-  Options as CheckContentTypeOptions
-} from 'multiverse/next-adhesive/check-content-type';
-
-import handleError, {
-  Options as HandleErrorOptions
-} from 'multiverse/next-adhesive/handle-error';
-
-import contriveError, {
-  Options as ContriveErrorOptions
-} from 'multiverse/next-adhesive/contrive-error';
+import type { Options as AuthRequestOptions } from 'multiverse/next-adhesive/auth-request';
+import type { Options as CheckContentTypeOptions } from 'multiverse/next-adhesive/check-content-type';
+import type { Options as CheckMethodOptions } from 'multiverse/next-adhesive/check-method';
+import type { Options as CheckVersionOptions } from 'multiverse/next-adhesive/check-version';
+import type { Options as ContriveErrorOptions } from 'multiverse/next-adhesive/contrive-error';
+import type { Options as HandleErrorOptions } from 'multiverse/next-adhesive/handle-error';
+import type { Options as LimitRequestOptions } from 'multiverse/next-adhesive/limit-request';
+import type { Options as LogRequestOptions } from 'multiverse/next-adhesive/log-request';
+import type { Options as UseCorsOptions } from 'multiverse/next-adhesive/use-cors';
 
 /**
  * Primary middleware runner for the REST API. Decorates a request handler.

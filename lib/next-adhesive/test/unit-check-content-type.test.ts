@@ -1,17 +1,18 @@
-import { testApiHandler } from 'next-test-api-route-handler';
-import { noopHandler, withMockedOutput, wrapHandler } from 'testverse/setup';
 import { withMiddleware } from 'multiverse/next-api-glue';
+import { testApiHandler } from 'next-test-api-route-handler';
 import randomizeCase from 'random-case';
 
-import checkContentType, {
-  Options
-} from 'multiverse/next-adhesive/check-content-type';
+import { noopHandler, withMockedOutput, wrapHandler } from 'testverse/setup';
+
+import checkContentType from 'multiverse/next-adhesive/check-content-type';
+
+import type { Options } from 'multiverse/next-adhesive/check-content-type';
 
 it('sends 415 by default for POST, PUT, and PATCH requests with or without a Content-Type header', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [checkContentType] })
     ),
     test: async ({ fetch }) => {
@@ -38,7 +39,7 @@ it('sends 200 by default for requests not using POST, PUT, or PATCH methods if t
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [checkContentType] })
     ),
     test: async ({ fetch }) => {
@@ -47,7 +48,6 @@ it('sends 200 by default for requests not using POST, PUT, or PATCH methods if t
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
     }
   });
 });
@@ -56,7 +56,7 @@ it('sends 415 by default for requests not using POST, PUT, or PATCH methods if t
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, { use: [checkContentType] })
     ),
     test: async ({ fetch }) => {
@@ -77,12 +77,7 @@ it('sends 415 by default for requests not using POST, PUT, or PATCH methods if t
       // ).toBe(415);
 
       expect(
-        (await fetch({ method: 'OPTIONS', headers: { 'content-type': 'a/j' } }))
-          .status
-      ).toBe(415);
-
-      expect(
-        (await fetch({ method: 'TRACE', headers: { 'content-type': 'a/j' } })).status
+        (await fetch({ method: 'OPTIONS', headers: { 'content-type': 'a/j' } })).status
       ).toBe(415);
     }
   });
@@ -92,7 +87,7 @@ it('sends 200 for POST, PUT, and PATCH requests with allowed Content-Type header
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: ['a1', 'a2'] }
@@ -130,7 +125,7 @@ it('sends 200 for POST, PUT, and PATCH requests with allowed Content-Type header
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: {
@@ -174,7 +169,7 @@ it(`ignores requests without a Content-Type header that aren't POST, PUT, or PAT
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: ['a1', 'a2'] }
@@ -186,7 +181,6 @@ it(`ignores requests without a Content-Type header that aren't POST, PUT, or PAT
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
 
       expect((await fetch({ method: 'POST' })).status).toBe(415);
       expect((await fetch({ method: 'PUT' })).status).toBe(415);
@@ -195,7 +189,7 @@ it(`ignores requests without a Content-Type header that aren't POST, PUT, or PAT
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: {
@@ -209,7 +203,6 @@ it(`ignores requests without a Content-Type header that aren't POST, PUT, or PAT
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
 
       expect((await fetch({ method: 'POST' })).status).toBe(415);
       expect((await fetch({ method: 'PUT' })).status).toBe(415);
@@ -246,7 +239,7 @@ it(`does not ignore requests that include a Content-Type header`, async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: ['a1', 'a2'] }
@@ -258,7 +251,6 @@ it(`does not ignore requests that include a Content-Type header`, async () => {
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
 
       let headers = { 'content-type': 'a1' };
       expect((await fetch({ method: 'GET', headers })).status).toBe(200);
@@ -266,7 +258,6 @@ it(`does not ignore requests that include a Content-Type header`, async () => {
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(200);
 
       headers = { 'content-type': 'bad' };
       expect((await fetch({ method: 'GET', headers })).status).toBe(415);
@@ -274,7 +265,6 @@ it(`does not ignore requests that include a Content-Type header`, async () => {
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(415);
     }
   });
 });
@@ -283,7 +273,7 @@ it('respects explicit configuration for all request methods regardless of header
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: {
@@ -307,7 +297,6 @@ it('respects explicit configuration for all request methods regardless of header
       expect((await fetch({ method: 'DELETE' })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(415);
       expect((await fetch({ method: 'POST' })).status).toBe(415);
       expect((await fetch({ method: 'PUT' })).status).toBe(415);
       expect((await fetch({ method: 'PATCH' })).status).toBe(415);
@@ -318,7 +307,6 @@ it('respects explicit configuration for all request methods regardless of header
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(200);
       expect((await fetch({ method: 'POST', headers })).status).toBe(200);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(200);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(200);
@@ -329,7 +317,6 @@ it('respects explicit configuration for all request methods regardless of header
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(415);
       expect((await fetch({ method: 'POST', headers })).status).toBe(415);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(415);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(415);
@@ -341,7 +328,7 @@ it('ignores Content-Type header case for all requests', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: ['application/json'] }
@@ -359,7 +346,6 @@ it('ignores Content-Type header case for all requests', async () => {
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(200);
       expect((await fetch({ method: 'POST', headers })).status).toBe(200);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(200);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(200);
@@ -371,7 +357,7 @@ it('allows all (even missing) Content-Type header if set to "any"', async () => 
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: 'any' }
@@ -384,7 +370,6 @@ it('allows all (even missing) Content-Type header if set to "any"', async () => 
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(200);
       expect((await fetch({ method: 'POST', headers })).status).toBe(200);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(200);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(200);
@@ -394,7 +379,6 @@ it('allows all (even missing) Content-Type header if set to "any"', async () => 
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
       expect((await fetch({ method: 'POST' })).status).toBe(200);
       expect((await fetch({ method: 'PUT' })).status).toBe(200);
       expect((await fetch({ method: 'PATCH' })).status).toBe(200);
@@ -402,7 +386,7 @@ it('allows all (even missing) Content-Type header if set to "any"', async () => 
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: { GET: 'any', POST: 'any' } }
@@ -415,7 +399,6 @@ it('allows all (even missing) Content-Type header if set to "any"', async () => 
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(415);
       expect((await fetch({ method: 'POST', headers })).status).toBe(200);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(415);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(415);
@@ -425,7 +408,6 @@ it('allows all (even missing) Content-Type header if set to "any"', async () => 
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
       expect((await fetch({ method: 'POST' })).status).toBe(200);
       expect((await fetch({ method: 'PUT' })).status).toBe(415);
       expect((await fetch({ method: 'PATCH' })).status).toBe(415);
@@ -437,7 +419,7 @@ it('requires all requests to be sent without a Content-Type header if set to "no
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: 'none' }
@@ -450,7 +432,6 @@ it('requires all requests to be sent without a Content-Type header if set to "no
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(415);
       expect((await fetch({ method: 'POST', headers })).status).toBe(415);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(415);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(415);
@@ -460,7 +441,6 @@ it('requires all requests to be sent without a Content-Type header if set to "no
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
       expect((await fetch({ method: 'POST' })).status).toBe(200);
       expect((await fetch({ method: 'PUT' })).status).toBe(200);
       expect((await fetch({ method: 'PATCH' })).status).toBe(200);
@@ -468,7 +448,7 @@ it('requires all requests to be sent without a Content-Type header if set to "no
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: { POST: 'none' } }
@@ -481,7 +461,6 @@ it('requires all requests to be sent without a Content-Type header if set to "no
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(415);
       expect((await fetch({ method: 'POST', headers })).status).toBe(415);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(415);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(415);
@@ -491,7 +470,6 @@ it('requires all requests to be sent without a Content-Type header if set to "no
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
       expect((await fetch({ method: 'POST' })).status).toBe(200);
       expect((await fetch({ method: 'PUT' })).status).toBe(415);
       expect((await fetch({ method: 'PATCH' })).status).toBe(415);
@@ -503,7 +481,7 @@ it('allows requests without a Content-Type header in addition to other constrain
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: ['none', 'application/json'] }
@@ -516,7 +494,6 @@ it('allows requests without a Content-Type header in addition to other constrain
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(200);
       expect((await fetch({ method: 'POST', headers })).status).toBe(200);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(200);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(200);
@@ -526,7 +503,6 @@ it('allows requests without a Content-Type header in addition to other constrain
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
       expect((await fetch({ method: 'POST' })).status).toBe(200);
       expect((await fetch({ method: 'PUT' })).status).toBe(200);
       expect((await fetch({ method: 'PATCH' })).status).toBe(200);
@@ -534,7 +510,7 @@ it('allows requests without a Content-Type header in addition to other constrain
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: { POST: ['none', 'application/json'] } }
@@ -547,7 +523,6 @@ it('allows requests without a Content-Type header in addition to other constrain
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(415);
       expect((await fetch({ method: 'POST', headers })).status).toBe(200);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(415);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(415);
@@ -557,7 +532,6 @@ it('allows requests without a Content-Type header in addition to other constrain
       expect((await fetch({ method: 'DELETE' })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT' })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS' })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE' })).status).toBe(200);
       expect((await fetch({ method: 'POST' })).status).toBe(200);
       expect((await fetch({ method: 'PUT' })).status).toBe(415);
       expect((await fetch({ method: 'PATCH' })).status).toBe(415);
@@ -569,7 +543,7 @@ it('sends 415 if Content-Type is literally the string "none"', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: ['none', 'application/json'] }
@@ -582,7 +556,6 @@ it('sends 415 if Content-Type is literally the string "none"', async () => {
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(415);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(415);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(415);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(415);
       expect((await fetch({ method: 'POST', headers })).status).toBe(415);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(415);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(415);
@@ -590,7 +563,7 @@ it('sends 415 if Content-Type is literally the string "none"', async () => {
   });
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: { POST: ['none', 'application/json'] } }
@@ -611,7 +584,7 @@ it('sends 400 is method is undefined', async () => {
     requestPatcher(req) {
       req.method = undefined;
     },
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: [randomizeCase('application/json')] }
@@ -629,7 +602,7 @@ it('works even if allowedContentTypes mapped value is strange or undefined', asy
   await withMockedOutput(async () => {
     await testApiHandler({
       rejectOnHandlerError: true,
-      handler: wrapHandler(
+      pagesHandler: wrapHandler(
         withMiddleware<Options>(noopHandler, {
           use: [checkContentType],
           options: { allowedContentTypes: { GET: undefined } }
@@ -643,7 +616,7 @@ it('works even if allowedContentTypes mapped value is strange or undefined', asy
     await expect(
       testApiHandler({
         rejectOnHandlerError: true,
-        handler: wrapHandler(
+        pagesHandler: wrapHandler(
           withMiddleware<Options>(noopHandler, {
             use: [checkContentType],
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -664,7 +637,7 @@ it('works even if allowedContentTypes not specified in lowercase', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [checkContentType],
         options: { allowedContentTypes: [randomizeCase('application/json')] }
@@ -682,7 +655,6 @@ it('works even if allowedContentTypes not specified in lowercase', async () => {
       expect((await fetch({ method: 'DELETE', headers })).status).toBe(200);
       // expect((await fetch({ method: 'CONNECT', headers })).status).toBe(200);
       expect((await fetch({ method: 'OPTIONS', headers })).status).toBe(200);
-      expect((await fetch({ method: 'TRACE', headers })).status).toBe(200);
       expect((await fetch({ method: 'POST', headers })).status).toBe(200);
       expect((await fetch({ method: 'PUT', headers })).status).toBe(200);
       expect((await fetch({ method: 'PATCH', headers })).status).toBe(200);

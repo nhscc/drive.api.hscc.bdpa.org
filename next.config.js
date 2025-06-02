@@ -1,9 +1,7 @@
+/* eslint-disable unicorn/no-anonymous-default-export */
 'use strict';
 
 const withBundleAnalyzer = require('@next/bundle-analyzer');
-const { verifyEnvironment } = require('./expect-env');
-
-verifyEnvironment();
 
 module.exports = () => {
   return withBundleAnalyzer({

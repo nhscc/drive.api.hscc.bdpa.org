@@ -1,5 +1,6 @@
-import { debugFactory, extendDebugger } from 'multiverse/debug-extended';
 import { debug as oldDebug } from 'debug';
+
+import { debugFactory, extendDebugger } from 'multiverse/debug-extended';
 
 describe('::debugFactory', () => {
   it('returns ExtendedDebugger instances', async () => {

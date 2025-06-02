@@ -1,10 +1,13 @@
-import { addToRequestLog } from 'multiverse/next-log';
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable unicorn/no-anonymous-default-export */
 import { debugFactory } from 'multiverse/debug-extended';
+import { addToRequestLog } from 'multiverse/next-log';
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-adhesive:log-request');
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type Options = {
   // No options
 };

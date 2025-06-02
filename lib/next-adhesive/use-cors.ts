@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/prefer-promise-reject-errors */
+/* eslint-disable unicorn/no-anonymous-default-export */
 import Cors from 'cors';
 import { debugFactory } from 'multiverse/debug-extended';
-import { Options as CheckMethodOptions } from 'multiverse/next-adhesive/check-method';
 
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { Options as CheckMethodOptions } from 'multiverse/next-adhesive/check-method';
 
 const debug = debugFactory('next-adhesive:use-cors');
 
@@ -31,6 +33,6 @@ export default async function (
 
   const cors = Cors({ methods: context.options.allowedMethods });
   await new Promise((resolve, reject) =>
-    cors(req, res, (err) => (err ? reject(err) : resolve(undefined)))
+    cors(req, res, (error) => (error ? reject(error) : resolve(undefined)))
   );
 }

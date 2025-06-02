@@ -1,19 +1,20 @@
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-base-to-string */
+/* eslint-disable unicorn/no-anonymous-default-export */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { debugFactory } from 'multiverse/debug-extended';
-import {
-  authenticateHeader,
-  authorizeHeader,
-  AuthScheme,
-  AuthConstraint
-} from 'multiverse/next-auth';
 
 import {
   sendHttpUnauthenticated,
   sendHttpUnauthorized
 } from 'multiverse/next-api-respond';
 
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import { authenticateHeader, authorizeHeader } from 'multiverse/next-auth';
 import { InvalidAppConfigurationError } from 'named-app-errors';
+
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { AuthConstraint, AuthScheme } from 'multiverse/next-auth';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-adhesive:auth-request');
 
@@ -52,8 +53,8 @@ export default async function (
   const { authorization: header } = req.headers;
 
   if (
-    typeof context.options.requiresAuth != 'boolean' &&
-    (!context.options.requiresAuth || typeof context.options.requiresAuth != 'object')
+    typeof context.options.requiresAuth !== 'boolean' &&
+    (!context.options.requiresAuth || typeof context.options.requiresAuth !== 'object')
   ) {
     throw new InvalidAppConfigurationError(
       'a valid "requiresAuth" option is missing from middleware configuration'

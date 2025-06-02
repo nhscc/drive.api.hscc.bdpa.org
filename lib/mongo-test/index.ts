@@ -1,20 +1,25 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+import inspector from 'node:inspector';
+
 import { MongoClient } from 'mongodb';
-import { getEnv } from 'multiverse/next-env';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { InvalidAppConfigurationError, TrialError } from 'named-app-errors';
 import { debugFactory } from 'multiverse/debug-extended';
-import inspector from 'inspector';
 
 import {
-  getSchemaConfig,
-  overwriteMemory,
-  getDb,
-  getNameFromAlias,
-  initializeDb,
-  destroyDb,
   closeClient,
-  getInitialInternalMemoryState
+  destroyDb,
+  getAliasFromName,
+  getDb,
+  getInitialInternalMemoryState,
+  getNameFromAlias,
+  getSchemaConfig,
+  initializeDb,
+  overwriteMemory
 } from 'multiverse/mongo-schema';
+
+import { getEnv } from 'multiverse/next-env';
+import { InvalidAppConfigurationError, TrialError } from 'named-app-errors';
 
 import type { Document } from 'mongodb';
 import type { DbSchema } from 'multiverse/mongo-schema';
@@ -30,6 +35,7 @@ const debug = debugFactory('mongo-test:test-db');
 export type DummyData = {
   /**
    * The data inserted into each collection in the named database.
+   * `databaseName` can also be an alias.
    */
   [databaseName: string]: {
     /**
@@ -60,10 +66,10 @@ export type TestCustomizations = {
 export async function getDummyData(): Promise<DummyData> {
   try {
     debug('importing `getDummyData` from "configverse/get-dummy-data"');
-    return await (await import('configverse/get-dummy-data')).getDummyData();
-  } catch (e) {
+    return (await require('configverse/get-dummy-data')).getDummyData();
+  } catch (error) {
     debug.warn(
-      `failed to import getDummyData from "configverse/get-dummy-data": ${e}`
+      `failed to import getDummyData from "configverse/get-dummy-data": ${error}`
     );
 
     throw new InvalidAppConfigurationError(
@@ -86,8 +92,39 @@ export async function hydrateDb({
 }) {
   const db = await getDb({ name });
   const nameActual = await getNameFromAlias(name);
+  const aliases = await getAliasFromName(nameActual);
+
   debug(`hydrating database ${nameActual}`);
-  const dummyData = (await getDummyData())[nameActual];
+
+  const rawDummyData = await getDummyData();
+  let dummyData = rawDummyData[nameActual];
+
+  if (aliases[0] !== nameActual) {
+    const foundAliases = aliases.filter(
+      (alias: string | number) => !!rawDummyData[alias]
+    );
+
+    if (foundAliases.length > 1) {
+      throw new InvalidAppConfigurationError(
+        `the following aliases have duplicate dummy data specifications (only one may exist): ${foundAliases.join(
+          ', '
+        )}`
+      );
+    }
+
+    const alias = foundAliases[0];
+
+    if (alias) {
+      if (dummyData) {
+        throw new InvalidAppConfigurationError(
+          `duplicate dummy data specifications for database "${nameActual}" and alias "${alias}"`
+        );
+      }
+
+      debug(`(using alias "${alias}")`);
+      dummyData = rawDummyData[alias];
+    }
+  }
 
   if (!dummyData) {
     throw new InvalidAppConfigurationError(
@@ -97,11 +134,11 @@ export async function hydrateDb({
 
   const collectionNames = (await getSchemaConfig()).databases[
     nameActual
-  ].collections.map((col) => (typeof col == 'string' ? col : col.name));
+  ].collections.map((col) => (typeof col === 'string' ? col : col.name));
 
   await Promise.all(
     Object.entries(dummyData).map(([colName, colSchema]) => {
-      if (colName != '_generatedAt') {
+      if (colName !== '_generatedAt') {
         if (!collectionNames.includes(colName)) {
           throw new InvalidAppConfigurationError(
             `collection "${nameActual}.${colName}" referenced in dummy data is not defined in source db schema`
@@ -135,7 +172,7 @@ export function setupMemoryServerOverride(params?: {
   // ? real mongodb instance (super bad!!!)
   let errored = false;
 
-  const port: number | undefined =
+  const port =
     // * https://stackoverflow.com/a/67445850/1367414
     ((getEnv().DEBUG_INSPECTING || inspector.url() !== undefined) &&
       getEnv().MONGODB_MS_PORT) ||
@@ -173,23 +210,24 @@ export function setupMemoryServerOverride(params?: {
           )
         );
       }
-    } catch (e) {
+    } catch (error) {
       errored = true;
       debug.error('an error occurred during reinitialization');
-      throw e;
+      throw error;
     }
   };
 
   beforeAll(async () => {
     try {
       if (errored) {
-        debug.warn(
-          '"beforeAll" jest lifecycle hook was skipped due to previous errors'
-        );
+        debug.warn('"beforeAll" jest lifecycle hook was skipped due to previous errors');
       } else {
         await server.ensureInstance();
         const uri = server.getUri();
-        debug(`connecting to in-memory dummy mongo server at ${uri}`);
+
+        debug(
+          `connecting (new connection) to in-memory dummy mongo server at ${uri} (port: ${port})`
+        );
 
         if (port && !(uri.endsWith(`:${port}/`) || uri.endsWith(`:${port}`))) {
           throw new TrialError(
@@ -204,10 +242,10 @@ export function setupMemoryServerOverride(params?: {
 
         if (params?.defer) await reinitializeServer();
       }
-    } catch (e) {
+    } catch (error) {
       errored = true;
       debug.error('an error occurred within "beforeAll" lifecycle hook');
-      throw e;
+      throw error;
     }
   });
 
@@ -220,5 +258,10 @@ export function setupMemoryServerOverride(params?: {
     await server.stop({ force: true });
   });
 
-  return { reinitializeServer };
+  return {
+    /**
+     * Reset the dummy MongoDb server databases back to their initial states.
+     */
+    reinitializeServer
+  };
 }

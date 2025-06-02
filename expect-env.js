@@ -99,8 +99,8 @@ module.exports = {
           typeof rule.value == 'string'
             ? RegExp(rule.value)
             : rule.value instanceof RegExp
-            ? rule.value
-            : DEFAULT_VALUE_REGEX[0];
+              ? rule.value
+              : DEFAULT_VALUE_REGEX[0];
 
         normalizedRule = {
           operation: 'or',
@@ -245,8 +245,7 @@ module.exports = {
         }
       }
 
-      if (!succeeded)
-        isCli ? console.error(rule.errorMessage) : violations.push(rule);
+      if (!succeeded) isCli ? console.error(rule.errorMessage) : violations.push(rule);
       verificationSucceeded = verificationSucceeded && succeeded;
     });
 

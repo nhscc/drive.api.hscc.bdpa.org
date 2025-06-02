@@ -1,12 +1,13 @@
-import { useMockDateNow, mockDateNowMs } from 'multiverse/mongo-common';
+import { mockDateNowMs, useMockDateNow } from 'multiverse/mongo-common';
 import { getDb } from 'multiverse/mongo-schema';
-import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
-import { addToRequestLog } from 'multiverse/next-log';
 import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
 
-import type { InternalRequestLogEntry } from 'multiverse/next-log';
+import { addToRequestLog } from 'multiverse/next-log';
+
 import type { HttpStatusCode } from '@xunnamius/types';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { InternalRequestLogEntry } from 'multiverse/next-log';
 
 setupMemoryServerOverride();
 useMockDateNow();
@@ -36,9 +37,9 @@ describe('::addToRequestLog', () => {
     await addToRequestLog({ req: req1, res: res1 });
     await addToRequestLog({ req: req2, res: res2 });
 
-    const reqlog = (
-      await getDb({ name: 'root' })
-    ).collection<InternalRequestLogEntry>('request-log');
+    const reqlog = (await getDb({ name: 'root' })).collection<InternalRequestLogEntry>(
+      'request-log'
+    );
 
     await expect(
       reqlog.findOne({ resStatusCode: 1111 as HttpStatusCode })
@@ -89,9 +90,9 @@ describe('::addToRequestLog', () => {
     await addToRequestLog({ req: req1, res: res1 });
     await addToRequestLog({ req: req2, res: res2 });
 
-    const reqlog = (
-      await getDb({ name: 'root' })
-    ).collection<InternalRequestLogEntry>('request-log');
+    const reqlog = (await getDb({ name: 'root' })).collection<InternalRequestLogEntry>(
+      'request-log'
+    );
 
     await expect(
       reqlog.findOne({ resStatusCode: 1111 as HttpStatusCode })

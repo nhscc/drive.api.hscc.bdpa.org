@@ -1,16 +1,14 @@
+/* eslint-disable unicorn/no-anonymous-default-export */
+import { debugFactory } from 'multiverse/debug-extended';
+import { sendHttpRateLimited, sendHttpUnauthorized } from 'multiverse/next-api-respond';
 import { getEnv } from 'multiverse/next-env';
 import { clientIsRateLimited } from 'multiverse/next-limit';
-import { debugFactory } from 'multiverse/debug-extended';
-
-import {
-  sendHttpRateLimited,
-  sendHttpUnauthorized
-} from 'multiverse/next-api-respond';
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-adhesive:limit-request');
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type Options = {
   // No options
 };

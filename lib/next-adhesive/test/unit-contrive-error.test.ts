@@ -1,9 +1,13 @@
-import { testApiHandler } from 'next-test-api-route-handler';
 import { asMockedFunction } from '@xunnamius/jest-types';
-import { isDueForContrivedError } from 'multiverse/next-contrived';
-import { wrapHandler, noopHandler } from 'testverse/setup';
 import { withMiddleware } from 'multiverse/next-api-glue';
-import contriveError, { Options } from 'multiverse/next-adhesive/contrive-error';
+import { isDueForContrivedError } from 'multiverse/next-contrived';
+import { testApiHandler } from 'next-test-api-route-handler';
+
+import { noopHandler, wrapHandler } from 'testverse/setup';
+
+import contriveError from 'multiverse/next-adhesive/contrive-error';
+
+import type { Options } from 'multiverse/next-adhesive/contrive-error';
 
 jest.mock('multiverse/next-contrived');
 
@@ -17,7 +21,7 @@ it('does not inject contrived errors by default', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [contriveError]
       })
@@ -33,7 +37,7 @@ it('injects contrived errors when due if enabled', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    handler: wrapHandler(
+    pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
         use: [contriveError],
         options: { enableContrivedErrors: true }

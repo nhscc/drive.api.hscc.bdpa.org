@@ -14,8 +14,6 @@ export const mockDateNowMs = Date.now();
  */
 export function useMockDateNow(options?: { mockNow?: number }) {
   beforeEach(() => {
-    jest
-      .spyOn(Date, 'now')
-      .mockImplementation(() => options?.mockNow || mockDateNowMs);
+    jest.spyOn(Date, 'now').mockImplementation(() => options?.mockNow || mockDateNowMs);
   });
 }

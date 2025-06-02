@@ -1,32 +1,39 @@
+/* eslint-disable unicorn/no-array-reduce */
+/* eslint-disable eqeqeq */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable unicorn/no-keyword-prefix */
+/* eslint-disable unicorn/no-array-callback-reference */
 /* eslint-disable no-await-in-loop */
 import { ObjectId } from 'mongodb';
-import { useMockDateNow } from 'multiverse/mongo-common';
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { dummyAppData } from 'testverse/db';
-import { mockEnvFactory } from 'testverse/setup';
+
+import * as Backend from 'universe/backend';
 import { toPublicNode, toPublicUser } from 'universe/backend/db';
 import { getEnv } from 'universe/backend/env';
 import { ErrorMessage } from 'universe/error';
 
-import * as Backend from 'universe/backend';
+import { dummyAppData } from 'testverse/db';
+import { mockEnvFactory } from 'testverse/setup';
+
+import { useMockDateNow } from 'multiverse/mongo-common';
+import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 
 import type {
-  PublicUser,
+  InternalFileNode,
+  InternalMetaNode,
   InternalNode,
-  Username,
+  NewFileNode,
+  NewMetaNode,
   NewNode,
   NewUser,
   NodeLock,
   PatchNode,
   PatchUser,
-  NewMetaNode,
-  NewFileNode,
-  PublicMetaNode,
   PublicFileNode,
-  InternalMetaNode,
-  InternalFileNode,
-  PublicNode
+  PublicMetaNode,
+  PublicNode,
+  PublicUser,
+  Username
 } from 'universe/backend/db';
 
 setupMemoryServerOverride();
@@ -40,8 +47,8 @@ const sortNodes = (nodes: InternalNode[]) => {
     .slice()
     .sort(
       (a, b) =>
-        parseInt(b._id.toString().slice(-5), 16) -
-        parseInt(a._id.toString().slice(-5), 16)
+        Number.parseInt(b._id.toString().slice(-5), 16) -
+        Number.parseInt(a._id.toString().slice(-5), 16)
     );
 };
 
@@ -56,16 +63,12 @@ describe('::getAllUsers', () => {
   it('does not crash when database is empty', async () => {
     expect.hasAssertions();
 
-    await expect(
-      Backend.getAllUsers({ after: undefined })
-    ).resolves.not.toStrictEqual([]);
-
-    await (await getDb({ name: 'hscc-api-drive' }))
-      .collection('users')
-      .deleteMany({});
-    await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual(
+    await expect(Backend.getAllUsers({ after: undefined })).resolves.not.toStrictEqual(
       []
     );
+
+    await (await getDb({ name: 'hscc-api-drive' })).collection('users').deleteMany({});
+    await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual([]);
   });
 
   it('returns all users', async () => {
@@ -168,12 +171,12 @@ describe('::createUser', () => {
     expect.hasAssertions();
 
     const {
-      MIN_USER_NAME_LENGTH: minULen,
-      MAX_USER_NAME_LENGTH: maxULen,
-      MIN_USER_EMAIL_LENGTH: minELen,
-      MAX_USER_EMAIL_LENGTH: maxELen,
-      USER_SALT_LENGTH: saltLen,
-      USER_KEY_LENGTH: keyLen
+      MIN_USER_NAME_LENGTH: minULength,
+      MAX_USER_NAME_LENGTH: maxULength,
+      MIN_USER_EMAIL_LENGTH: minELength,
+      MAX_USER_EMAIL_LENGTH: maxELength,
+      USER_SALT_LENGTH: saltLength,
+      USER_KEY_LENGTH: keyLength
     } = getEnv();
 
     const newUsers: [NewUser, string][] = [
@@ -181,131 +184,131 @@ describe('::createUser', () => {
       ['string data' as NewUser, ErrorMessage.InvalidJSON()],
       [
         {} as NewUser,
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
         { email: null } as unknown as NewUser,
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
-        { email: 'x'.repeat(minELen - 1) },
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        { email: 'x'.repeat(minELength - 1) },
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
-        { email: 'x'.repeat(maxELen + 1) },
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        { email: 'x'.repeat(maxELength + 1) },
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
-        { email: 'x'.repeat(maxELen) },
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        { email: 'x'.repeat(maxELength) },
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
         { email: 'valid@email.address' },
-        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('salt', saltLength, null, 'hexadecimal')
       ],
       [
         {
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen - 1)
+          salt: '0'.repeat(saltLength - 1)
         },
-        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('salt', saltLength, null, 'hexadecimal')
       ],
       [
         {
           email: 'valid@email.address',
           salt: null
         } as unknown as NewUser,
-        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('salt', saltLength, null, 'hexadecimal')
       ],
       [
         {
           email: 'valid@email.address',
-          salt: 'x'.repeat(saltLen)
+          salt: 'x'.repeat(saltLength)
         },
-        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('salt', saltLength, null, 'hexadecimal')
       ],
       [
         {
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen)
+          salt: '0'.repeat(saltLength)
         },
-        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('key', keyLength, null, 'hexadecimal')
       ],
       [
         {
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen - 1)
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength - 1)
         },
-        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('key', keyLength, null, 'hexadecimal')
       ],
       [
         {
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: 'x'.repeat(keyLen)
+          salt: '0'.repeat(saltLength),
+          key: 'x'.repeat(keyLength)
         },
-        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('key', keyLength, null, 'hexadecimal')
       ],
       [
         {
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
+          salt: '0'.repeat(saltLength),
           key: null
         } as unknown as NewUser,
-        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('key', keyLength, null, 'hexadecimal')
       ],
       [
         {
           username: 'must be alphanumeric',
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen)
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength)
         },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+        ErrorMessage.InvalidStringLength('username', minULength, maxULength)
       ],
       [
         {
           username: '#&*@^(#@(^$&*#',
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen)
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength)
         },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+        ErrorMessage.InvalidStringLength('username', minULength, maxULength)
       ],
       [
         {
           username: null,
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen)
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength)
         } as unknown as NewUser,
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+        ErrorMessage.InvalidStringLength('username', minULength, maxULength)
       ],
       [
         {
-          username: 'x'.repeat(minULen - 1),
+          username: 'x'.repeat(minULength - 1),
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen)
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength)
         },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+        ErrorMessage.InvalidStringLength('username', minULength, maxULength)
       ],
       [
         {
-          username: 'x'.repeat(maxULen + 1),
+          username: 'x'.repeat(maxULength + 1),
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen)
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength)
         },
-        ErrorMessage.InvalidStringLength('username', minULen, maxULen)
+        ErrorMessage.InvalidStringLength('username', minULength, maxULength)
       ],
       [
         {
-          username: 'x'.repeat(maxULen - 1),
+          username: 'x'.repeat(maxULength - 1),
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen),
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength),
           user_id: 1
         } as NewUser,
         ErrorMessage.UnknownField('user_id')
@@ -464,10 +467,10 @@ describe('::updateUser', () => {
     expect.hasAssertions();
 
     const {
-      MIN_USER_EMAIL_LENGTH: minELen,
-      MAX_USER_EMAIL_LENGTH: maxELen,
-      USER_SALT_LENGTH: saltLen,
-      USER_KEY_LENGTH: keyLen
+      MIN_USER_EMAIL_LENGTH: minELength,
+      MAX_USER_EMAIL_LENGTH: maxELength,
+      USER_SALT_LENGTH: saltLength,
+      USER_KEY_LENGTH: keyLength
     } = getEnv();
 
     const patchUsers: [PatchUser, string][] = [
@@ -475,51 +478,51 @@ describe('::updateUser', () => {
       ['string data' as PatchUser, ErrorMessage.InvalidJSON()],
       [
         { email: '' },
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
-        { email: 'x'.repeat(minELen - 1) },
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        { email: 'x'.repeat(minELength - 1) },
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
-        { email: 'x'.repeat(maxELen + 1) },
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        { email: 'x'.repeat(maxELength + 1) },
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
-        { email: 'x'.repeat(maxELen) },
-        ErrorMessage.InvalidStringLength('email', minELen, maxELen, 'string')
+        { email: 'x'.repeat(maxELength) },
+        ErrorMessage.InvalidStringLength('email', minELength, maxELength, 'string')
       ],
       [
         { salt: '' },
-        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('salt', saltLength, null, 'hexadecimal')
       ],
       [
-        { salt: '0'.repeat(saltLen - 1) },
-        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+        { salt: '0'.repeat(saltLength - 1) },
+        ErrorMessage.InvalidStringLength('salt', saltLength, null, 'hexadecimal')
       ],
       [
-        { salt: 'x'.repeat(saltLen) },
-        ErrorMessage.InvalidStringLength('salt', saltLen, null, 'hexadecimal')
+        { salt: 'x'.repeat(saltLength) },
+        ErrorMessage.InvalidStringLength('salt', saltLength, null, 'hexadecimal')
       ],
       [
         { key: '' },
-        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+        ErrorMessage.InvalidStringLength('key', keyLength, null, 'hexadecimal')
       ],
       [
-        { key: '0'.repeat(keyLen - 1) },
-        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+        { key: '0'.repeat(keyLength - 1) },
+        ErrorMessage.InvalidStringLength('key', keyLength, null, 'hexadecimal')
       ],
       [
-        { key: 'x'.repeat(keyLen) },
-        ErrorMessage.InvalidStringLength('key', keyLen, null, 'hexadecimal')
+        { key: 'x'.repeat(keyLength) },
+        ErrorMessage.InvalidStringLength('key', keyLength, null, 'hexadecimal')
       ],
       [{ data: 1 } as NewUser, ErrorMessage.UnknownField('data')],
       [{ name: 'username' } as NewUser, ErrorMessage.UnknownField('name')],
       [
         {
           email: 'valid@email.address',
-          salt: '0'.repeat(saltLen),
-          key: '0'.repeat(keyLen),
+          salt: '0'.repeat(saltLength),
+          key: '0'.repeat(keyLength),
           username: 'new-username'
         } as PatchUser,
         ErrorMessage.UnknownField('username')
@@ -802,8 +805,8 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: 'User1',
-        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(
-          () => new ObjectId().toString()
+        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(() =>
+          new ObjectId().toString()
         )
       })
     ).rejects.toMatchObject({
@@ -814,9 +817,7 @@ describe('::getNodes', () => {
 
 describe('::searchNodes', () => {
   const getOwnedAndSharedNodes = (username: Username) => {
-    return sortedNodes.filter(
-      (n) => n.owner == username || !!n.permissions[username]
-    );
+    return sortedNodes.filter((n) => n.owner == username || !!n.permissions[username]);
   };
 
   it("returns all of a user's nodes if no query params given", async () => {
@@ -880,7 +881,7 @@ describe('::searchNodes', () => {
 
     await withMockedEnv(
       async () => {
-        let prevNode: PublicNode | null = null;
+        let previousNode: PublicNode | null = null;
         const nodes = getOwnedAndSharedNodes(dummyAppData.users[2].username).map(
           toPublicNode
         );
@@ -889,18 +890,18 @@ describe('::searchNodes', () => {
           await expect(
             Backend.searchNodes({
               username: dummyAppData.users[2].username,
-              after: prevNode ? prevNode.node_id : undefined,
+              after: previousNode ? previousNode.node_id : undefined,
               match: {},
               regexMatch: {}
             })
           ).resolves.toStrictEqual([node]);
-          prevNode = node;
+          previousNode = node;
         }
 
         await expect(
           Backend.searchNodes({
             username: dummyAppData.users[2].username,
-            after: prevNode ? prevNode.node_id : undefined,
+            after: previousNode ? previousNode.node_id : undefined,
             match: {},
             regexMatch: {}
           })
@@ -1062,13 +1063,13 @@ describe('::searchNodes', () => {
       Backend.searchNodes({
         username: dummyAppData.users[0].username,
         after: undefined,
-        match: { createdAt: { $lt: Date.now() - 5000, $gt: Date.now() - 10000 } },
+        match: { createdAt: { $lt: Date.now() - 5000, $gt: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[0].username)
         .filter(
-          (n) => n.createdAt < Date.now() - 5000 && n.createdAt > Date.now() - 10000
+          (n) => n.createdAt < Date.now() - 5000 && n.createdAt > Date.now() - 10_000
         )
         .map(toPublicNode)
     );
@@ -1099,12 +1100,12 @@ describe('::searchNodes', () => {
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
         after: undefined,
-        match: { createdAt: { $lt: Date.now() - 10000 } },
+        match: { createdAt: { $lt: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[2].username)
-        .filter((n) => n.createdAt < Date.now() - 10000)
+        .filter((n) => n.createdAt < Date.now() - 10_000)
         .map(toPublicNode)
     );
 
@@ -1112,12 +1113,12 @@ describe('::searchNodes', () => {
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
         after: undefined,
-        match: { createdAt: { $lte: Date.now() - 10000 } },
+        match: { createdAt: { $lte: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[2].username)
-        .filter((n) => n.createdAt <= Date.now() - 10000)
+        .filter((n) => n.createdAt <= Date.now() - 10_000)
         .map(toPublicNode)
     );
 
@@ -1125,12 +1126,12 @@ describe('::searchNodes', () => {
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
         after: undefined,
-        match: { createdAt: { $gt: Date.now() - 10000 } },
+        match: { createdAt: { $gt: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[2].username)
-        .filter((n) => n.createdAt > Date.now() - 10000)
+        .filter((n) => n.createdAt > Date.now() - 10_000)
         .map(toPublicNode)
     );
 
@@ -1138,12 +1139,12 @@ describe('::searchNodes', () => {
       Backend.searchNodes({
         username: dummyAppData.users[2].username,
         after: undefined,
-        match: { createdAt: { $gte: Date.now() - 10000 } },
+        match: { createdAt: { $gte: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[2].username)
-        .filter((n) => n.createdAt >= Date.now() - 10000)
+        .filter((n) => n.createdAt >= Date.now() - 10_000)
         .map(toPublicNode)
     );
   });
@@ -1157,7 +1158,7 @@ describe('::searchNodes', () => {
         after: undefined,
         match: {
           createdAt: {
-            $or: [{ $lt: Date.now() - 10000 }, { $gt: Date.now() - 5000 }]
+            $or: [{ $lt: Date.now() - 10_000 }, { $gt: Date.now() - 5000 }]
           }
         },
         regexMatch: {}
@@ -1165,7 +1166,7 @@ describe('::searchNodes', () => {
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[2].username)
         .filter(
-          (n) => n.createdAt < Date.now() - 10000 || n.createdAt > Date.now() - 5000
+          (n) => n.createdAt < Date.now() - 10_000 || n.createdAt > Date.now() - 5000
         )
         .map(toPublicNode)
     );
@@ -1262,24 +1263,15 @@ describe('::searchNodes', () => {
     ][] = [
       [
         'wtf',
-        [
-          ErrorMessage.InvalidMatcher('match'),
-          ErrorMessage.InvalidMatcher('regexMatch')
-        ]
+        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
       ],
       [
         null,
-        [
-          ErrorMessage.InvalidMatcher('match'),
-          ErrorMessage.InvalidMatcher('regexMatch')
-        ]
+        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
       ],
       [
         undefined,
-        [
-          ErrorMessage.InvalidMatcher('match'),
-          ErrorMessage.InvalidMatcher('regexMatch')
-        ]
+        [ErrorMessage.InvalidMatcher('match'), ErrorMessage.InvalidMatcher('regexMatch')]
       ],
       [
         { bad: 'super-bad' },
@@ -1304,8 +1296,8 @@ describe('::searchNodes', () => {
       ],
       [
         {
-          tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map(
-            (_, ndx) => ndx.toString()
+          tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map((_, ndx) =>
+            ndx.toString()
           )
         },
         [
@@ -1595,12 +1587,12 @@ describe('::createNode', () => {
     expect.hasAssertions();
 
     const {
-      MIN_USER_NAME_LENGTH: minUsernameLen,
-      MAX_USER_NAME_LENGTH: maxUsernameLen,
-      MAX_LOCK_CLIENT_LENGTH: maxLockClientLen,
-      MAX_NODE_NAME_LENGTH: maxNodeNameLen,
+      MIN_USER_NAME_LENGTH: minUsernameLength,
+      MAX_USER_NAME_LENGTH: maxUsernameLength,
+      MAX_LOCK_CLIENT_LENGTH: maxLockClientLength,
+      MAX_NODE_NAME_LENGTH: maxNodeNameLength,
       MAX_NODE_TAGS: maxNodeTags,
-      MAX_NODE_TAG_LENGTH: maxNodeTagLen,
+      MAX_NODE_TAG_LENGTH: maxNodeTagLength,
       MAX_NODE_PERMISSIONS: maxNodePerms,
       MAX_NODE_CONTENTS: maxNodeContents,
       MAX_NODE_TEXT_LENGTH_BYTES: maxNodeTextBytes
@@ -1618,11 +1610,11 @@ describe('::createNode', () => {
       ],
       [
         { type: 'directory', name: '' },
-        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string')
+        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLength, 'string')
       ],
       [
-        { type: 'symlink', name: 'x'.repeat(maxNodeNameLen + 1) },
-        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string')
+        { type: 'symlink', name: 'x'.repeat(maxNodeNameLength + 1) },
+        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLength, 'string')
       ],
       [
         {
@@ -1663,7 +1655,7 @@ describe('::createNode', () => {
           permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
             NonNullable<NewNode['permissions']>
           >((o) => {
-            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
+            o[Math.random().toString(32).slice(2, 7)] = 'view';
             return o;
           }, {})
         },
@@ -1700,7 +1692,7 @@ describe('::createNode', () => {
           permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
             NonNullable<NewNode['permissions']>
           >((o) => {
-            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
+            o[Math.random().toString(32).slice(2, 7)] = 'view';
             return o;
           }, {})
         },
@@ -1769,7 +1761,7 @@ describe('::createNode', () => {
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTagLen,
+          maxNodeTagLength,
           'alphanumeric',
           false,
           true
@@ -1780,7 +1772,7 @@ describe('::createNode', () => {
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTagLen,
+          maxNodeTagLength,
           'alphanumeric',
           false,
           true
@@ -1792,12 +1784,12 @@ describe('::createNode', () => {
           name: 'x',
           permissions: {},
           text: 'x',
-          tags: ['x'.repeat(maxNodeTagLen + 1)]
+          tags: ['x'.repeat(maxNodeTagLength + 1)]
         },
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTagLen,
+          maxNodeTagLength,
           'alphanumeric',
           false,
           true
@@ -1834,12 +1826,16 @@ describe('::createNode', () => {
           text: 'x',
           tags: [],
           lock: {
-            user: 'x'.repeat(minUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
+            user: 'x'.repeat(minUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen)
+        ErrorMessage.InvalidStringLength(
+          'lock.user',
+          minUsernameLength,
+          maxUsernameLength
+        )
       ],
       [
         {
@@ -1849,12 +1845,16 @@ describe('::createNode', () => {
           text: 'x',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
+            user: 'x'.repeat(maxUsernameLength + 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen)
+        ErrorMessage.InvalidStringLength(
+          'lock.user',
+          minUsernameLength,
+          maxUsernameLength
+        )
       ],
       [
         {
@@ -1865,11 +1865,15 @@ describe('::createNode', () => {
           tags: [],
           lock: {
             user: null as unknown as string,
-            client: 'y'.repeat(maxLockClientLen - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen)
+        ErrorMessage.InvalidStringLength(
+          'lock.user',
+          minUsernameLength,
+          maxUsernameLength
+        )
       ],
       [
         {
@@ -1879,12 +1883,12 @@ describe('::createNode', () => {
           text: '',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
             client: '',
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string')
+        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLength, 'string')
       ],
       [
         {
@@ -1894,12 +1898,12 @@ describe('::createNode', () => {
           text: '',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
             client: null as unknown as string,
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string')
+        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLength, 'string')
       ],
       [
         {
@@ -1909,12 +1913,12 @@ describe('::createNode', () => {
           text: '',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen + 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength + 1),
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLen, 'string')
+        ErrorMessage.InvalidStringLength('lock.client', 1, maxLockClientLength, 'string')
       ],
       [
         {
@@ -1924,8 +1928,8 @@ describe('::createNode', () => {
           text: '',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen - 1)
+            user: 'x'.repeat(maxUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength - 1)
           } as NodeLock
         },
         ErrorMessage.InvalidFieldValue('lock.createdAt')
@@ -1938,8 +1942,8 @@ describe('::createNode', () => {
           text: 'x',
           tags: [],
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: null
           } as unknown as NodeLock
         },
@@ -1954,7 +1958,7 @@ describe('::createNode', () => {
           tags: [],
           lock: {
             user: dummyAppData.users[0].username,
-            client: 'y'.repeat(maxLockClientLen - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now(),
             bad: 1
           } as unknown as NodeLock
@@ -2409,12 +2413,12 @@ describe('::updateNode', () => {
     expect.hasAssertions();
 
     const {
-      MIN_USER_NAME_LENGTH: minUsernameLen,
-      MAX_USER_NAME_LENGTH: maxUsernameLen,
-      MAX_LOCK_CLIENT_LENGTH: maxLockClientLen,
-      MAX_NODE_NAME_LENGTH: maxNodeNameLen,
+      MIN_USER_NAME_LENGTH: minUsernameLength,
+      MAX_USER_NAME_LENGTH: maxUsernameLength,
+      MAX_LOCK_CLIENT_LENGTH: maxLockClientLength,
+      MAX_NODE_NAME_LENGTH: maxNodeNameLength,
       MAX_NODE_TAGS: maxNodeTags,
-      MAX_NODE_TAG_LENGTH: maxNodeTagLen,
+      MAX_NODE_TAG_LENGTH: maxNodeTagLength,
       MAX_NODE_PERMISSIONS: maxNodePerms,
       MAX_NODE_CONTENTS: maxNodeContents,
       MAX_NODE_TEXT_LENGTH_BYTES: maxNodeTextBytes
@@ -2430,12 +2434,12 @@ describe('::updateNode', () => {
       ['string data' as PatchNode, ErrorMessage.InvalidJSON(), knownFileNode],
       [
         { name: '' },
-        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string'),
+        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLength, 'string'),
         knownDirNode
       ],
       [
-        { name: 'x'.repeat(maxNodeNameLen + 1) },
-        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLen, 'string'),
+        { name: 'x'.repeat(maxNodeNameLength + 1) },
+        ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLength, 'string'),
         knownLinkNode
       ],
       [
@@ -2471,7 +2475,7 @@ describe('::updateNode', () => {
           permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
             NonNullable<PatchNode['permissions']>
           >((o) => {
-            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
+            o[Math.random().toString(32).slice(2, 7)] = 'view';
             return o;
           }, {})
         },
@@ -2504,7 +2508,7 @@ describe('::updateNode', () => {
           permissions: Array.from({ length: maxNodePerms + 1 }).reduce<
             NonNullable<PatchNode['permissions']>
           >((o) => {
-            o[Math.random().toString(32).slice(2, 7) as keyof typeof o] = 'view';
+            o[Math.random().toString(32).slice(2, 7)] = 'view';
             return o;
           }, {})
         },
@@ -2559,7 +2563,7 @@ describe('::updateNode', () => {
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTagLen,
+          maxNodeTagLength,
           'alphanumeric',
           false,
           true
@@ -2571,7 +2575,7 @@ describe('::updateNode', () => {
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTagLen,
+          maxNodeTagLength,
           'alphanumeric',
           false,
           true
@@ -2580,12 +2584,12 @@ describe('::updateNode', () => {
       ],
       [
         {
-          tags: ['x'.repeat(maxNodeTagLen + 1)]
+          tags: ['x'.repeat(maxNodeTagLength + 1)]
         },
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
-          maxNodeTagLen,
+          maxNodeTagLength,
           'alphanumeric',
           false,
           true
@@ -2611,41 +2615,53 @@ describe('::updateNode', () => {
       [
         {
           lock: {
-            user: 'x'.repeat(minUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
+            user: 'x'.repeat(minUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen),
+        ErrorMessage.InvalidStringLength(
+          'lock.user',
+          minUsernameLength,
+          maxUsernameLength
+        ),
         knownFileNode
       ],
       [
         {
           lock: {
-            user: 'x'.repeat(maxUsernameLen + 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
+            user: 'x'.repeat(maxUsernameLength + 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen),
+        ErrorMessage.InvalidStringLength(
+          'lock.user',
+          minUsernameLength,
+          maxUsernameLength
+        ),
         knownFileNode
       ],
       [
         {
           lock: {
             user: null as unknown as string,
-            client: 'y'.repeat(maxLockClientLen - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now()
           }
         },
-        ErrorMessage.InvalidStringLength('lock.user', minUsernameLen, maxUsernameLen),
+        ErrorMessage.InvalidStringLength(
+          'lock.user',
+          minUsernameLength,
+          maxUsernameLength
+        ),
         knownFileNode
       ],
       [
         {
           text: '',
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
             client: '',
             createdAt: Date.now()
           }
@@ -2653,7 +2669,7 @@ describe('::updateNode', () => {
         ErrorMessage.InvalidStringLength(
           'lock.client',
           1,
-          maxLockClientLen,
+          maxLockClientLength,
           'string'
         ),
         knownFileNode
@@ -2661,7 +2677,7 @@ describe('::updateNode', () => {
       [
         {
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
             client: null as unknown as string,
             createdAt: Date.now()
           }
@@ -2669,7 +2685,7 @@ describe('::updateNode', () => {
         ErrorMessage.InvalidStringLength(
           'lock.client',
           1,
-          maxLockClientLen,
+          maxLockClientLength,
           'string'
         ),
         knownFileNode
@@ -2677,15 +2693,15 @@ describe('::updateNode', () => {
       [
         {
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen + 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength + 1),
             createdAt: Date.now()
           }
         },
         ErrorMessage.InvalidStringLength(
           'lock.client',
           1,
-          maxLockClientLen,
+          maxLockClientLength,
           'string'
         ),
         knownFileNode
@@ -2693,8 +2709,8 @@ describe('::updateNode', () => {
       [
         {
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen - 1)
+            user: 'x'.repeat(maxUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength - 1)
           } as NodeLock
         },
         ErrorMessage.InvalidFieldValue('lock.createdAt'),
@@ -2703,8 +2719,8 @@ describe('::updateNode', () => {
       [
         {
           lock: {
-            user: 'x'.repeat(maxUsernameLen - 1),
-            client: 'y'.repeat(maxLockClientLen - 1),
+            user: 'x'.repeat(maxUsernameLength - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: null
           } as unknown as NodeLock
         },
@@ -2715,7 +2731,7 @@ describe('::updateNode', () => {
         {
           lock: {
             user: dummyAppData.users[0].username,
-            client: 'y'.repeat(maxLockClientLen - 1),
+            client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now(),
             bad: 1
           } as unknown as NodeLock
@@ -2903,8 +2919,8 @@ describe('::deleteNodes', () => {
     await expect(
       Backend.deleteNodes({
         username: 'User1',
-        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(
-          () => new ObjectId().toString()
+        node_ids: Array.from({ length: getEnv().MAX_PARAMS_PER_REQUEST + 1 }).map(() =>
+          new ObjectId().toString()
         )
       })
     ).rejects.toMatchObject({

@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import execa from 'execa';
 import { promises as fs } from 'fs';
 import { debugFactory } from 'multiverse/debug-extended';
@@ -11,18 +13,13 @@ import { defaultConfig } from 'universe/backend/api';
 import { debugNamespace } from 'universe/constants';
 import { GuruMeditationError, TrialError } from 'universe/error';
 import { verifyEnvironment } from '../expect-env';
+import '@testing-library/jest-dom';
 // ? See: https://github.com/jest-community/jest-extended#setup
-import '@testing-library/jest-dom/extend-expect';
 import 'jest-extended';
 import 'jest-extended/all';
 
 import type { Debugger } from 'multiverse/debug-extended';
-import type {
-  NextApiHandler,
-  NextApiRequest,
-  NextApiResponse,
-  PageConfig
-} from 'next';
+import type { NextApiHandler, NextApiRequest, NextApiResponse, PageConfig } from 'next';
 import type { SimpleGit } from 'simple-git';
 import type { Promisable } from 'type-fest';
 
@@ -56,115 +53,11 @@ export const noopHandler = async (_req: NextApiRequest, res: NextApiResponse) =>
  * This function wraps mock Next.js API handler functions so that they provide
  * the default (or a custom) API configuration object.
  */
-export const wrapHandler = (handler: NextApiHandler, config?: PageConfig) => {
-  const api = async (req: NextApiRequest, res: NextApiResponse) => handler(req, res);
+export const wrapHandler = (pagesHandler: NextApiHandler, config?: PageConfig) => {
+  const api = async (req: NextApiRequest, res: NextApiResponse) =>
+    pagesHandler(req, res);
   api.config = config || defaultConfig;
   return api;
-};
-
-/**
- * Contains the expected shapes of the gzipped tar archives under
- * `test/fixtures`.
- */
-export const expectedEntries = {
-  monorepo: [
-    {
-      headers: expect.objectContaining({ name: 'monorepo/' }),
-      data: ''
-    },
-    {
-      headers: expect.objectContaining({ name: 'monorepo/package.json' }),
-      data:
-        '{\n' +
-        '  "name": "dummy-monorepo",\n' +
-        '  "workspaces": [\n' +
-        '    "packages/pkg-1",\n' +
-        '    "packages/pkg-2"\n' +
-        '  ]\n' +
-        '}\n'
-    },
-    {
-      headers: expect.objectContaining({ name: 'monorepo/packages/' }),
-      data: ''
-    },
-    {
-      headers: expect.objectContaining({ name: 'monorepo/packages/pkg-1/' }),
-      data: ''
-    },
-    {
-      headers: expect.objectContaining({
-        name: 'monorepo/packages/pkg-1/package.json'
-      }),
-      data:
-        '{\n' +
-        '  "name": "dummy-monorepo-pkg-2",\n' +
-        '  "version": "1.0.0",\n' +
-        '  "main": "index.js"\n' +
-        '}\n'
-    },
-    {
-      headers: expect.objectContaining({ name: 'monorepo/packages/pkg-1/index.js' }),
-      data: "console.log('dummy monorepo pkg-1 test');\n"
-    },
-    {
-      headers: expect.objectContaining({ name: 'monorepo/packages/pkg-2/' }),
-      data: ''
-    },
-    {
-      headers: expect.objectContaining({
-        name: 'monorepo/packages/pkg-2/package.json'
-      }),
-      data:
-        '{\n' +
-        '  "name": "dummy-monorepo-pkg-2",\n' +
-        '  "version": "1.0.0",\n' +
-        '  "main": "index.js"\n' +
-        '}\n'
-    },
-    {
-      headers: expect.objectContaining({ name: 'monorepo/packages/pkg-2/index.js' }),
-      data: "console.log('dummy monorepo pkg-2 test');\n"
-    }
-  ],
-  pkg1: [
-    {
-      headers: expect.objectContaining({ name: 'pkg-1/' }),
-      data: ''
-    },
-    {
-      headers: expect.objectContaining({ name: 'pkg-1/package.json' }),
-      data:
-        '{\n' +
-        // ? Oops... too late now
-        '  "name": "dummy-monorepo-pkg-2",\n' +
-        '  "version": "1.0.0",\n' +
-        '  "main": "index.js"\n' +
-        '}\n'
-    },
-    {
-      headers: expect.objectContaining({ name: 'pkg-1/index.js' }),
-      data: "console.log('dummy monorepo pkg-1 test');\n"
-    }
-  ],
-  pkg2: [
-    {
-      headers: expect.objectContaining({ name: 'pkg-2/' }),
-      data: ''
-    },
-    {
-      headers: expect.objectContaining({ name: 'pkg-2/package.json' }),
-      data:
-        '{\n' +
-        '  "name": "dummy-monorepo-pkg-2",\n' +
-        '  "version": "1.0.0",\n' +
-        '  "main": "index.js"\n' +
-        '}\n'
-    },
-    {
-      headers: expect.objectContaining({ name: 'pkg-2/index.js' }),
-      data: "console.log('dummy monorepo pkg-2 test');\n"
-    }
-  ]
 };
 
 // TODO: XXX: add these brand new tools to where they're supposed to be!
@@ -175,9 +68,7 @@ export function itemFactory<T>(testItems: T[]) {
     () => {
       const next = nextItem['$iter'].next() as IteratorResult<T, unknown>;
       if (next.done) {
-        throw new FactoryExhaustionError(
-          'item factory iterator exhausted unexpectedly'
-        );
+        throw new FactoryExhaustionError('item factory iterator exhausted unexpectedly');
       } else return next.value;
     },
     {
@@ -197,7 +88,6 @@ export function itemFactory<T>(testItems: T[]) {
       async *[Symbol.asyncIterator]() {
         while (true) {
           try {
-            // eslint-disable-next-line no-await-in-loop
             yield await nextItem();
           } catch (e) {
             if (e instanceof FactoryExhaustionError) return;
@@ -211,10 +101,8 @@ export function itemFactory<T>(testItems: T[]) {
   Object.defineProperty(nextItem, 'length', {
     configurable: false,
     enumerable: false,
-    set: () =>
-      toss(new SyntaxError('did you mean to use ::count instead of ::length?')),
-    get: () =>
-      toss(new SyntaxError('did you mean to use ::count instead of ::length?'))
+    set: () => toss(new SyntaxError('did you mean to use ::count instead of ::length?')),
+    get: () => toss(new SyntaxError('did you mean to use ::count instead of ::length?'))
   });
 
   return nextItem;
@@ -284,9 +172,7 @@ export async function withMockedEnv(
 ) {
   const prevEnv = { ...process.env };
   const clearEnv = () =>
-    Object.getOwnPropertyNames(process.env).forEach(
-      (prop) => delete process.env[prop]
-    );
+    Object.getOwnPropertyNames(process.env).forEach((prop) => delete process.env[prop]);
 
   // ? Take care to preserve the original env object reference in memory
   if (options.replace) clearEnv();
@@ -439,10 +325,10 @@ export async function protectedImport<T = unknown>({
     pkg = await isolatedImport({ path: path, useDefault: useDefault });
     if (expect) {
       expectedExitCode == 'non-zero'
-        ? expect(exitSpy).not.toBeCalledWith(0)
+        ? expect(exitSpy).not.toHaveBeenCalledWith(0)
         : expectedExitCode === undefined
-        ? expect(exitSpy).not.toHaveBeenCalled()
-        : expect(exitSpy).toBeCalledWith(expectedExitCode);
+          ? expect(exitSpy).not.toHaveBeenCalled()
+          : expect(exitSpy).toHaveBeenCalledWith(expectedExitCode);
     } else {
       debug.warn('"expect" object not found, so exit check was skipped');
     }
@@ -572,8 +458,7 @@ export async function withMockedOutput(
   !options?.passthrough?.errorSpy && errorSpy.mockImplementation(() => undefined);
   !options?.passthrough?.infoSpy && infoSpy.mockImplementation(() => undefined);
   !options?.passthrough?.stdoutSpy && stdoutSpy.mockImplementation(() => true);
-  options?.passthrough?.stdErrSpy === false &&
-    stdErrSpy.mockImplementation(() => true);
+  options?.passthrough?.stdErrSpy === false && stdErrSpy.mockImplementation(() => true);
 
   try {
     await fn({
@@ -739,7 +624,6 @@ export interface DummyDirectoriesFixtureOptions {
 }
 
 // TODO: XXX: make this into a separate (mock-fixture) package (along w/ below)
-// eslint-disable-next-line @typescript-eslint/ban-types
 export interface FixtureContext<CustomOptions extends Record<string, unknown> = {}>
   extends Partial<TestResultProvider>,
     Partial<TreeOutputProvider>,
@@ -768,10 +652,7 @@ export interface GitProvider {
 }
 
 // TODO: XXX: make this into a separate (mock-fixture) package (along w/ below)
-// eslint-disable-next-line @typescript-eslint/ban-types
-export type FixtureAction<Context = FixtureContext> = (
-  ctx: Context
-) => Promise<unknown>;
+export type FixtureAction<Context = FixtureContext> = (ctx: Context) => Promise<unknown>;
 
 // TODO: XXX: make this into a separate (mock-fixture) package (along w/ below)
 export type ReturnsString<Context = FixtureContext> = (
@@ -873,10 +754,7 @@ export function webpackTestFixture(): MockFixture {
 
       await Promise.all([
         writeFile(`${ctx.root}/${indexPath}`, ctx.fileContents[indexPath]),
-        writeFile(
-          `${ctx.root}/webpack.config.js`,
-          ctx.fileContents['webpack.config.js']
-        )
+        writeFile(`${ctx.root}/webpack.config.js`, ctx.fileContents['webpack.config.js'])
       ]);
 
       ctx.treeOutput = await getTreeOutput(ctx);
@@ -998,8 +876,7 @@ export function dummyFilesFixture(): MockFixture {
         Object.entries(ctx.fileContents).map(async ([path, contents]) => {
           const fullPath = `${ctx.root}/${path}`;
           await accessFile(fullPath).then(
-            () =>
-              debug(`skipped creating dummy file: file already exists at ${path}`),
+            () => debug(`skipped creating dummy file: file already exists at ${path}`),
             async () => {
               debug(`creating dummy file "${path}" with contents:`);
               debug.extend('contents >')(contents);
@@ -1030,9 +907,7 @@ export function describeRootFixture(): MockFixture {
 
 // TODO: XXX: make this into a separate (mock-fixture) package
 export async function withMockedFixture<
-  // eslint-disable-next-line @typescript-eslint/ban-types
   CustomOptions extends Record<string, unknown> = {},
-  // eslint-disable-next-line @typescript-eslint/ban-types
   CustomContext extends Record<string, unknown> = {}
 >({
   fn,
@@ -1040,9 +915,7 @@ export async function withMockedFixture<
   options
 }: {
   fn: FixtureAction<
-    FixtureContext<
-      FixtureOptions & Partial<Record<string, unknown> & CustomOptions>
-    > &
+    FixtureContext<FixtureOptions & Partial<Record<string, unknown> & CustomOptions>> &
       CustomContext
   >;
   testIdentifier: string;
@@ -1094,8 +967,7 @@ export async function withMockedFixture<
   const setupDebugger = async (fixture: CustomizedMockFixture, error = false) => {
     const toString = async (
       p: CustomizedMockFixture['name'] | CustomizedMockFixture['description']
-    ) =>
-      typeof p == 'function' ? p(ctx) : typeof p == 'string' ? p : ':impossible:';
+    ) => (typeof p == 'function' ? p(ctx) : typeof p == 'string' ? p : ':impossible:');
     const name = await toString(fixture.name.toString());
     const desc = await toString(fixture.description);
     const dbg = debug.extend(error ? `${name}:<error>` : name);
@@ -1147,18 +1019,13 @@ export async function withMockedFixture<
 
 // TODO: XXX: make this into a separate (mock-fixture) package (along w/ above)
 export function mockFixtureFactory<
-  // eslint-disable-next-line @typescript-eslint/ban-types
   CustomOptions extends Record<string, unknown> = {},
-  // eslint-disable-next-line @typescript-eslint/ban-types
   CustomContext extends Record<string, unknown> = {}
 >(testIdentifier: string, options?: Partial<FixtureOptions & CustomOptions>) {
   return (
     fn: FixtureAction<
-      FixtureContext<
-        FixtureOptions & Partial<Record<string, unknown> & CustomOptions>
-      > &
+      FixtureContext<FixtureOptions & Partial<Record<string, unknown> & CustomOptions>> &
         CustomContext
     >
-  ) =>
-    withMockedFixture<CustomOptions, CustomContext>({ fn, testIdentifier, options });
+  ) => withMockedFixture<CustomOptions, CustomContext>({ fn, testIdentifier, options });
 }

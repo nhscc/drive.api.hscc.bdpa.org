@@ -1,10 +1,13 @@
-import { toss } from 'toss-expression';
-import { sendNotImplemented } from 'multiverse/next-api-respond';
+/* eslint-disable @typescript-eslint/unbound-method */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { debugFactory } from 'multiverse/debug-extended';
+import { sendNotImplemented } from 'multiverse/next-api-respond';
+import { toss } from 'toss-expression';
 
-import type { Debugger } from 'multiverse/debug-extended';
-import type { NextApiRequest, NextApiResponse, NextApiHandler } from 'next';
 import type { NoInfer } from '@xunnamius/types';
+import type { Debugger } from 'multiverse/debug-extended';
+import type { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
 
 const debug = debugFactory('next-api-glue:runtime');
 
@@ -85,7 +88,7 @@ export type MiddlewareContext<
 export function withMiddleware<
   Options extends Record<string, unknown> = Record<string, unknown>
 >(
-  handler: NextApiHandler | undefined,
+  pagesHandler: NextApiHandler | undefined,
   {
     use,
     useOnError,
@@ -93,12 +96,11 @@ export function withMiddleware<
   }: {
     use: Middleware<NoInfer<Options>>[];
     useOnError?: Middleware<NoInfer<Options>>[];
-    options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> &
-      NoInfer<Options>;
+    options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> & NoInfer<Options>;
   }
 ) {
   if (!Array.isArray(use)) {
-    throw new Error('withMiddleware `use` parameter must be an array');
+    throw new TypeError('withMiddleware `use` parameter must be an array');
   }
 
   if (useOnError && !Array.isArray(useOnError)) {
@@ -169,9 +171,7 @@ export function withMiddleware<
                 );
               } else {
                 chainWasPulled = true;
-                localDebug(
-                  'runtime.next: manually selecting next middleware in chain'
-                );
+                localDebug('runtime.next: manually selecting next middleware in chain');
                 await pullChain();
               }
             } else {
@@ -200,7 +200,7 @@ export function withMiddleware<
           };
 
           if (!done) {
-            if (typeof currentMiddleware == 'function') {
+            if (typeof currentMiddleware === 'function') {
               localDebug('executing middleware');
               await currentMiddleware(req, res, middlewareContext);
               ranAtLeastOneMiddleware = true;
@@ -216,8 +216,7 @@ export function withMiddleware<
             }
           } else {
             localDebug('no more middleware to execute');
-            !executionCompleted &&
-              localDebug('deactivated runtime control functions');
+            !executionCompleted && localDebug('deactivated runtime control functions');
             executionCompleted = true;
           }
         };
@@ -225,16 +224,14 @@ export function withMiddleware<
         await pullChain();
         localDebug('stopped middleware execution chain');
         localDebug(
-          `at least one middleware executed: ${
-            ranAtLeastOneMiddleware ? 'yes' : 'no'
-          }`
+          `at least one middleware executed: ${ranAtLeastOneMiddleware ? 'yes' : 'no'}`
         );
 
         return executionWasAborted;
-      } catch (e) {
+      } catch (error) {
         executionWasAborted = true;
         debug.warn('execution chain aborted due to error');
-        throw e;
+        throw error;
       }
     };
 
@@ -245,21 +242,18 @@ export function withMiddleware<
 
       try {
         debug('selecting first middleware in primary middleware chain');
-        primaryChainWasAborted = await startPullingChain(
-          use[Symbol.iterator](),
-          debug
-        );
-      } catch (e) {
+        primaryChainWasAborted = await startPullingChain(use[Symbol.iterator](), debug);
+      } catch (error) {
         debug('error in primary middleware chain');
-        throw e;
+        throw error;
       }
 
-      if (typeof handler == 'function') {
+      if (typeof pagesHandler === 'function') {
         if (primaryChainWasAborted) {
           debug('not executing handler since primary chain execution was aborted');
         } else {
           debug('executing handler');
-          await handler(req, res);
+          await pagesHandler(req, res);
           debug('finished executing handler');
         }
       } else {
@@ -272,35 +266,33 @@ export function withMiddleware<
       }
 
       debug('-- done --');
-    } catch (e) {
+    } catch (error) {
       try {
-        debug.error('attempting to handle error: %O', e);
+        debug.error('attempting to handle error: %O', error);
 
         // @ts-expect-error: error is readonly to everyone but us
-        middlewareContext.runtime.error = e;
+        middlewareContext.runtime.error = error;
 
         if (useOnError) {
           try {
-            debug.error(
-              'selecting first middleware in error handling middleware chain'
-            );
+            debug.error('selecting first middleware in error handling middleware chain');
             await startPullingChain(useOnError[Symbol.iterator](), debug.error);
-          } catch (err) {
+          } catch (error_) {
             // ? Error in error handler was unhandled
-            debug.error('error in error handling middleware chain: %O', err);
+            debug.error('error in error handling middleware chain: %O', error_);
             debug.error('throwing unhandled error');
-            throw err;
+            throw error_;
           }
         } else {
           debug.error('no error handling middleware found');
           debug.error('throwing unhandled error');
-          throw e;
+          throw error;
         }
 
         // ? Error was unhandled, kick it up to the caller (usually Next itself)
         if (!res.writableEnded && !res.headersSent) {
           debug.error('throwing unhandled error');
-          throw e;
+          throw error;
         }
       } finally {
         debug('-- done (with errors) --');
@@ -328,11 +320,10 @@ export function middlewareFactory<
 }: {
   use: Middleware<NoInfer<Options>>[];
   useOnError?: Middleware<NoInfer<Options>>[];
-  options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> &
-    NoInfer<Options>;
+  options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> & NoInfer<Options>;
 }) {
   return <PassedOptions extends Record<string, unknown> = Record<string, unknown>>(
-    handler: NextApiHandler | undefined,
+    pagesHandler: NextApiHandler | undefined,
     params?: {
       prependUse?: Middleware<NoInfer<Options>>[];
       appendUse?: Middleware<NoInfer<Options>>[];
@@ -350,7 +341,7 @@ export function middlewareFactory<
       options: passedOptions
     } = { ...params };
 
-    return withMiddleware<NoInfer<Options> & NoInfer<PassedOptions>>(handler, {
+    return withMiddleware<NoInfer<Options> & NoInfer<PassedOptions>>(pagesHandler, {
       use: [...(prependUse || []), ...defaultUse, ...(appendUse || [])],
       useOnError: [
         ...(prependUseOnError || []),

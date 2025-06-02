@@ -37,36 +37,36 @@ need to run it locally is in this repo (except a running MongoDB instance).
 
 To run a local instance of the API:
 
-1.  Ensure the latest [NodeJS][24] and [MongoDB][25] are installed.
-    - Typically, once you run their installers, no further configuration is
-      required. Easy peasy!
-    - If you're using WSL on Windows, [read this][26].
-    - Check out [MongoDB Compass][27]!
-2.  Clone this repo using your favorite terminal.
-3.  From the terminal, with the repo as the current working directory, run
-    `npm install`.
-4.  Copy the file `.env.example` to `.env`.
-    - Add your MongoDB connect URI to the MONGODB_URI environment variable in
-      `.env`.
-      - Using `mongodb://127.0.0.1:27017/test` as the connect URI should work
-        out of the box.
-      - A valid URI looks something like this:
-        `mongodb://your-server-uri:your-port-number/your-test-db-name`
-      - It is important that you include **the name of the test database** after
-        the slash (you can just make something up) like in the above examples.
-    - You may need to add values for a few other environment variables. Pay
-      attention to any error messages you receive.
-5.  At this point you should test that the API will work on your system. To do
-    this, run the command `npm test` in your terminal.
-6.  If all tests passed, you can start up the API in development mode by running
-    the `npm run dev` command.
-7.  You can now interact with the API using your browser, [Postman][28], or
-    otherwise.
-    - You should see a line on the console that looks like
-      `ready - started server on http://<HOST:PORT>`. Use that URI at the end to
-      access the API.
-    - If you're using MongoDB Compass, you'll be able to visually explore the
-      dummy database's data at this point.
+1. Ensure the latest [NodeJS][24] and [MongoDB][25] are installed.
+   - Typically, once you run their installers, no further configuration is
+     required. Easy peasy!
+   - If you're using WSL on Windows, [read this][26].
+   - Check out [MongoDB Compass][27]!
+2. Clone this repo using your favorite terminal.
+3. From the terminal, with the repo as the current working directory, run
+   `npm install`.
+4. Copy the file `.env.example` to `.env`.
+   - Add your MongoDB connect URI to the MONGODB_URI environment variable in
+     `.env`.
+     - Using `mongodb://127.0.0.1:27017/test` as the connect URI should work out
+       of the box.
+     - A valid URI looks something like this:
+       `mongodb://your-server-uri:your-port-number/your-test-db-name`
+     - It is important that you include **the name of the test database** after
+       the slash (you can just make something up) like in the above examples.
+   - You may need to add values for a few other environment variables. Pay
+     attention to any error messages you receive.
+5. At this point you should test that the API will work on your system. To do
+   this, run the command `npm test` in your terminal.
+6. If all tests passed, you can start up the API in development mode by running
+   the `npm run dev` command.
+7. You can now interact with the API using your browser, [Postman][28], or
+   otherwise.
+   - You should see a line on the console that looks like
+     `ready - started server on http://<HOST:PORT>`. Use that URI at the end to
+     access the API.
+   - If you're using MongoDB Compass, you'll be able to visually explore the
+     dummy database's data at this point.
 
 ## Project structure
 

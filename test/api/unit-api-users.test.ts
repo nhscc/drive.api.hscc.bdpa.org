@@ -1,18 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { testApiHandler } from 'next-test-api-route-handler';
+
 import { api, setupMockBackend } from 'testverse/fixtures';
 
 jest.mock('universe/backend');
-jest.mock('universe/backend/middleware', () => {
-  const { middlewareFactory } = require('multiverse/next-api-glue');
-  const { default: handleError } = require('multiverse/next-adhesive/handle-error');
+jest.mock<typeof import('universe/backend/middleware')>(
+  'universe/backend/middleware',
+  () => {
+    const { middlewareFactory } = require('multiverse/next-api-glue');
+    const { default: handleError } = require('multiverse/next-adhesive/handle-error');
 
-  return {
-    withMiddleware: jest
-      .fn()
-      .mockImplementation(middlewareFactory({ use: [], useOnError: [handleError] }))
-  };
-});
+    return {
+      withMiddleware: jest
+        .fn()
+        .mockImplementation(middlewareFactory({ use: [], useOnError: [handleError] }))
+    } as unknown as typeof import('universe/backend/middleware');
+  }
+);
 
 const { mockedAuthAppUser } = setupMockBackend();
 
@@ -22,7 +26,7 @@ describe('api/v1/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.users,
+        pagesHandler: api.v1.users,
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
             async (r) => [r.status, await r.json()] as [status: number, json: any]
@@ -42,7 +46,7 @@ describe('api/v1/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.users,
+        pagesHandler: api.v1.users,
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(
             async (r) => [r.status, await r.json()] as [status: number, json: any]
@@ -62,7 +66,7 @@ describe('api/v1/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.usersUsername,
+        pagesHandler: api.v1.usersUsername,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -83,7 +87,7 @@ describe('api/v1/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.usersUsername,
+        pagesHandler: api.v1.usersUsername,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'PUT' }).then(
@@ -103,7 +107,7 @@ describe('api/v1/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.usersUsername,
+        pagesHandler: api.v1.usersUsername,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'DELETE' }).then(
@@ -123,7 +127,7 @@ describe('api/v1/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v1.usersUsernameAuth,
+        pagesHandler: api.v1.usersUsernameAuth,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(
@@ -140,7 +144,7 @@ describe('api/v1/users', () => {
       mockedAuthAppUser.mockReturnValue(Promise.resolve(true));
 
       await testApiHandler({
-        handler: api.v1.usersUsernameAuth,
+        pagesHandler: api.v1.usersUsernameAuth,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(
@@ -162,7 +166,7 @@ describe('api/v2/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.users,
+        pagesHandler: api.v2.users,
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
             async (r) => [r.status, await r.json()] as [status: number, json: any]
@@ -182,7 +186,7 @@ describe('api/v2/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.users,
+        pagesHandler: api.v2.users,
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(
             async (r) => [r.status, await r.json()] as [status: number, json: any]
@@ -202,7 +206,7 @@ describe('api/v2/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsername,
+        pagesHandler: api.v2.usersUsername,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'GET' }).then(
@@ -223,7 +227,7 @@ describe('api/v2/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsername,
+        pagesHandler: api.v2.usersUsername,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'PUT' }).then(
@@ -243,7 +247,7 @@ describe('api/v2/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsername,
+        pagesHandler: api.v2.usersUsername,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'DELETE' }).then(
@@ -263,7 +267,7 @@ describe('api/v2/users', () => {
       expect.hasAssertions();
 
       await testApiHandler({
-        handler: api.v2.usersUsernameAuth,
+        pagesHandler: api.v2.usersUsernameAuth,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(
@@ -280,7 +284,7 @@ describe('api/v2/users', () => {
       mockedAuthAppUser.mockReturnValue(Promise.resolve(true));
 
       await testApiHandler({
-        handler: api.v2.usersUsernameAuth,
+        pagesHandler: api.v2.usersUsernameAuth,
         params: { username: 'User1' },
         test: async ({ fetch }) => {
           const [status, json] = await fetch({ method: 'POST' }).then(

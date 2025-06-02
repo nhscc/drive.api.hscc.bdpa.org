@@ -1,10 +1,11 @@
 import { ObjectId } from 'mongodb';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { itemExists, itemToObjectId, itemToStringId } from 'multiverse/mongo-item';
 import { getDb } from 'multiverse/mongo-schema';
-import { toss } from 'toss-expression';
-import { TrialError } from 'named-app-errors';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { DUMMY_BEARER_TOKEN, NULL_BEARER_TOKEN } from 'multiverse/next-auth';
+import { TrialError } from 'named-app-errors';
+import { toss } from 'toss-expression';
+
+import { itemExists, itemToObjectId, itemToStringId } from 'multiverse/mongo-item';
 
 import type { InternalAuthBearerEntry } from 'multiverse/next-auth';
 
@@ -148,12 +149,10 @@ describe('::itemToObjectId', () => {
     const ids = [id, id, id];
 
     expect(itemToObjectId(ids)).toStrictEqual(ids);
-    expect(itemToObjectId([{ _id: id }, { _id: id }, { _id: id }])).toStrictEqual(
+    expect(itemToObjectId([{ _id: id }, { _id: id }, { _id: id }])).toStrictEqual(ids);
+    expect(itemToObjectId([id.toString(), id.toString(), id.toString()])).toStrictEqual(
       ids
     );
-    expect(
-      itemToObjectId([id.toString(), id.toString(), id.toString()])
-    ).toStrictEqual(ids);
   });
 
   it('throws if item is irreducible', async () => {
@@ -167,8 +166,8 @@ describe('::itemToObjectId', () => {
     expect(() => itemToObjectId({})).toThrow('irreducible');
     // @ts-expect-error: bad param
     expect(() => itemToObjectId([{}])).toThrow('irreducible');
-    expect(() => itemToObjectId('bad')).toThrow('must be a string of');
-    expect(() => itemToObjectId(['bad'])).toThrow('must be a string of');
+    expect(() => itemToObjectId('bad')).toThrow('must be a 24 character');
+    expect(() => itemToObjectId(['bad'])).toThrow('must be a 24 character');
   });
 });
 
@@ -195,9 +194,9 @@ describe('::itemToStringId', () => {
       idStrings
     );
 
-    expect(
-      itemToStringId([id.toString(), id.toString(), id.toString()])
-    ).toStrictEqual(idStrings);
+    expect(itemToStringId([id.toString(), id.toString(), id.toString()])).toStrictEqual(
+      idStrings
+    );
   });
 
   it('throws if item is irreducible', async () => {
@@ -211,7 +210,7 @@ describe('::itemToStringId', () => {
     expect(() => itemToStringId({})).toThrow('irreducible');
     // @ts-expect-error: bad param
     expect(() => itemToStringId([{}])).toThrow('irreducible');
-    expect(() => itemToStringId('bad')).toThrow('must be a string of');
-    expect(() => itemToStringId(['bad'])).toThrow('must be a string of');
+    expect(() => itemToStringId('bad')).toThrow('must be a 24 character');
+    expect(() => itemToStringId(['bad'])).toThrow('must be a 24 character');
   });
 });

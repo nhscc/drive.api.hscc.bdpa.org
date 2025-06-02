@@ -1,18 +1,18 @@
 /**
  * @jest-environment jsdom
  */
-import * as React from 'react';
 import { render, screen } from '@testing-library/react';
+
 import IndexPage, { getServerSideProps } from 'universe/pages/index';
 
 it('renders without crashing', async () => {
   expect.hasAssertions();
 
-  const serverSideProps = (await getServerSideProps()).props;
+  const serverSideProperties = (await getServerSideProps()).props;
 
-  render(<IndexPage {...serverSideProps} />);
+  render(<IndexPage {...serverSideProperties} />);
   expect(screen.getByText('no')).toBeInTheDocument();
 
-  render(<IndexPage {...{ ...serverSideProps, isInProduction: true }} />);
+  render(<IndexPage {...{ ...serverSideProperties, isInProduction: true }} />);
   expect(screen.getByText('yes')).toBeInTheDocument();
 });

@@ -21,7 +21,7 @@ reactions being present on issues, PRs, and replies:
 
 :+1: 👍🏿👍🏾👍🏽👍🏼👍🏻👍 — up vote (also: _approve_, _like_, _+1_)
 
-\:-1: 👎🏿👎🏾👎🏽👎🏼👎🏻👎 — down vote (also: _disapprove_, _dislike_, _-1_)
+:-1: 👎🏿👎🏾👎🏽👎🏼👎🏻👎 — down vote (also: _disapprove_, _dislike_, _-1_)
 
 ### Bug Reports and Feature Requests
 
