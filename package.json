@@ -98,7 +98,7 @@
     "@types/content-type": "^1.1.8",
     "@types/jest": "^29.5.14",
     "@types/node-fetch": "^2.5.12",
-    "@types/semver": "^7.3.10",
+    "@types/semver": "^7.7.0",
     "@types/tar-stream": "^2.2.2",
     "@types/test-listen": "^1.1.0",
     "@types/webpack": "^5.28.0",
