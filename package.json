@@ -73,7 +73,7 @@
     "named-app-errors": "^4.0.2",
     "next": "^15.3.3",
     "node-fetch": "cjs",
-    "raw-body": "^2.5.1",
+    "raw-body": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-use": "^17.4.0",
