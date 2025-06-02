@@ -131,7 +131,7 @@
     "mongodb-memory-server": "^10.1.4",
     "msw": "^2.8.7",
     "next-test-api-route-handler": "^4.0.16",
-    "prettier": "^2.7.1",
+    "prettier": "^3.5.3",
     "random-case": "^1.0.0",
     "remark-cli": "^11.0.0",
     "remark-frontmatter": "^4.0.1",
