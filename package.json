@@ -146,7 +146,7 @@
     "remark-lint-no-undefined-references": "^5.0.2",
     "remark-lint-no-unused-definitions": "^4.0.2",
     "remark-lint-ordered-list-marker-style": "^4.0.1",
-    "remark-reference-links": "^6.0.1",
+    "remark-reference-links": "^7.0.0",
     "remark-validate-links": "^12.0.0",
     "simple-git": "^3.10.0",
     "sort-package-json": "^1.57.0",
