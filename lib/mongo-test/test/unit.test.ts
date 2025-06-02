@@ -1,8 +1,8 @@
 /* eslint-disable jest/no-conditional-expect */
-import { asMockedFunction, asMockedClass } from '@xunnamius/jest-types';
-import { isolatedImportFactory, mockEnvFactory } from 'testverse/setup';
+import { asMockedClass, asMockedFunction } from '@xunnamius/jest-types';
 import { MongoClient } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { isolatedImportFactory, mockEnvFactory } from 'testverse/setup';
 
 import type { TestCustomizations } from 'multiverse/mongo-test';
 import { DummyError } from 'named-app-errors';
@@ -347,20 +347,20 @@ describe('::setupMemoryServerOverride', () => {
           undefined as unknown as jest.DoneCallback
         );
 
-        expect(destroySpy).not.toBeCalled();
-        expect(initializeDbSpy).not.toBeCalled();
-        expect(hydrateDbSpy).not.toBeCalled();
-        expect(closeClientSpy).not.toBeCalled();
+        expect(destroySpy).not.toHaveBeenCalled();
+        expect(initializeDbSpy).not.toHaveBeenCalled();
+        expect(hydrateDbSpy).not.toHaveBeenCalled();
+        expect(closeClientSpy).not.toHaveBeenCalled();
         // eslint-disable-next-line jest/unbound-method
-        expect(asMockedFunction(mockedMongoMemoryServer.stop)).not.toBeCalled();
+        expect(asMockedFunction(mockedMongoMemoryServer.stop)).not.toHaveBeenCalled();
 
         await asMockedFunction(afterAll).mock.calls[0][0](
           undefined as unknown as jest.DoneCallback
         );
 
-        expect(closeClientSpy).toBeCalled();
+        expect(closeClientSpy).toHaveBeenCalled();
         // eslint-disable-next-line jest/unbound-method
-        expect(asMockedFunction(mockedMongoMemoryServer.stop)).toBeCalled();
+        expect(asMockedFunction(mockedMongoMemoryServer.stop)).toHaveBeenCalled();
 
         testLib.setupMemoryServerOverride({ defer: true });
 
@@ -538,7 +538,7 @@ describe('::setupMemoryServerOverride', () => {
             )
           ).resolves.toBeUndefined();
 
-          expect(destroySpy).not.toBeCalled();
+          expect(destroySpy).not.toHaveBeenCalled();
         },
         {
           VSCODE_INSPECTOR_OPTIONS: 'exists',

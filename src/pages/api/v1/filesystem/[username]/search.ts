@@ -3,7 +3,6 @@ import { searchNodes } from 'universe/backend';
 import { sendHttpOk } from 'multiverse/next-api-respond';
 import { ValidationError, ErrorMessage } from 'universe/error';
 
-// ? This is a NextJS special "config" export
 export { defaultConfig as config } from 'universe/backend/api';
 
 export default withMiddleware(

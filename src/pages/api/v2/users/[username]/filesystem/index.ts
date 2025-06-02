@@ -2,7 +2,6 @@ import { withMiddleware } from 'universe/backend/middleware';
 import { createNode } from 'universe/backend';
 import { sendHttpOk } from 'multiverse/next-api-respond';
 
-// ? This is a NextJS special "config" export
 export { defaultConfig as config } from 'universe/backend/api';
 
 export default withMiddleware(

@@ -1,29 +1,29 @@
-import { debugNamespace } from 'universe/constants';
-import { name as pkgName, version as pkgVersion } from 'package';
-import { verifyEnvironment } from '../expect-env';
-import { TrialError, GuruMeditationError } from 'universe/error';
-import { tmpdir } from 'os';
-import { promises as fs } from 'fs';
-import { resolve } from 'path';
-import { toss } from 'toss-expression';
-import { defaultConfig } from 'universe/backend/api';
 import execa from 'execa';
-import uniqueFilename from 'unique-filename';
+import { promises as fs } from 'fs';
 import { debugFactory } from 'multiverse/debug-extended';
+import { tmpdir } from 'os';
+import { name as pkgName, version as pkgVersion } from 'package';
+import { resolve } from 'path';
 import gitFactory from 'simple-git';
+import { toss } from 'toss-expression';
+import uniqueFilename from 'unique-filename';
+import { defaultConfig } from 'universe/backend/api';
+import { debugNamespace } from 'universe/constants';
+import { GuruMeditationError, TrialError } from 'universe/error';
+import { verifyEnvironment } from '../expect-env';
 // ? See: https://github.com/jest-community/jest-extended#setup
-import 'jest-extended/all';
-import 'jest-extended';
 import '@testing-library/jest-dom/extend-expect';
+import 'jest-extended';
+import 'jest-extended/all';
 
 import type { Debugger } from 'multiverse/debug-extended';
-import type { SimpleGit } from 'simple-git';
 import type {
   NextApiHandler,
   NextApiRequest,
   NextApiResponse,
   PageConfig
 } from 'next';
+import type { SimpleGit } from 'simple-git';
 import type { Promisable } from 'type-fest';
 
 const { writeFile, access: accessFile } = fs;
@@ -441,7 +441,7 @@ export async function protectedImport<T = unknown>({
       expectedExitCode == 'non-zero'
         ? expect(exitSpy).not.toBeCalledWith(0)
         : expectedExitCode === undefined
-        ? expect(exitSpy).not.toBeCalled()
+        ? expect(exitSpy).not.toHaveBeenCalled()
         : expect(exitSpy).toBeCalledWith(expectedExitCode);
     } else {
       debug.warn('"expect" object not found, so exit check was skipped');

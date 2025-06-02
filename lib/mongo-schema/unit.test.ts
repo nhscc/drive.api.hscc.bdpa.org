@@ -1,10 +1,10 @@
 /* eslint-disable jest/no-conditional-expect */
-import { isolatedImportFactory, mockEnvFactory } from 'testverse/setup';
-import { Db, MongoClient } from 'mongodb';
 import { asMockedClass } from '@xunnamius/jest-types';
+import { Db, MongoClient } from 'mongodb';
+import { isolatedImportFactory, mockEnvFactory } from 'testverse/setup';
 
-import type { TestCustomizations } from 'multiverse/mongo-test';
 import { getInitialInternalMemoryState } from 'multiverse/mongo-schema';
+import type { TestCustomizations } from 'multiverse/mongo-test';
 
 jest.mock('mongodb');
 jest.mock('configverse/get-schema-config', () => mockedMongoCustomizations);
@@ -157,13 +157,13 @@ describe('::getDb', () => {
     await withMockedEnv(
       async () => {
         const db = await lib.getDb({ name: 'fake-db-1', initialize: false });
-        expect(db.createCollection).not.toBeCalled();
+        expect(db.createCollection).not.toHaveBeenCalled();
         await lib.getDb({ name: 'fake-db-1' });
-        expect(db.createCollection).not.toBeCalled();
+        expect(db.createCollection).not.toHaveBeenCalled();
         const db2 = await lib.getDb({ name: 'fake-db-2' });
-        expect(db2.createCollection).toBeCalled();
+        expect(db2.createCollection).toHaveBeenCalled();
         await lib.getDb({ name: 'fake-db-2' });
-        expect(db2.createCollection).toBeCalled();
+        expect(db2.createCollection).toHaveBeenCalled();
       },
       { MONGODB_URI: 'abc' }
     );

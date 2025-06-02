@@ -1,6 +1,6 @@
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { getDb } from 'multiverse/mongo-schema';
 import { dummyRootData, useMockDateNow } from 'multiverse/mongo-common';
+import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { dummyAppData } from 'testverse/db';
 
 import {
@@ -104,7 +104,7 @@ it('becomes verbose when no DEBUG environment variable set and NODE_ENV is not t
 
   await withMockedOutput(async ({ infoSpy }) => {
     await withMockedEnv(importPruneData);
-    expect(infoSpy).not.toBeCalled();
+    expect(infoSpy).not.toHaveBeenCalled();
   });
 });
 

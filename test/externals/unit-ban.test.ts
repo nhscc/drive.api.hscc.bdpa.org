@@ -1,8 +1,8 @@
-import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { GuruMeditationError } from 'universe/error';
-import { getDb } from 'multiverse/mongo-schema';
 import { mockDateNowMs, useMockDateNow } from 'multiverse/mongo-common';
+import { getDb } from 'multiverse/mongo-schema';
+import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
+import { GuruMeditationError } from 'universe/error';
 
 import {
   mockEnvFactory,
@@ -10,9 +10,9 @@ import {
   withMockedOutput
 } from 'testverse/setup';
 
+import { ObjectId } from 'mongodb';
 import type { InternalLimitedLogEntry } from 'multiverse/next-limit';
 import type { InternalRequestLogEntry } from 'multiverse/next-log';
-import { ObjectId } from 'mongodb';
 
 // ? Ensure the isolated external picks up the memory server override
 jest.mock('multiverse/mongo-schema', () => {
@@ -82,7 +82,7 @@ it('becomes verbose when no DEBUG environment variable and NODE_ENV is not test'
 
   await withMockedOutput(async ({ infoSpy }) => {
     await withMockedEnv(importBanHammer);
-    expect(infoSpy).not.toBeCalled();
+    expect(infoSpy).not.toHaveBeenCalled();
   });
 });
 
