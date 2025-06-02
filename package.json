@@ -69,7 +69,6 @@
     "cors": "^2.8.5",
     "find-up": "^5.0.0",
     "is-plain-object": "^5.0.0",
-    "is-server-side": "^1.0.2",
     "mongodb": "^4.8.1",
     "named-app-errors": "^4.0.0",
     "next": "^12.2.3",

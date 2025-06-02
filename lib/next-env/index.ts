@@ -1,5 +1,4 @@
 import { parse as parseAsBytes } from 'bytes';
-import { isServer } from 'is-server-side';
 import { InvalidAppEnvironmentError } from 'named-app-errors';
 import { toss } from 'toss-expression';
 import { validHttpMethods } from '@xunnamius/types';
@@ -146,7 +145,7 @@ export function getEnv<T extends Environment>(customizedEnv?: T) {
     if (env.NODE_ENV == 'unknown') errors.push(`bad NODE_ENV, saw "${env.NODE_ENV}"`);
 
     // TODO: expect-env should cover this use-case (server-only) as well.
-    if (isServer()) {
+    if (env.NODE_ENV !== 'test') {
       if (env.MONGODB_URI === '')
         errors.push(`bad MONGODB_URI, saw "${env.MONGODB_URI}"`);
 
