@@ -54,7 +54,7 @@ export default async function setSchemaAndMaybeHydrateDb() {
 
     if (isDevelopment && getEnv().API_HYDRATE_DB) {
       setSchemaAndHydrateDbDebug('executing api db hydration directive');
-      setDummyData(require('testverse/db').getDummyData());
+      setDummyData(require('testverse/db'.toString()).getDummyData());
 
       await getDb({ name: 'root' });
       await getDb({ name: 'app' });
