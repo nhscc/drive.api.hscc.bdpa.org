@@ -7,8 +7,6 @@ import { createDebugLogger } from 'rejoinder';
 import { getSchemaConfig } from 'universe/backend/db';
 import { getEnv } from 'universe/backend/env';
 
-import { getDummyData } from 'testverse/db';
-
 import authRequest from 'multiverse/next-adhesive/auth-request';
 import checkContentType from 'multiverse/next-adhesive/check-content-type';
 import checkMethod from 'multiverse/next-adhesive/check-method';
@@ -56,7 +54,7 @@ export default async function setSchemaAndMaybeHydrateDb() {
 
     if (isDevelopment && getEnv().API_HYDRATE_DB) {
       setSchemaAndHydrateDbDebug('executing api db hydration directive');
-      setDummyData(getDummyData());
+      setDummyData(require('testverse/db').getDummyData());
 
       await getDb({ name: 'root' });
       await getDb({ name: 'app' });
