@@ -26,8 +26,9 @@ config.push({
 
 // TODO: delete this the next time you see it (unless /test/fixtures/ still
 // TODO: unwisely contains integration.ts)
-config[0].ignores = config[0]?.ignores?.filter((p) => !p.includes('/test/fixtures/'));
 assert(config[0]);
+config[0].ignores = config[0].ignores?.filter((p) => !p.includes('/test/fixtures/'));
+assert(config[0].ignores);
 
 export default config;
 

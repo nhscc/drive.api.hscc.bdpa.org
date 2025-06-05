@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { performance as perf } from 'node:perf_hooks';
 
+import { getEnv } from '@-xun/next-env';
+import { MongoClientClosedError } from 'mongodb';
 import { createDebugLogger } from 'rejoinder';
 
 import { addToRequestLog } from 'multiverse/next-log';
@@ -8,9 +10,6 @@ import { addToRequestLog } from 'multiverse/next-log';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { EmptyObject } from 'type-fest';
 import type { MiddlewareContext } from 'multiverse/next-api-glue';
-import { getEnv } from '@-xun/next-env';
-import { isNativeError } from 'node:util/types';
-import { MongoClientClosedError } from 'mongodb';
 
 const debug = createDebugLogger({ namespace: 'next-api:f:log-request' });
 

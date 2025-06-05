@@ -7,8 +7,8 @@ import { api, setupMockBackend } from 'testverse/fixtures';
 jest.mock('universe/backend');
 jest.mock('universe/backend/api', (): typeof import('universe/backend/api') => {
   return {
-    ...jest.requireActual('universe/backend/api'),
-    authorizationHeaderToOwnerAttribute: jest.fn(() => Promise.resolve('mock-owner'))
+    ...jest.requireActual('universe/backend/api')
+    //authorizationHeaderToOwnerAttribute: jest.fn(() => Promise.resolve('mock-owner'))
   };
 });
 

@@ -1,5 +1,3 @@
-import { asMocked } from 'testverse/util';
-
 import {
   authAppUser,
   createNode,
@@ -19,21 +17,6 @@ import CatchAllForNotFoundEndpoint, {
   metadata as CatchAllForNotFoundMetadata
 } from 'universe/pages/api/[[...catchAllForNotFound]]';
 
-import V1EndpointUsers, {
-  config as V1ConfigUsers,
-  metadata as V1MetadataUsers
-} from 'universe/pages/api/v1/users';
-
-import V1EndpointUsersUsername, {
-  config as V1ConfigUsersUsername,
-  metadata as V1MetadataUsersUsername
-} from 'universe/pages/api/v1/users/[username]';
-
-import V1EndpointUsersUsernameAuth, {
-  config as V1ConfigUsersUsernameAuth,
-  metadata as V1MetadataUsersUsernameAuth
-} from 'universe/pages/api/v1/users/[username]/auth';
-
 import V1EndpointFilesystemUsername, {
   config as V1ConfigFilesystemUsername,
   metadata as V1MetadataFilesystemUsername
@@ -48,6 +31,21 @@ import V1EndpointFilesystemUsernameSearch, {
   config as V1ConfigFilesystemUsernameSearch,
   metadata as V1MetadataFilesystemUsernameSearch
 } from 'universe/pages/api/v1/filesystem/[username]/search';
+
+import V1EndpointUsers, {
+  config as V1ConfigUsers,
+  metadata as V1MetadataUsers
+} from 'universe/pages/api/v1/users';
+
+import V1EndpointUsersUsername, {
+  config as V1ConfigUsersUsername,
+  metadata as V1MetadataUsersUsername
+} from 'universe/pages/api/v1/users/[username]';
+
+import V1EndpointUsersUsernameAuth, {
+  config as V1ConfigUsersUsernameAuth,
+  metadata as V1MetadataUsersUsernameAuth
+} from 'universe/pages/api/v1/users/[username]/auth';
 
 import V2EndpointUsers, {
   config as V2ConfigUsers,
@@ -78,6 +76,8 @@ import V2EndpointUsersUsernameFilesystemSearch, {
   config as V2ConfigUsersUsernameFilesystemSearch,
   metadata as V2MetadataUsersUsernameFilesystemSearch
 } from 'universe/pages/api/v2/users/[username]/filesystem/search';
+
+import { asMocked } from 'testverse/util';
 
 import type { NextApiHandler, PageConfig } from 'next';
 import type { PublicNode, PublicUser } from 'universe/backend/db';
