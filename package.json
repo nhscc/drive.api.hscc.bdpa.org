@@ -1,6 +1,6 @@
 {
   "name": "drive.api.hscc.bdpa.org",
-  "version": "1.2.3",
+  "version": "2.0.0",
   "private": true,
   "description": "https://drive.api.hscc.bdpa.org",
   "homepage": "https://drive.api.hscc.bdpa.org",
@@ -36,7 +36,7 @@
     "@-xun/jest": "^2.2.1",
     "@-xun/mongo-schema": "^1.1.2",
     "@-xun/mongo-test": "^1.1.2",
-    "@-xun/next-env": "^1.0.2",
+    "@-xun/next-env": "^1.1.0",
     "@-xun/symbiote": "^4.2.7",
     "@-xun/types": "^1.1.0",
     "@testing-library/jest-dom": "^6.6.3",
