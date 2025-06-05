@@ -32,7 +32,7 @@
     "test-repeat-unit": "npm run __test-repeat-unit --silent",
     "test-unit": "NODE_ENV=test jest $JEST_CLI --coverage --testPathIgnorePatterns '/(integration|e2e).*?\\.test\\.tsx?' '/dist/'"
   },
-  "devDependencies": {
+  "dependencies": {
     "@-xun/jest": "^2.2.1",
     "@-xun/mongo-schema": "^1.1.2",
     "@-xun/mongo-test": "^1.1.2",
