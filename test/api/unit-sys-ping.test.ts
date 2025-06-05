@@ -10,7 +10,7 @@ import { useMockDateNow } from 'testverse/util';
 import {
   getCommonDummyData,
   getCommonSchemaConfig
-} from 'multiverse/mongo-common/index.ts';
+} from 'multiverse/mongo-common/index';
 
 import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
 

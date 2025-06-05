@@ -1,5 +1,5 @@
 import { withSysMiddleware } from 'universe/backend/middleware';
-import { validateAndParseJson } from 'universe/util.ts';
+import { validateAndParseJson } from 'universe/util';
 
 import { sendHttpOk } from 'multiverse/next-api-respond';
 

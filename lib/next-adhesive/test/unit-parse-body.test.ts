@@ -5,7 +5,7 @@ import { noopHandler, withMockedOutput, wrapHandler } from 'testverse/util';
 import addRawBody, {
   ensureNextApiRequestHasRawBody,
   isNextApiRequestWithRawBody
-} from 'multiverse/next-adhesive/parse-body.ts';
+} from 'multiverse/next-adhesive/parse-body';
 
 import { withMiddleware } from 'multiverse/next-api-glue';
 

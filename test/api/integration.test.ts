@@ -8,7 +8,7 @@ import { get as dotPath } from 'dot-prop';
 import { testApiHandler } from 'next-test-api-route-handler';
 
 import { getSchemaConfig } from 'universe/backend/db';
-import { ErrorMessage } from 'universe/error.ts';
+import { ErrorMessage } from 'universe/error';
 
 import { getDummyData } from 'testverse/db';
 import { api } from 'testverse/fixtures';

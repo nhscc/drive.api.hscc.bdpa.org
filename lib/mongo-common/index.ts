@@ -1,9 +1,8 @@
+import { mockDateNowMs } from '@-xun/jest';
 import { safeDeepClone } from '@-xun/js';
 import { generateMockSensitiveObjectId } from '@-xun/mongo-test';
 
-import { AppValidationError } from 'universe/error.ts';
-
-import { mockDateNowMs } from 'testverse/util';
+import { AppValidationError } from 'universe/error';
 
 import {
   BANNED_BEARER_TOKEN,

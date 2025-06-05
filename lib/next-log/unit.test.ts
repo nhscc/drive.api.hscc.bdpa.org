@@ -3,10 +3,7 @@ import { setupMemoryServerOverride } from '@-xun/mongo-test';
 
 import { mockDateNowMs, useMockDateNow, withMockedOutput } from 'testverse/util';
 
-import {
-  getCommonDummyData,
-  getCommonSchemaConfig
-} from 'multiverse/mongo-common/index.ts';
+import { getCommonDummyData, getCommonSchemaConfig } from 'multiverse/mongo-common';
 
 import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
 import { addToRequestLog } from 'multiverse/next-log';

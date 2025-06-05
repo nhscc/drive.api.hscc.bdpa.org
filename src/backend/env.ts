@@ -1,7 +1,7 @@
 import { getEnv as getDefaultEnv } from '@-xun/next-env';
 import { parse as parseAsBytes } from 'bytes';
 
-import { AppValidationError } from 'universe/error.ts';
+import { AppValidationError } from 'universe/error';
 
 import type { Environment } from '@-xun/next-env';
 

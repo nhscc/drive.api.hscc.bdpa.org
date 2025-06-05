@@ -2,11 +2,7 @@ import { setupMemoryServerOverride } from '@-xun/mongo-test';
 
 import { useMockDateNow } from 'testverse/util';
 
-import {
-  getCommonDummyData,
-  getCommonSchemaConfig
-} from 'multiverse/mongo-common/index.ts';
-
+import { getCommonDummyData, getCommonSchemaConfig } from 'multiverse/mongo-common/';
 import { authorizeHeader } from 'multiverse/next-auth/authorize';
 
 import {

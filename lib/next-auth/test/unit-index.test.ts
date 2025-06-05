@@ -8,10 +8,7 @@ import { ObjectId } from 'mongodb';
 
 import { asMocked, useMockDateNow } from 'testverse/util';
 
-import {
-  getCommonDummyData,
-  getCommonSchemaConfig
-} from 'multiverse/mongo-common/index.ts';
+import { getCommonDummyData, getCommonSchemaConfig } from 'multiverse/mongo-common';
 
 import {
   authenticateHeader,
