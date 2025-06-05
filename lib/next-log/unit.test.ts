@@ -1,16 +1,27 @@
-import { mockDateNowMs, useMockDateNow } from 'multiverse/mongo-common';
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
+import { getDb } from '@-xun/mongo-schema';
+import { setupMemoryServerOverride } from '@-xun/mongo-test';
 
+import { mockDateNowMs, useMockDateNow, withMockedOutput } from 'testverse/util';
+
+import {
+  getCommonDummyData,
+  getCommonSchemaConfig
+} from 'multiverse/mongo-common/index.ts';
+
+import { BANNED_BEARER_TOKEN } from 'multiverse/next-auth';
 import { addToRequestLog } from 'multiverse/next-log';
 
-import type { HttpStatusCode } from '@xunnamius/types';
+import type { HttpStatusCode } from '@-xun/types';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { InternalRequestLogEntry } from 'multiverse/next-log';
 
-setupMemoryServerOverride();
 useMockDateNow();
+setupMemoryServerOverride({
+  schema: getCommonSchemaConfig(),
+  data: getCommonDummyData()
+});
+
+const mockPerfNow = 1234;
 
 describe('::addToRequestLog', () => {
   it('adds request to mongo collection', async () => {
@@ -34,8 +45,19 @@ describe('::addToRequestLog', () => {
     const res1 = { statusCode: 1111 } as NextApiResponse;
     const res2 = { statusCode: 2222 } as NextApiResponse;
 
-    await addToRequestLog({ req: req1, res: res1 });
-    await addToRequestLog({ req: req2, res: res2 });
+    await addToRequestLog({
+      req: req1,
+      res: res1,
+      endpoint: '/fake',
+      durationMs: 1234
+    });
+
+    await addToRequestLog({
+      req: req2,
+      res: res2,
+      endpoint: '/fake',
+      durationMs: 1234
+    });
 
     const reqlog = (await getDb({ name: 'root' })).collection<InternalRequestLogEntry>(
       'request-log'
@@ -48,9 +70,11 @@ describe('::addToRequestLog', () => {
       ip: '9.9.9.9',
       header: null,
       route: '/api/route/path1',
+      endpoint: '/fake',
       method: 'POST',
       createdAt: mockDateNowMs,
-      resStatusCode: 1111
+      resStatusCode: 1111,
+      durationMs: mockPerfNow
     });
 
     await expect(
@@ -60,9 +84,11 @@ describe('::addToRequestLog', () => {
       ip: '8.8.8.8',
       header: `bearer ${BANNED_BEARER_TOKEN}`,
       route: '/api/route/path2',
+      endpoint: '/fake',
       method: 'GET',
       createdAt: mockDateNowMs,
-      resStatusCode: 2222
+      resStatusCode: 2222,
+      durationMs: mockPerfNow
     });
   });
 
@@ -87,8 +113,19 @@ describe('::addToRequestLog', () => {
     const res1 = { statusCode: 1111 } as NextApiResponse;
     const res2 = { statusCode: 2222 } as NextApiResponse;
 
-    await addToRequestLog({ req: req1, res: res1 });
-    await addToRequestLog({ req: req2, res: res2 });
+    await addToRequestLog({
+      req: req1,
+      res: res1,
+      endpoint: '/fake',
+      durationMs: 1234
+    });
+
+    await addToRequestLog({
+      req: req2,
+      res: res2,
+      endpoint: '/fake',
+      durationMs: 1234
+    });
 
     const reqlog = (await getDb({ name: 'root' })).collection<InternalRequestLogEntry>(
       'request-log'
@@ -101,9 +138,11 @@ describe('::addToRequestLog', () => {
       ip: '9.9.9.9',
       header: null,
       route: '/api/route/path1',
+      endpoint: '/fake',
       method: null,
       createdAt: mockDateNowMs,
-      resStatusCode: 1111
+      resStatusCode: 1111,
+      durationMs: mockPerfNow
     });
 
     await expect(
@@ -113,9 +152,95 @@ describe('::addToRequestLog', () => {
       ip: '8.8.8.8',
       header: `bearer ${BANNED_BEARER_TOKEN}`,
       route: null,
+      endpoint: '/fake',
       method: 'GET',
       createdAt: mockDateNowMs,
-      resStatusCode: 2222
+      resStatusCode: 2222,
+      durationMs: mockPerfNow
+    });
+  });
+
+  it('handles null or undefined endpoint metadata with warnings', async () => {
+    expect.hasAssertions();
+
+    const req1 = {
+      headers: { 'x-forwarded-for': '9.9.9.9' },
+      method: 'GET',
+      url: '/api/route/path1'
+    } as unknown as NextApiRequest;
+
+    const req2 = {
+      headers: { 'x-forwarded-for': '8.8.8.8' },
+      method: 'GET',
+      url: null
+    } as unknown as NextApiRequest;
+
+    const res1 = { statusCode: 1111 } as NextApiResponse;
+    const res2 = { statusCode: 2222 } as NextApiResponse;
+    const res3 = { statusCode: 3333 } as NextApiResponse;
+
+    const reqlog = (await getDb({ name: 'root' })).collection<InternalRequestLogEntry>(
+      'request-log'
+    );
+
+    await withMockedOutput(async ({ warnSpy }) => {
+      await addToRequestLog({
+        req: req1,
+        res: res1,
+        endpoint: null,
+        durationMs: 1234
+      });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`API endpoint at ${String(req1.url)}`)
+      );
+
+      await expect(
+        reqlog.findOne({ resStatusCode: 1111 as HttpStatusCode })
+      ).resolves.toStrictEqual(
+        expect.objectContaining({
+          endpoint: null
+        })
+      );
+
+      await addToRequestLog({
+        req: req2,
+        res: res2,
+        endpoint: undefined,
+        durationMs: 1234
+      });
+
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('an API endpoint'));
+
+      await expect(
+        reqlog.findOne({ resStatusCode: 2222 as HttpStatusCode })
+      ).resolves.toStrictEqual(
+        expect.objectContaining({
+          endpoint: null
+        })
+      );
+
+      // @ts-expect-error: purposely missing endpoint parameter
+      await addToRequestLog({ req: req2, res: res3 });
+
+      expect(warnSpy).toHaveBeenCalledTimes(3);
+
+      await expect(
+        reqlog.findOne({ resStatusCode: 3333 as HttpStatusCode })
+      ).resolves.toStrictEqual(
+        expect.objectContaining({
+          endpoint: null
+        })
+      );
+
+      await addToRequestLog({
+        req: req2,
+        res: res3,
+        endpoint: '/fake',
+        durationMs: 1234
+      });
+
+      expect(warnSpy).toHaveBeenCalledTimes(3);
     });
   });
 });

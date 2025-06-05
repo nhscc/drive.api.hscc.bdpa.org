@@ -1,14 +1,13 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable unicorn/no-anonymous-default-export */
-import { debugFactory } from 'multiverse/debug-extended';
+import { getEnv } from '@-xun/next-env';
+import { createDebugLogger } from 'rejoinder';
+
 import { sendHttpBadMethod } from 'multiverse/next-api-respond';
-import { getEnv } from 'multiverse/next-env';
 
-import type { ValidHttpMethod } from '@xunnamius/types';
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { ValidHttpMethod } from '@-xun/types';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
 
-const debug = debugFactory('next-adhesive:check-method');
+const debug = createDebugLogger({ namespace: 'next-api:f:check-method' });
 
 export type Options = {
   /**
@@ -21,13 +20,13 @@ export type Options = {
  * Rejects requests that are either using a disallowed method or not using an
  * allowed method.
  */
-export default async function (
+export default async function middlewareFunction(
   req: NextApiRequest,
   res: NextApiResponse,
   context: MiddlewareContext<Options>
 ) {
   debug('entered middleware runtime');
-  debug(`original method: ${req.method}`);
+  debug('original method: %O', req.method);
 
   const method = req.method?.toUpperCase();
   const allowedMethods = context.options.allowedMethods?.map((m) => m.toUpperCase());

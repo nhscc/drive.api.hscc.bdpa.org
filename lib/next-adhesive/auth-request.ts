@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-base-to-string */
-/* eslint-disable unicorn/no-anonymous-default-export */
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
-import { debugFactory } from 'multiverse/debug-extended';
+import { createDebugLogger } from 'rejoinder';
+
+import { ValidationError } from 'universe/error';
 
 import {
   sendHttpUnauthenticated,
@@ -10,13 +8,16 @@ import {
 } from 'multiverse/next-api-respond';
 
 import { authenticateHeader, authorizeHeader } from 'multiverse/next-auth';
-import { InvalidAppConfigurationError } from 'named-app-errors';
 
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
-import type { AuthConstraint, AuthScheme } from 'multiverse/next-auth';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
 
-const debug = debugFactory('next-adhesive:auth-request');
+import type {
+  AuthenticationScheme,
+  AuthorizationConstraint
+} from 'multiverse/next-auth';
+
+const debug = createDebugLogger({ namespace: 'next-api:f:auth-request' });
 
 export type Options = {
   /**
@@ -34,8 +35,8 @@ export type Options = {
   requiresAuth?:
     | boolean
     | {
-        allowedSchemes?: AuthScheme | AuthScheme[];
-        constraints?: AuthConstraint | AuthConstraint[];
+        allowedSchemes?: AuthenticationScheme | AuthenticationScheme[];
+        constraints?: AuthorizationConstraint | AuthorizationConstraint[];
       };
 };
 
@@ -43,7 +44,7 @@ export type Options = {
  * Rejects unauthenticatable and unauthorizable requests (via Authorization
  * header).
  */
-export default async function (
+export default async function middlewareFunction(
   req: NextApiRequest,
   res: NextApiResponse,
   context: MiddlewareContext<Options>
@@ -56,7 +57,7 @@ export default async function (
     typeof context.options.requiresAuth !== 'boolean' &&
     (!context.options.requiresAuth || typeof context.options.requiresAuth !== 'object')
   ) {
-    throw new InvalidAppConfigurationError(
+    throw new ValidationError(
       'a valid "requiresAuth" option is missing from middleware configuration'
     );
   }
@@ -64,7 +65,7 @@ export default async function (
   if (context.options.requiresAuth) {
     const allowedSchemes =
       context.options.requiresAuth !== true
-        ? context.options.requiresAuth?.allowedSchemes
+        ? context.options.requiresAuth.allowedSchemes
         : undefined;
 
     const { authenticated, error: authenticationError } = await authenticateHeader({
@@ -84,11 +85,11 @@ export default async function (
 
       const constraints =
         context.options.requiresAuth !== true
-          ? context.options.requiresAuth?.constraints
+          ? context.options.requiresAuth.constraints
           : undefined;
 
       if (constraints) {
-        debug(`authorization check required: ${constraints}`);
+        debug(`authorization check required: ${String(constraints)}`);
 
         const { authorized, error: authorizationError } = await authorizeHeader({
           header,

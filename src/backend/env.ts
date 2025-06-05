@@ -1,11 +1,16 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
+import { getEnv as getDefaultEnv } from '@-xun/next-env';
 import { parse as parseAsBytes } from 'bytes';
 
-import { InvalidAppEnvironmentError } from 'universe/error';
+import { AppValidationError } from 'universe/error.ts';
 
-import { getEnv as getDefaultEnv } from 'multiverse/next-env';
+import type { Environment } from '@-xun/next-env';
 
-import type { Environment } from 'multiverse/next-env';
+// TODO: replace validation logic with zod instead (including defaults) and
+// TODO: integrate that logic with expect-env (also zod-based)
+
+// TODO: fix the badness that happens when trying to reference a non-existent
+// TODO: key from getEnv() (right now it says something like Primitive |
+// TODO: Primitive[] when it should be never)
 
 /**
  * Returns an object representing the application's runtime environment.
@@ -28,27 +33,11 @@ export function getEnv<T extends Environment = Environment>() {
     MAX_NODE_PERMISSIONS: Number(process.env.MAX_NODE_PERMISSIONS) || 10,
     MAX_NODE_CONTENTS: Number(process.env.MAX_NODE_CONTENTS) || 10,
     MAX_NODE_TEXT_LENGTH_BYTES:
-      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10_240,
-
-    PRUNE_DATA_MAX_FILE_NODES: process.env.PRUNE_DATA_MAX_FILE_NODES
-      ? Number(process.env.PRUNE_DATA_MAX_FILE_NODES)
-      : null,
-    PRUNE_DATA_MAX_META_NODES: process.env.PRUNE_DATA_MAX_META_NODES
-      ? Number(process.env.PRUNE_DATA_MAX_META_NODES)
-      : null,
-    PRUNE_DATA_MAX_USERS: process.env.PRUNE_DATA_MAX_USERS
-      ? Number(process.env.PRUNE_DATA_MAX_USERS)
-      : null
+      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10_240
   });
 
-  // TODO: retire all of the following logic when expect-env is created. Also,
-  // TODO: expect-env should have the ability to skip runs on certain NODE_ENV
-  // TODO: unless OVERRIDE_EXPECT_ENV is properly defined.
   /* istanbul ignore next */
-  if (
-    (env.NODE_ENV != 'test' && env.OVERRIDE_EXPECT_ENV != 'force-no-check') ||
-    env.OVERRIDE_EXPECT_ENV == 'force-check'
-  ) {
+  if (env.NODE_ENV !== 'test') {
     const errors: string[] = [];
 
     (
@@ -69,9 +58,11 @@ export function getEnv<T extends Environment = Environment>() {
         'MAX_NODE_TEXT_LENGTH_BYTES'
       ] as (keyof typeof env)[]
     ).forEach((name) => {
-      const value = env[name] as number;
-      if (!value || value <= 0) {
-        errors.push(`bad ${name}, saw "${env[name]}" (expected a non-negative number)`);
+      const value = env[name];
+      if (!value || !Number.isSafeInteger(value) || (value as number) <= 0) {
+        errors.push(
+          `bad ${name}, saw "${String(env[name])}" (expected a safe non-negative number)`
+        );
       }
     });
 
@@ -87,10 +78,8 @@ export function getEnv<T extends Environment = Environment>() {
       );
     }
 
-    // TODO: make it easier to reuse error code from getDefaultEnv. Or is it
-    // TODO: obsoleted by expect-env package? Either way, factor this logic out!
     if (errors.length) {
-      throw new InvalidAppEnvironmentError(`bad variables:\n - ${errors.join('\n - ')}`);
+      throw new AppValidationError(`bad variables:\n - ${errors.join('\n - ')}`);
     }
   }
 

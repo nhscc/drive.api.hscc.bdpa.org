@@ -1,16 +1,24 @@
-import { dummyRootData, useMockDateNow } from 'multiverse/mongo-common';
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import { getDb } from '@-xun/mongo-schema';
+import { setupMemoryServerOverride } from '@-xun/mongo-test';
 
-import { mockEnvFactory } from 'testverse/setup';
+import { mockEnvFactory, useMockDateNow } from 'testverse/util';
+
+import {
+  dummyRootData,
+  getCommonDummyData,
+  getCommonSchemaConfig
+} from 'multiverse/mongo-common';
 
 import { isDueForContrivedError } from 'multiverse/next-contrived';
 
-setupMemoryServerOverride();
 useMockDateNow();
+setupMemoryServerOverride({
+  schema: getCommonSchemaConfig(),
+  data: getCommonDummyData()
+});
 
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
-const { _id, ...entry } = dummyRootData['request-log'][0];
+const { _id, ...entry } = dummyRootData['request-log'][0]!;
 
 beforeEach(async () => {
   await (await getDb({ name: 'root' })).collection('request-log').deleteMany({});

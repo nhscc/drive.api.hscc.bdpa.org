@@ -1,41 +1,44 @@
-import { name as pkgName } from 'package';
-import { toss } from 'toss-expression';
-import { GuruMeditationError } from 'universe/error';
-import { dummyAppData } from 'testverse/db';
-import { ObjectId } from 'mongodb';
-import { getEnv } from 'universe/backend/env';
-import debugFactory from 'debug';
+import assert from 'node:assert';
 
-import {
+import createDebugLogger from 'debug';
+import { ObjectId } from 'mongodb';
+
+import { toPublicUser } from 'universe/backend/db';
+import { getEnv } from 'universe/backend/env';
+
+import { dummyAppData } from 'testverse/db';
+
+import { name as packageName } from 'package';
+
+import type { Promisable } from 'type-fest';
+
+import type {
   NewFileNode,
   NewMetaNode,
   NewUser,
   NodeLock,
   PatchMetaNode,
+  PatchUser,
   PublicFileNode,
   PublicMetaNode,
   PublicNode,
-  toPublicUser
+  PublicUser
 } from 'universe/backend/db';
 
-import type { Promisable } from 'type-fest';
 import type { NextApiHandlerMixin } from 'testverse/fixtures';
-import type { PatchUser, PublicUser } from 'universe/backend/db';
 
 // TODO: XXX: turn a lot of this into some kind of package; needs to be generic
 // TODO: XXX: enough to handle various use cases though :) Maybe
-// TODO: XXX: @xunnamius/fable for the generic version, along with
-// TODO: XXX: @xunnamius/fable-next, @xunnamius/fable-next-api (below),
-// TODO: XXX: @xunnamius/fable-X plugins. Initial version of @xunnamius/fable
-// TODO: XXX: would just be the next API version.
+// TODO: XXX: @-xun/fable for the generic version, @-xun/fable-next. Initial
+// TODO: XXX: version of @-xun/fable would just be the next API version.
 
 // TODO: XXX: add an `id` param that allows getResultAt using that `id` (along
-// TODO: XXX:  with index)
+// TODO: XXX: with index)
 
 // TODO: XXX: document functionality: RUN_ONLY='#, ##,###,...'
 // TODO: XXX: "fail fast" should be optional
 
-const debug = debugFactory(`${pkgName}:integration-fixtures`);
+const debug = createDebugLogger(`${packageName}:integration-fixtures`);
 
 /**
  * A single test result stored in `memory`.
@@ -70,10 +73,12 @@ export type TestResultset = TestResult[] & {
    *
    * @param index Specify a previous test result index starting at 1 (not zero!)
    */
-  getResultAt<T = unknown>(index: number): TestResult<T>;
-  getResultAt<T = unknown>(index: number, prop: string): T;
-  getResultAt<T = unknown>(index: string): TestResult<T>;
-  getResultAt<T = unknown>(index: string, prop: string): T;
+  getResultAt<T = unknown>(this: void, index: number): TestResult<T>;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  getResultAt<T = unknown>(this: void, index: number, property: string): T;
+  getResultAt<T = unknown>(this: void, index: string): TestResult<T>;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
+  getResultAt<T = unknown>(this: void, index: string, property: string): T;
 };
 
 /**
@@ -89,7 +94,7 @@ export type TestFixture = {
    */
   id?: string;
   /**
-   * If `invisible == true`, the test is not counted when generating positional
+   * If `invisible === true`, the test is not counted when generating positional
    * fixtures.
    *
    * @default false
@@ -117,25 +122,30 @@ export type TestFixture = {
    */
   params?:
     | Record<string, string | string[]>
-    | ((prevResults: TestResultset) => Promisable<Record<string, string | string[]>>);
+    | ((
+        previousResults: TestResultset
+      ) => Promisable<Record<string, string | string[]>>);
   /**
    * The body of the mock request. Automatically stringified.
    */
   body?:
     | Record<string, unknown>
-    | ((prevResults: TestResultset) => Promisable<Record<string, unknown>>);
+    | ((previousResults: TestResultset) => Promisable<Record<string, unknown>>);
   /**
    * The expected shape of the HTTP response.
    */
   response?: {
     /**
-     * The expected response status. If status != 200, we expect `json.success`
+     * The expected response status. If status !== 200, we expect `json.success`
      * to be `false`. Otherwise, we expect it to be `true`. All status-related
      * checks are skipped if a callback is provided that returns `undefined`.
      */
     status?:
       | number
-      | ((status: number, prevResults: TestResultset) => Promisable<number | undefined>);
+      | ((
+          status: number,
+          previousResults: TestResultset
+        ) => Promisable<number | undefined>);
     /**
      * The expected JSON response body. No need to test for `success` as that is
      * handled automatically (unless a status callback was used and it returned
@@ -148,7 +158,7 @@ export type TestFixture = {
       | jest.AsymmetricMatcher
       | ((
           json: Record<string, unknown> | undefined,
-          prevResults: TestResultset
+          previousResults: TestResultset
         ) => Promisable<Record<string, unknown> | jest.AsymmetricMatcher | undefined>);
   };
 };
@@ -160,23 +170,23 @@ export function getFixtures(
     .flatMap((n) => {
       const range = n
         .split('-')
-        .map((m) => parseInt(m))
+        .map((m) => Number.parseInt(m))
         .filter((m) => !Number.isNaN(m));
 
       const min = Math.min(...range);
       const max = Math.max(...range);
 
-      debug(`min: ${min}`);
-      debug(`max: ${max}`);
-      debug(`range: ${range}`);
+      debug('min: %O', min);
+      debug('max: %O', max);
+      debug('range: %O', range);
 
       if (!(0 < min && min <= max && max < Infinity)) {
-        throw new GuruMeditationError(`invalid RUN_ONLY range "${min}-${max}"`);
+        throw new Error(`invalid RUN_ONLY range "${min}-${max}"`);
       } else {
         const finalRange = Array.from({ length: max - min + 1 }).map(
           (_, ndx) => min + ndx
         );
-        debug(`final range: ${finalRange}`);
+        debug('final range: %O', finalRange);
         return finalRange;
       }
     })
@@ -229,7 +239,10 @@ export function getFixtures(
           return {
             users: [
               getResultAt('user-hillary', 'user'),
-              ...dummyAppData.users.slice().reverse().map(toPublicUser)
+              ...dummyAppData.users
+                .slice()
+                .reverse()
+                .map((u) => toPublicUser(u))
             ]
           };
         }
@@ -293,7 +306,7 @@ export function getFixtures(
       subject: 'delete user',
       pagesHandler: api.v1.usersUsername,
       method: 'DELETE',
-      params: { username: dummyAppData.users[0].username },
+      params: { username: dummyAppData.users[0]!.username },
       response: { status: 200 }
     },
     {
@@ -306,7 +319,10 @@ export function getFixtures(
           return {
             users: [
               getResultAt<PublicUser>('updated-user-hillary', 'user'),
-              ...dummyAppData.users.slice(1).reverse().map(toPublicUser)
+              ...dummyAppData.users
+                .slice(1)
+                .reverse()
+                .map((u) => toPublicUser(u))
             ]
           };
         }
@@ -315,7 +331,7 @@ export function getFixtures(
     {
       subject: 'attempt to fetch deleted user',
       pagesHandler: api.v1.usersUsername,
-      params: { username: dummyAppData.users[0].username },
+      params: { username: dummyAppData.users[0]!.username },
       method: 'GET',
       response: { status: 404 }
     },
@@ -389,7 +405,10 @@ export function getFixtures(
             users: [
               getResultAt('user-obama', 'user'),
               getResultAt<PublicUser>('updated-user-hillary', 'user'),
-              ...dummyAppData.users.slice(1).reverse().map(toPublicUser)
+              ...dummyAppData.users
+                .slice(1)
+                .reverse()
+                .map((u) => toPublicUser(u))
             ]
           };
         }
@@ -451,7 +470,7 @@ export function getFixtures(
       subject: 'delete user',
       pagesHandler: api.v2.usersUsername,
       method: 'DELETE',
-      params: { username: dummyAppData.users[1].username },
+      params: { username: dummyAppData.users[1]!.username },
       response: { status: 200 }
     },
     {
@@ -466,7 +485,10 @@ export function getFixtures(
             users: [
               getResultAt<PublicUser>('updated-user-obama', 'user'),
               getResultAt<PublicUser>('updated-user-hillary', 'user'),
-              ...dummyAppData.users.slice(2).reverse().map(toPublicUser)
+              ...dummyAppData.users
+                .slice(2)
+                .reverse()
+                .map((u) => toPublicUser(u))
             ]
           };
         }
@@ -489,14 +511,14 @@ export function getFixtures(
     {
       subject: 'attempt to fetch deleted user',
       pagesHandler: api.v2.usersUsername,
-      params: { username: dummyAppData.users[1].username },
+      params: { username: dummyAppData.users[1]!.username },
       method: 'GET',
       response: { status: 404 }
     },
     {
       subject: 'attempt to update deleted user',
       pagesHandler: api.v2.usersUsername,
-      params: { username: dummyAppData.users[1].username },
+      params: { username: dummyAppData.users[1]!.username },
       method: 'PUT',
       body: { email: 'some@new.email' },
       response: { status: 404 }
@@ -504,7 +526,7 @@ export function getFixtures(
     {
       subject: 'attempt to update using a bad email',
       pagesHandler: api.v2.usersUsername,
-      params: { username: dummyAppData.users[2].username },
+      params: { username: dummyAppData.users[2]!.username },
       method: 'PUT',
       body: { email: 'bad email address' },
       response: { status: 400 }
@@ -512,7 +534,7 @@ export function getFixtures(
     {
       subject: 'attempt to update using a too-long email',
       pagesHandler: api.v2.usersUsername,
-      params: { username: dummyAppData.users[2].username },
+      params: { username: dummyAppData.users[2]!.username },
       method: 'PUT',
       body: { email: 'x'.repeat(getEnv().MAX_USER_EMAIL_LENGTH) + '@aol.com' },
       response: { status: 400 }
@@ -520,7 +542,7 @@ export function getFixtures(
     {
       subject: 'attempt to update using a short non-hex salt',
       pagesHandler: api.v2.usersUsername,
-      params: { username: dummyAppData.users[2].username },
+      params: { username: dummyAppData.users[2]!.username },
       method: 'PUT',
       body: { salt: 'xyz' },
       response: { status: 400 }
@@ -528,7 +550,7 @@ export function getFixtures(
     {
       subject: 'attempt to update using a short non-hex key',
       pagesHandler: api.v2.usersUsername,
-      params: { username: dummyAppData.users[2].username },
+      params: { username: dummyAppData.users[2]!.username },
       method: 'PUT',
       body: { key: 'xyz' },
       response: { status: 400 }
@@ -536,7 +558,7 @@ export function getFixtures(
     {
       subject: 'no-op updates are okay',
       pagesHandler: api.v2.usersUsername,
-      params: { username: dummyAppData.users[2].username },
+      params: { username: dummyAppData.users[2]!.username },
       method: 'PUT',
       body: {},
       response: { status: 200 }
@@ -550,21 +572,26 @@ export function getFixtures(
       },
       response: {
         status: 200,
-        json: { users: dummyAppData.users.slice(2).reverse().map(toPublicUser) }
+        json: {
+          users: dummyAppData.users
+            .slice(2)
+            .reverse()
+            .map((u) => toPublicUser(u))
+        }
       }
     },
     {
       id: 'lifo-nodes',
-      subject: `count ${dummyAppData.users[2].username}'s nodes`,
+      subject: `count ${dummyAppData.users[2]!.username}'s nodes`,
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
-      params: { username: dummyAppData.users[2].username },
+      params: { username: dummyAppData.users[2]!.username },
       response: {
         status: 200,
         json: {
           nodes: expect.toBeArrayOfSize(
             [...dummyAppData['meta-nodes'], ...dummyAppData['file-nodes']].filter(
-              (n) => n.owner == dummyAppData.users[2].username
+              (n) => n.owner === dummyAppData.users[2]!.username
             ).length
           )
         }
@@ -575,7 +602,7 @@ export function getFixtures(
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         regexMatch: JSON.stringify({
           [`permissions.dummyAppData.users[0].username`]: 'view|edit'
         })
@@ -587,7 +614,7 @@ export function getFixtures(
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         regexMatch: JSON.stringify({
           [`permissions.dummyAppData.users[1].username`]: 'view|edit'
         })
@@ -601,7 +628,7 @@ export function getFixtures(
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         match: JSON.stringify({ tags: ['MaTeRiAlS'] })
       },
       response: {
@@ -610,7 +637,7 @@ export function getFixtures(
           return {
             nodes: [
               getResultAt<PublicNode[]>('lifo-nodes', 'nodes').find(
-                (n) => n.type == 'file' && n.tags.includes('materials')
+                (n) => n.type === 'file' && n.tags.includes('materials')
               )
             ]
           };
@@ -623,8 +650,8 @@ export function getFixtures(
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
-          username: dummyAppData.users[2].username,
-          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0].node_id]
+          username: dummyAppData.users[2]!.username,
+          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0]!.node_id]
         };
       },
       response: {
@@ -640,15 +667,15 @@ export function getFixtures(
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
-          username: dummyAppData.users[2].username,
-          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0].node_id]
+          username: dummyAppData.users[2]!.username,
+          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0]!.node_id]
         };
       },
       body: {
         name: 'new-name',
         lock: {
           client: 'abc123',
-          user: dummyAppData.users[2].username,
+          user: dummyAppData.users[2]!.username,
           createdAt: Date.now()
         } as NodeLock
       },
@@ -660,8 +687,8 @@ export function getFixtures(
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
-          username: dummyAppData.users[2].username,
-          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0].node_id]
+          username: dummyAppData.users[2]!.username,
+          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0]!.node_id]
         };
       },
       body: { permissions: { 'the-hill': 'view' } },
@@ -673,8 +700,8 @@ export function getFixtures(
       method: 'PUT',
       params: ({ getResultAt }) => {
         return {
-          username: dummyAppData.users[2].username,
-          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0].node_id]
+          username: dummyAppData.users[2]!.username,
+          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0]!.node_id]
         };
       },
       body: {},
@@ -686,16 +713,16 @@ export function getFixtures(
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
-          username: dummyAppData.users[2].username,
-          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0].node_id]
+          username: dummyAppData.users[2]!.username,
+          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0]!.node_id]
         };
       },
       response: {
         status: 200,
         json: (json, { getResultAt }) => {
-          const targetNode = getResultAt<PublicFileNode[]>('target-node', 'nodes')[0];
+          const targetNode = getResultAt<PublicFileNode[]>('target-node', 'nodes')[0]!;
 
-          expect((json?.nodes as PublicFileNode[])?.[0].modifiedAt).toBeGreaterThan(
+          expect((json?.nodes as PublicFileNode[])[0]!.modifiedAt).toBeGreaterThan(
             targetNode.modifiedAt
           );
 
@@ -707,7 +734,7 @@ export function getFixtures(
                 name: 'new-name',
                 lock: {
                   client: 'abc123',
-                  user: dummyAppData.users[2].username,
+                  user: dummyAppData.users[2]!.username,
                   createdAt: expect.any(Number)
                 },
                 permissions: { 'the-hill': 'view' }
@@ -723,8 +750,8 @@ export function getFixtures(
       method: 'DELETE',
       params: ({ getResultAt }) => {
         return {
-          username: dummyAppData.users[2].username,
-          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0].node_id]
+          username: dummyAppData.users[2]!.username,
+          node_ids: [getResultAt<PublicNode[]>('target-node', 'nodes')[0]!.node_id]
         };
       },
       response: { status: 200 }
@@ -734,7 +761,7 @@ export function getFixtures(
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         match: JSON.stringify({ tags: ['materials'] })
       },
       response: { status: 200, json: { nodes: [] } }
@@ -744,7 +771,7 @@ export function getFixtures(
       pagesHandler: api.v1.filesystemUsernameNodeId,
       method: 'GET',
       params: {
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         node_ids: dummyAppData['meta-nodes'].slice(1).map((n) => n._id.toString())
       },
       response: {
@@ -752,7 +779,7 @@ export function getFixtures(
         json: (json) => {
           expect(json?.nodes).toHaveLength(2);
           expect(
-            (json?.nodes as PublicMetaNode[]).every((n) => n.contents.length == 0)
+            (json?.nodes as PublicMetaNode[]).every((n) => n.contents.length === 0)
           ).toBeTrue();
           return undefined;
         }
@@ -763,7 +790,7 @@ export function getFixtures(
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         regexMatch: JSON.stringify({
           [`permissions.dummyAppData.users[0].username`]: 'view|edit',
           [`permissions.dummyAppData.users[1].username`]: 'view|edit'
@@ -776,7 +803,7 @@ export function getFixtures(
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
       params: {
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         match: JSON.stringify({
           [`permissions.dummyAppData.users[0].username`]: 'view|edit'
         }),
@@ -790,7 +817,7 @@ export function getFixtures(
       subject: "attempt to get non-existent user's nodes",
       pagesHandler: api.v1.filesystemUsernameSearch,
       method: 'GET',
-      params: { username: dummyAppData.users[1].username },
+      params: { username: dummyAppData.users[1]!.username },
       response: { status: 404 }
     },
     {
@@ -813,7 +840,7 @@ export function getFixtures(
         tags: ['live', 'tv', 'reporter', 'nbc', 'coverage'],
         lock: {
           client: 'abc123',
-          user: dummyAppData.users[2].username,
+          user: dummyAppData.users[2]!.username,
           createdAt: Date.now()
         }
       } as NewFileNode,
@@ -832,7 +859,7 @@ export function getFixtures(
             tags: ['live', 'tv', 'reporter', 'nbc', 'coverage'],
             lock: {
               client: 'abc123',
-              user: dummyAppData.users[2].username,
+              user: dummyAppData.users[2]!.username,
               createdAt: Date.now()
             },
             permissions: {}
@@ -927,7 +954,7 @@ export function getFixtures(
       body: {
         type: 'symlink',
         name: 'broken symlink',
-        contents: [dummyAppData['meta-nodes'][0]._id.toString()]
+        contents: [dummyAppData['meta-nodes'][0]!._id.toString()]
       } as NewMetaNode,
       response: {
         status: 200,
@@ -939,7 +966,7 @@ export function getFixtures(
             name: 'broken symlink',
             node_id: expect.any(String),
             permissions: {},
-            contents: [dummyAppData['meta-nodes'][0]._id.toString()]
+            contents: [dummyAppData['meta-nodes'][0]!._id.toString()]
           }
         }
       }
@@ -1335,12 +1362,12 @@ export function getFixtures(
       }
     },
     {
-      subject: `attempt to get file nodes #1 and #2 as ${dummyAppData.users[2].username}`,
+      subject: `attempt to get file nodes #1 and #2 as ${dummyAppData.users[2]!.username}`,
       pagesHandler: api.v2.usersUsernameFilesystemNodeId,
       method: 'GET',
       params: ({ getResultAt }) => {
         return {
-          username: dummyAppData.users[2].username,
+          username: dummyAppData.users[2]!.username,
           node_ids: [
             getResultAt('node-1', 'node.node_id'),
             getResultAt('node-2', 'node.node_id')
@@ -1371,30 +1398,29 @@ export function getFixtures(
       if (runOnly && !runOnly.includes(displayIndex)) return false;
       (test as TestFixture).displayIndex = !runOnly
         ? displayIndex
-        : (runOnly.shift() ??
-          toss(new GuruMeditationError('ran out of RUN_ONLY indices')));
+        : (runOnly.shift() ?? assert.fail('ran out of RUN_ONLY indices'));
       return true;
     }
   );
 
   // TODO: XXX: add ability to capture/suppress output via fixture option (even better: selectively use mock plugins like withMockEnv and withMockOutput via config options)
 
-  // TODO: XXX: with @xunnamius/fable, have an "every X" type construct (the below is "every reqPerContrived")
+  // TODO: XXX: with @-xun/fable, have an "every X" type construct (the below is "every reqPerContrived")
   // TODO: XXX: also allow middleware
   // TODO: XXX: also custom props for fixtures
 
   const reqPerContrived = getEnv().REQUESTS_PER_CONTRIVED_ERROR;
 
-  for (let i = 0; i < filteredFixtures.length; i += reqPerContrived) {
+  for (let index = 0; index < filteredFixtures.length; index += reqPerContrived) {
     const invisibleCount = filteredFixtures
-      .slice(Math.max(0, i - reqPerContrived), i)
+      .slice(Math.max(0, index - reqPerContrived), index)
       .filter((f) => f.invisible).length;
 
     // ? Ensure counts remain aligned by skipping tests that don't increase
     // ? internal contrived counter
-    i += invisibleCount;
+    index += invisibleCount;
 
-    filteredFixtures.splice(i, 0, {
+    filteredFixtures.splice(index, 0, {
       displayIndex: -1,
       subject: 'handle contrived',
       pagesHandler: api.v1.users,

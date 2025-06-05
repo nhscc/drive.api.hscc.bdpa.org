@@ -1,12 +1,12 @@
-/* eslint-disable unicorn/no-anonymous-default-export */
-import { debugFactory } from 'multiverse/debug-extended';
+import { createDebugLogger } from 'rejoinder';
+
 import { sendHttpContrivedError } from 'multiverse/next-api-respond';
 import { isDueForContrivedError } from 'multiverse/next-contrived';
 
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
 
-const debug = debugFactory('next-adhesive:contrive-error');
+const debug = createDebugLogger({ namespace: 'next-api:f:contrive-error' });
 
 export type Options = {
   /**
@@ -20,7 +20,7 @@ export type Options = {
 /**
  * Rejects every Nth request with a dummy error (see .env.example).
  */
-export default async function (
+export default async function middlewareFunction(
   _req: NextApiRequest,
   res: NextApiResponse,
   context: MiddlewareContext<Options>

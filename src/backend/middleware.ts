@@ -1,3 +1,5 @@
+// TODO: simplify simplify simplify!
+
 import authRequest from 'multiverse/next-adhesive/auth-request';
 import checkContentType from 'multiverse/next-adhesive/check-content-type';
 import checkMethod from 'multiverse/next-adhesive/check-method';
@@ -9,6 +11,7 @@ import logRequest from 'multiverse/next-adhesive/log-request';
 import useCors from 'multiverse/next-adhesive/use-cors';
 import { middlewareFactory } from 'multiverse/next-api-glue';
 
+import type { Simplify } from 'type-fest';
 import type { Options as AuthRequestOptions } from 'multiverse/next-adhesive/auth-request';
 import type { Options as CheckContentTypeOptions } from 'multiverse/next-adhesive/check-content-type';
 import type { Options as CheckMethodOptions } from 'multiverse/next-adhesive/check-method';
@@ -18,6 +21,20 @@ import type { Options as HandleErrorOptions } from 'multiverse/next-adhesive/han
 import type { Options as LimitRequestOptions } from 'multiverse/next-adhesive/limit-request';
 import type { Options as LogRequestOptions } from 'multiverse/next-adhesive/log-request';
 import type { Options as UseCorsOptions } from 'multiverse/next-adhesive/use-cors';
+
+type ExposedOptions = LogRequestOptions &
+  CheckVersionOptions &
+  CheckMethodOptions &
+  CheckContentTypeOptions;
+
+/**
+ * The shape of an API endpoint metadata object.
+ *
+ * This export is heavily relied upon by most of the testing infrastructure and
+ * should be exported alongside `defaultEndpointConfig`/`config` in every
+ * Next.js API handler file.
+ */
+export type EndpointMetadata = Simplify<ExposedOptions & { descriptor: string }>;
 
 /**
  * Primary middleware runner for the REST API. Decorates a request handler.
@@ -29,13 +46,10 @@ import type { Options as UseCorsOptions } from 'multiverse/next-adhesive/use-cor
  */
 /* istanbul ignore next */
 const withMiddleware = middlewareFactory<
-  LogRequestOptions &
-    CheckVersionOptions &
+  ExposedOptions &
     UseCorsOptions &
     AuthRequestOptions &
     LimitRequestOptions &
-    CheckMethodOptions &
-    CheckContentTypeOptions &
     HandleErrorOptions &
     ContriveErrorOptions
 >({
@@ -70,7 +84,6 @@ const withMiddleware = middlewareFactory<
 const withSysMiddleware = middlewareFactory<
   LogRequestOptions &
     AuthRequestOptions &
-    LimitRequestOptions &
     CheckMethodOptions &
     CheckContentTypeOptions &
     HandleErrorOptions

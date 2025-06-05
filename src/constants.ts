@@ -1,7 +1,8 @@
-import { name as pkgName } from 'package';
+/* eslint-disable unicorn/prefer-export-from */
+import { name as packageName } from 'package';
 
 /**
  * This value is used in first party source app-wide as a debug package
  * namespace.
  */
-export const debugNamespace = pkgName;
+export const debugNamespace = packageName;

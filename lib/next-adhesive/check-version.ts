@@ -1,12 +1,12 @@
-/* eslint-disable unicorn/no-anonymous-default-export */
-import { debugFactory } from 'multiverse/debug-extended';
+import { getEnv } from '@-xun/next-env';
+import { createDebugLogger } from 'rejoinder';
+
 import { sendHttpNotFound } from 'multiverse/next-api-respond';
-import { getEnv } from 'multiverse/next-env';
 
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
 
-const debug = debugFactory('next-adhesive:check-version');
+const debug = createDebugLogger({ namespace: 'next-api:f:check-version' });
 
 export type Options = {
   /**
@@ -18,7 +18,7 @@ export type Options = {
 /**
  * Rejects requests to disabled versions of the API.
  */
-export default async function (
+export default async function middlewareFunction(
   _req: NextApiRequest,
   res: NextApiResponse,
   context: MiddlewareContext<Options>

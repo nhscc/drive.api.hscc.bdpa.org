@@ -1,5 +1,7 @@
 // @ts-check
 
+import assert from 'node:assert';
+
 import {
   assertEnvironment,
   moduleExport
@@ -18,9 +20,14 @@ config.push({
   /* Add custom config here, such as disabling certain rules */
   rules: {
     'import/extensions': 'off',
-    'unicorn/no-abusive-eslint-disable': 'off'
+    'no-restricted-syntax': 'off'
   }
 });
+
+// TODO: delete this the next time you see it (unless /test/fixtures/ still
+// TODO: unwisely contains integration.ts)
+config[0].ignores = config[0]?.ignores?.filter((p) => !p.includes('/test/fixtures/'));
+assert(config[0]);
 
 export default config;
 

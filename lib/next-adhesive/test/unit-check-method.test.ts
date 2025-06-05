@@ -1,11 +1,11 @@
-import { withMiddleware } from 'multiverse/next-api-glue';
 import { testApiHandler } from 'next-test-api-route-handler';
 
-import { mockEnvFactory, noopHandler, wrapHandler } from 'testverse/setup';
+import { mockEnvFactory, noopHandler, wrapHandler } from 'testverse/util';
 
 import checkMethod from 'multiverse/next-adhesive/check-method';
+import { withMiddleware } from 'multiverse/next-api-glue';
 
-import type { ValidHttpMethod } from '@xunnamius/types';
+import type { ValidHttpMethod } from '@-xun/types';
 import type { Options } from 'multiverse/next-adhesive/check-method';
 
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
@@ -16,6 +16,7 @@ it('sends 200 for allowed methods', async () => {
   await testApiHandler({
     pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
         use: [checkMethod],
         options: { allowedMethods: ['GET', 'DELETE', 'POST', 'PUT'] }
       })
@@ -34,7 +35,10 @@ it('is restrictive by default', async () => {
 
   await testApiHandler({
     pagesHandler: wrapHandler(
-      withMiddleware<Options>(noopHandler, { use: [checkMethod] })
+      withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
+        use: [checkMethod]
+      })
     ),
     test: async ({ fetch }) => {
       expect((await fetch({ method: 'GET' })).status).toBe(405);
@@ -51,7 +55,10 @@ it('sends 405 when request.method is undefined', async () => {
   await testApiHandler({
     requestPatcher: (req) => (req.method = undefined),
     pagesHandler: wrapHandler(
-      withMiddleware<Options>(noopHandler, { use: [checkMethod] })
+      withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
+        use: [checkMethod]
+      })
     ),
     test: async ({ fetch }) => {
       expect((await fetch()).status).toBe(405);
@@ -65,6 +72,7 @@ it('sends 405 when encountering unlisted methods', async () => {
   await testApiHandler({
     pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
         use: [checkMethod],
         options: { allowedMethods: ['POST', 'PUT'] }
       })
@@ -86,6 +94,7 @@ it('sends 405 when encountering globally disallowed methods', async () => {
       await testApiHandler({
         pagesHandler: wrapHandler(
           withMiddleware<Options>(noopHandler, {
+            descriptor: '/fake',
             use: [checkMethod],
             options: { allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'] }
           })
@@ -110,6 +119,7 @@ it('ignores spacing when parsing DISALLOWED_METHODS', async () => {
       await testApiHandler({
         pagesHandler: wrapHandler(
           withMiddleware<Options>(noopHandler, {
+            descriptor: '/fake',
             use: [checkMethod],
             options: { allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'] }
           })
@@ -132,6 +142,7 @@ it('sends an Allow header in 405 responses', async () => {
   await testApiHandler({
     pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
         use: [checkMethod],
         options: { allowedMethods: ['GET', 'POST', 'HEAD'] }
       })
@@ -150,6 +161,7 @@ it('works even if allowedMethods specified in lowercase', async () => {
   await testApiHandler({
     pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
         use: [checkMethod],
         options: {
           allowedMethods: ['get'] as unknown as ValidHttpMethod[]

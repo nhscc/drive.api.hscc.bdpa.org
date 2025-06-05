@@ -1,14 +1,16 @@
 import { ObjectId } from 'mongodb';
 
-import { getCommonDummyData, mockDateNowMs } from 'multiverse/mongo-common';
+import { mockDateNowMs } from 'testverse/util';
+
+import { getCommonDummyData } from 'multiverse/mongo-common';
+
+import type { DummyData } from '@-xun/mongo-test';
 
 import type {
   InternalFileNode,
   InternalMetaNode,
   InternalUser
 } from 'universe/backend/db';
-
-import type { DummyData } from 'multiverse/mongo-test';
 
 /**
  * Returns data used to hydrate databases and their collections.

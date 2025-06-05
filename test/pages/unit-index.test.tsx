@@ -1,7 +1,9 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment jest-fixed-jsdom
  */
 import { render, screen } from '@testing-library/react';
+// add custom jest matchers from jest-dom
+import '@testing-library/jest-dom';
 
 import IndexPage, { getServerSideProps } from 'universe/pages/index';
 

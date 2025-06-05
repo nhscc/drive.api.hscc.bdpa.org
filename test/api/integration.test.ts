@@ -1,41 +1,43 @@
-/* eslint-disable eqeqeq */
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable jest/no-standalone-expect */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable jest/require-hook */
+import assert from 'node:assert';
+
+import { getDb } from '@-xun/mongo-schema';
+import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { get as dotPath } from 'dot-prop';
 import { testApiHandler } from 'next-test-api-route-handler';
-import { toss } from 'toss-expression';
 
-import { GuruMeditationError } from 'universe/error';
+import { getSchemaConfig } from 'universe/backend/db';
+import { ErrorMessage } from 'universe/error.ts';
 
+import { getDummyData } from 'testverse/db';
 import { api } from 'testverse/fixtures';
 import { getFixtures } from 'testverse/fixtures/integration';
-import { mockEnvFactory } from 'testverse/setup';
+import { mockEnvFactory } from 'testverse/util';
 
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
 import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
 
 import type { TestResult, TestResultset } from 'testverse/fixtures/integration';
 
 setupMemoryServerOverride({
   // ? Ensure all tests share the same database state
-  defer: true
+  defer: true,
+  schema: getSchemaConfig(),
+  data: getDummyData()
 });
 
-const withMockedEnv = mockEnvFactory(
-  { OVERRIDE_EXPECT_ENV: 'force-check' },
-  { replace: false }
-);
+const withMockedEnv = mockEnvFactory({
+  NODE_ENV: 'production',
+  MONGODB_URI: 'fake'
+});
 
 // ? Memory of the results of past fixture runs.
 const memory: TestResultset = [
   { status: Infinity, json: {} }
 ] as unknown as TestResultset;
 
-memory.latest = memory[0];
-memory.getResultAt = () => memory[0];
+memory.latest = memory[0]!;
+memory.getResultAt = () => memory[0]!;
 memory.idMap = {};
 
 // ? Fail fast and early
@@ -43,6 +45,8 @@ let lastRunSuccess = true;
 
 describe('> middleware correctness tests', () => {
   [...Object.values(api.v1), ...Object.values(api.v2)].forEach((endpoint) => {
+    assert(endpoint.uri, ErrorMessage.GuruMeditation());
+
     it(`${endpoint.uri} fails on bad authentication`, async () => {
       expect.hasAssertions();
 
@@ -96,9 +100,10 @@ describe('> fable integration tests', () => {
   let countSkippedTests = 0;
 
   afterAll(() => {
-    if (countSkippedTests)
+    if (countSkippedTests) {
       // eslint-disable-next-line no-console
       console.warn(`${countSkippedTests} tests were skipped!`);
+    }
   });
 
   getFixtures(api).forEach(
@@ -113,11 +118,7 @@ describe('> fable integration tests', () => {
       params,
       invisible
     }) => {
-      if (!displayIndex) {
-        throw new GuruMeditationError(
-          'fixture is missing required property "displayIndex"'
-        );
-      }
+      assert(displayIndex, 'fixture is missing required property "displayIndex"');
 
       const shouldSkip =
         !subject ||
@@ -145,23 +146,20 @@ describe('> fable integration tests', () => {
             index: number | string,
             property?: string
           ): TestResult<T> | T => {
-            const result: TestResult<T> =
+            const result =
               typeof index === 'string'
                 ? memory.idMap[index]
                 : memory[index + (index < 0 ? displayIndex : 1)];
 
-            // @ts-expect-error: delete this
             const returnValue = property ? dotPath<T>(result?.json, property) : result;
 
-            if (!result) {
-              throw new GuruMeditationError(`no result at index "${index}"`);
-            } else if (returnValue === undefined) {
-              throw new GuruMeditationError(
-                `${
-                  property ? 'prop path "' + property + '" ' : ''
-                }return value cannot be undefined`
-              );
-            }
+            assert(result, `no result at index "${index}"`);
+            assert(
+              returnValue !== undefined,
+              `${
+                property ? 'prop path "' + property + '" ' : ''
+              }return value cannot be undefined`
+            );
 
             return returnValue;
           };
@@ -172,8 +170,10 @@ describe('> fable integration tests', () => {
 
           await withMockedEnv(
             async () => {
+              assert(handler, ErrorMessage.GuruMeditation());
+
               await testApiHandler({
-                pagesHandler: handler || toss(new GuruMeditationError()),
+                pagesHandler: handler,
                 params: requestParams,
                 requestPatcher: (req) => {
                   req.headers.authorization = `bearer ${DUMMY_BEARER_TOKEN}`;
@@ -199,14 +199,16 @@ describe('> fable integration tests', () => {
                   } catch {}
 
                   if (expectedStatus) {
-                    if (res.status != expectedStatus) {
+                    if (res.status !== expectedStatus) {
                       // eslint-disable-next-line no-console
                       console.warn('unexpected status for result:', json);
                     }
 
                     expect(res.status).toBe(expectedStatus);
 
-                    expect(json.success)[res.status == 200 ? 'toBeTrue' : 'toBeFalsy']();
+                    expect(json.success)[
+                      res.status === 200 ? 'toBeTrue' : 'toBeFalsy'
+                    ]();
                     delete json.success;
                   }
 
@@ -221,7 +223,10 @@ describe('> fable integration tests', () => {
 
                   const memorize = { status: res.status, json } as TestResult;
 
-                  if (id) memory.idMap[id] = memorize;
+                  if (id) {
+                    memory.idMap[id] = memorize;
+                  }
+
                   memory[displayIndex] = memorize;
                   memory.latest = memorize;
                   lastRunSuccess = true;

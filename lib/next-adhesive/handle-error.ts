@@ -1,7 +1,15 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable unicorn/no-anonymous-default-export */
-import { debugFactory } from 'multiverse/debug-extended';
+import { AssertionError } from 'node:assert';
+
+import { createDebugLogger } from 'rejoinder';
+
+import {
+  AppError,
+  AppValidationError,
+  AuthError,
+  NotFoundError,
+  NotImplementedError,
+  ValidationError
+} from 'universe/error';
 
 import {
   sendHttpBadRequest,
@@ -11,22 +19,13 @@ import {
   sendNotImplemented
 } from 'multiverse/next-api-respond';
 
-import {
-  AppError,
-  AppValidationError,
-  AuthError,
-  GuruMeditationError,
-  NotFoundError,
-  NotImplementedError,
-  ValidationError
-} from 'named-app-errors';
-
-import type { JsonError } from '@xunnamius/types';
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { Promisable } from 'type-fest';
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import type { JsonError } from 'multiverse/next-api-respond';
 
-const debug = debugFactory('next-adhesive:handle-error');
+const debug = createDebugLogger({ namespace: 'next-api:f:handle-error' });
+const log = createDebugLogger({ namespace: 'next-api' });
 
 /**
  * Special middleware used to handle custom errors.
@@ -54,7 +53,7 @@ export type Options = {
  * Generic error handling middleware. **This should be among the final
  * middleware to run on the error handling middleware chain.**
  */
-export default async function (
+export default async function middlewareFunction(
   req: NextApiRequest,
   res: NextApiResponse,
   context: MiddlewareContext<Options>
@@ -96,16 +95,14 @@ export default async function (
     }`
   );
 
-  if (error instanceof GuruMeditationError) {
-    // eslint-disable-next-line no-console
-    console.error(`error - sanity check failed on request: ${req.url}\n`, error);
+  if (error instanceof AssertionError) {
+    log.error(`error - sanity check failed on request: ${String(req.url)}\n`, error);
     sendHttpError(res, {
       error: 'sanity check failed: please report exactly what you did just now!'
     });
   } else if (error instanceof AppValidationError) {
-    // eslint-disable-next-line no-console
-    console.error(
-      `error - server-side validation exception on request: ${req.url}\n`,
+    log.error(
+      `error - server-side validation exception on request: ${String(req.url)}\n`,
       error
     );
     sendHttpError(res, errorJson);
@@ -118,12 +115,10 @@ export default async function (
   } else if (error instanceof NotImplementedError) {
     sendNotImplemented(res);
   } else if (error instanceof AppError) {
-    // eslint-disable-next-line no-console
-    console.error(`error - named exception on request: ${req.url}\n`, error);
+    log.error(`error - named exception on request: ${String(req.url)}\n`, error);
     sendHttpError(res, errorJson);
   } else {
-    // eslint-disable-next-line no-console
-    console.error(`error - unnamed exception on request: ${req.url}\n`, error);
+    log.error(`error - unnamed exception on request: ${String(req.url)}\n`, error);
     sendHttpError(res);
   }
 }

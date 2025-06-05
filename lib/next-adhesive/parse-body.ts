@@ -1,28 +1,21 @@
-/* eslint-disable eqeqeq */
-/* eslint-disable unicorn/no-anonymous-default-export */
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* eslint-disable unicorn/prevent-abbreviations */
 import querystring from 'node:querystring';
+import { isNativeError } from 'node:util/types';
 
-import { isError } from '@xunnamius/types';
 import { parse } from 'content-type';
-import { debugFactory } from 'multiverse/debug-extended';
-import { sendHttpTooLarge } from 'multiverse/next-api-respond';
-import { ClientValidationError, InvalidAppConfigurationError } from 'named-app-errors';
+import { AppValidationError, ValidationError } from 'named-app-errors';
 import getRawBody from 'raw-body';
+import { createDebugLogger } from 'rejoinder';
 
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
+import { sendHttpTooLarge } from 'multiverse/next-api-respond';
+
 import type { NextApiRequest, NextApiResponse } from 'next';
 import type { RawBodyError } from 'raw-body';
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
 
-const debug = debugFactory('next-adhesive:add-raw-body');
+const debug = createDebugLogger({ namespace: 'next-api:f:parse-body' });
 
 // * https://xunn.at/source-nextjs-defaultbodylimit
 const defaultRequestBodySizeLimit = '1mb';
-
-const isRawBodyError = (e: unknown): e is RawBodyError => {
-  return isError(e) && typeof (e as RawBodyError).type === 'string';
-};
 
 /**
  * The shape of an object (typically a NextApiRequest object) that has a rawBody
@@ -33,7 +26,7 @@ export type WithRawBody<T> = T & {
    * The raw request body exactly as it was received (as a string parsed by
    * `raw-body`).
    */
-  rawBody: string;
+  rawBody?: string;
 };
 
 export type Options = {
@@ -69,7 +62,7 @@ export function ensureNextApiRequestHasRawBody(
   if ((req as WithRawBody<NextApiRequest>).rawBody !== undefined) {
     return true;
   } else {
-    throw new InvalidAppConfigurationError(
+    throw new AppValidationError(
       'encountered a NextApiRequest object without a rawBody property'
     );
   }
@@ -98,7 +91,7 @@ export function ensureNextApiRequestHasRawBody(
  *
  * @see https://nextjs.org/docs/api-routes/api-middlewares#custom-config
  */
-export default async function (
+export default async function middlewareFunction(
   req: NextApiRequest,
   res: NextApiResponse,
   context: MiddlewareContext<Options>
@@ -106,12 +99,12 @@ export default async function (
   debug('entered middleware runtime');
 
   if (req.body !== undefined) {
-    throw new InvalidAppConfigurationError(
-      "Next.js's body parser must be disabled when using add-raw-body middleware"
+    throw new AppValidationError(
+      "Next.js's body parser must be disabled when using parse-body middleware"
     );
   } else if (isNextApiRequestWithRawBody(req)) {
-    throw new InvalidAppConfigurationError(
-      'NextApiRequest object already has a defined "rawBody" property (is the add-raw-body middleware obsolete?)'
+    throw new AppValidationError(
+      'NextApiRequest object already has a defined "rawBody" property (is the parse-body middleware obsolete?)'
     );
   } else {
     debug('adding "rawBody" property to request object via custom body parsing');
@@ -135,10 +128,10 @@ export default async function (
     try {
       buffer = (await getRawBody(req, { encoding, limit })).toString();
     } catch (error) {
-      if (isRawBodyError(error) && error.type == 'entity.too.large') {
+      if (isRawBodyError(error) && error.type === 'entity.too.large') {
         sendHttpTooLarge(res, { error: `body exceeded ${limit} size limit` });
       } else {
-        throw new ClientValidationError('invalid body');
+        throw new ValidationError('invalid body');
       }
     }
 
@@ -155,7 +148,7 @@ export default async function (
           try {
             finalReq.body = JSON.parse(finalReq.rawBody);
           } catch {
-            throw new ClientValidationError('invalid JSON body');
+            throw new ValidationError('invalid JSON body');
           }
         }
       } else if (type === 'application/x-www-form-urlencoded') {
@@ -167,4 +160,8 @@ export default async function (
       }
     }
   }
+}
+
+function isRawBodyError(error: unknown): error is RawBodyError {
+  return isNativeError(error) && typeof (error as RawBodyError).type === 'string';
 }

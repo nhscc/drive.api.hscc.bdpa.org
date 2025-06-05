@@ -1,9 +1,11 @@
-import { withMiddleware } from 'universe/backend/middleware';
 import { authAppUser } from 'universe/backend';
+import { withMiddleware } from 'universe/backend/middleware';
+
 import { sendHttpOk, sendHttpUnauthorized } from 'multiverse/next-api-respond';
 
 export { defaultConfig as config } from 'universe/backend/api';
 
+// TODO: 2025: didn't we implement this already?
 // * The next version of this should use GET and POST as follows:
 // TODO: 1. GET to get the permanent user salt and a one-time fresh salt
 // TODO:    Fresh salts are stored per-ip and expire after 15 seconds
@@ -16,17 +18,31 @@ export { defaultConfig as config } from 'universe/backend/api';
 // TODO: 5. Server responds to POST with 200 on success, 403 on error
 // TODO: 6. After response is sent, close connection & maybe prune expired salts
 
+export const metadata = {
+  descriptor: '/v2/users/:username/auth'
+};
+
 export default withMiddleware(
   async (req, res) => {
-    // * POST
-    (await authAppUser({
-      username: req.query.username?.toString(),
-      key: req.body?.key
-    }))
-      ? sendHttpOk(res)
-      : sendHttpUnauthorized(res);
+    switch (req.method) {
+      case 'POST': {
+        const authorized = await authAppUser({
+          username: req.query.username?.toString(),
+          key: req.body?.key
+        });
+
+        if (authorized) {
+          sendHttpOk(res);
+        } else {
+          sendHttpUnauthorized(res);
+        }
+
+        break;
+      }
+    }
   },
   {
-    options: { allowedMethods: ['POST'], apiVersion: '2' }
+    descriptor: metadata.descriptor,
+    options: { allowedMethods: ['POST'], apiVersion: '1' }
   }
 );

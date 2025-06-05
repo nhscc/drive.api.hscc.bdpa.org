@@ -1,24 +1,35 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable no-global-assign */
+import { getDb } from '@-xun/mongo-schema';
+import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { testApiHandler } from 'next-test-api-route-handler';
 
 import Endpoint, { config as Config } from 'universe/pages/api/sys/ping';
 
-import { useMockDateNow } from 'multiverse/jest-mock-date';
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import { useMockDateNow } from 'testverse/util';
+
+import {
+  getCommonDummyData,
+  getCommonSchemaConfig
+} from 'multiverse/mongo-common/index.ts';
+
 import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
 
-import type { InternalAuthBearerEntry, TokenAttributes } from 'multiverse/next-auth';
+import type { InternalAuthBearerEntry } from 'multiverse/next-auth';
 
 const pagesHandler = Endpoint as typeof Endpoint & { config?: typeof Config };
 pagesHandler.config = Config;
 
-setupMemoryServerOverride();
-useMockDateNow();
+// ! Note how these tests only rely on commonly available schema and data
 
-// * This suite blurs the line between unit and integration tests for portability
-// * reasons.
+useMockDateNow();
+setupMemoryServerOverride({
+  schema: getCommonSchemaConfig(),
+  data: getCommonDummyData()
+});
+
+// * This suite blurs the line between unit and integration tests for
+// * portability reasons.
+
 // TODO: replace with next-fable (formerly / in addition to: @xunnamius/fable)
 
 describe('middleware correctness tests', () => {
@@ -55,7 +66,7 @@ describe('middleware correctness tests', () => {
       .collection<InternalAuthBearerEntry>('auth')
       .updateOne(
         { token: { bearer: BANNED_BEARER_TOKEN } },
-        { $set: { attributes: { isGlobalAdmin: true } as TokenAttributes } }
+        { $set: { 'attributes.isGlobalAdmin': true } }
       );
 
     await testApiHandler({
@@ -84,13 +95,12 @@ describe('api/sys/ping', () => {
           super(...args);
         }
 
-        toLocaleString(): string;
-        toLocaleString(
+        override toLocaleString(): string;
+        override toLocaleString(
           locales?: string | string[],
           options?: Intl.DateTimeFormatOptions
         ): string;
-        toLocaleString(locales?: unknown, options?: unknown): string {
-          void locales, options;
+        override toLocaleString(_locales?: unknown, _options?: unknown): string {
           return 'fake date, fake time';
         }
       };

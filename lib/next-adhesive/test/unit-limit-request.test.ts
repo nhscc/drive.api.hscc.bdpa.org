@@ -1,16 +1,15 @@
-import { asMockedFunction } from '@xunnamius/jest-types';
-import { withMiddleware } from 'multiverse/next-api-glue';
-import { clientIsRateLimited } from 'multiverse/next-limit';
 import { testApiHandler } from 'next-test-api-route-handler';
 
-import { mockEnvFactory, noopHandler, wrapHandler } from 'testverse/setup';
+import { asMocked, mockEnvFactory, noopHandler, wrapHandler } from 'testverse/util';
 
 import limitRequest from 'multiverse/next-adhesive/limit-request';
+import { withMiddleware } from 'multiverse/next-api-glue';
+import { clientIsRateLimited } from 'multiverse/next-limit';
 
 jest.mock('multiverse/next-limit');
 
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
-const mockClientIsRateLimited = asMockedFunction(clientIsRateLimited);
+const mockClientIsRateLimited = asMocked(clientIsRateLimited);
 
 beforeEach(() => {
   mockClientIsRateLimited.mockReturnValue(
@@ -22,7 +21,12 @@ it('rate limits requests according to backend determination', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(
+      withMiddleware(noopHandler, {
+        descriptor: '/fake',
+        use: [limitRequest]
+      })
+    ),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {
@@ -57,7 +61,12 @@ it('does not rate limit requests when ignoring rate limits', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(
+      withMiddleware(noopHandler, {
+        descriptor: '/fake',
+        use: [limitRequest]
+      })
+    ),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {
@@ -87,7 +96,12 @@ it('treats otherwise valid requests as unauthenticatable only when locking out a
   expect.hasAssertions();
 
   await testApiHandler({
-    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(
+      withMiddleware(noopHandler, {
+        descriptor: '/fake',
+        use: [limitRequest]
+      })
+    ),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {
@@ -110,7 +124,12 @@ it('includes retry-after value in header (s) and in response JSON (ms)', async (
   expect.hasAssertions();
 
   await testApiHandler({
-    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [limitRequest] })),
+    pagesHandler: wrapHandler(
+      withMiddleware(noopHandler, {
+        descriptor: '/fake',
+        use: [limitRequest]
+      })
+    ),
     test: async ({ fetch }) => {
       await withMockedEnv(
         async () => {

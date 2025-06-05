@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable @typescript-eslint/no-base-to-string */
-/* eslint-disable eqeqeq */
-/* eslint-disable no-restricted-syntax */
+import assert from 'node:assert';
+
 import { ObjectId } from 'mongodb';
-import { GuruMeditationError } from 'named-app-errors';
-import { toss } from 'toss-expression';
+import { createDebugLogger } from 'rejoinder';
 
 import type { Collection, Document, WithId } from 'mongodb';
+
+const debug = createDebugLogger({ namespace: 'mongo-item' });
 
 /**
  * Represents the value of the `_id` property of a MongoDB collection entry.
@@ -25,6 +25,8 @@ export type ItemExistsOptions = {
   /**
    * Items matching excludeId will be completely ignored by this function.
    *
+   * Note that `optimisticCoercion` does _not_ have any effect on `excludeId`.
+   *
    * @default undefined
    */
   excludeId?: ItemExistsIdParam;
@@ -35,13 +37,16 @@ export type ItemExistsOptions = {
    */
   caseInsensitive?: boolean;
   /**
-   * When looking for an item matching `{ _id: id }`, where the descriptor key
-   * is the string `"_id"`, `id` will be optimistically wrapped in a `new
-   * ObjectId(id)` call. Set this to `false` to prevent this.
+   * By default: when looking for an item matching `{ _id: id }`, where the
+   * descriptor key is the string `"_id"`, `id` will be optimistically wrapped
+   * in a `new ObjectId(id)` call.
+   *
+   * Set this to `false` to prevent this, or to `'force'` to always do this for
+   * every item.
    *
    * @default true
    */
-  optimisticCoercion?: boolean;
+  optimisticCoercion?: boolean | 'force';
 };
 
 /**
@@ -63,13 +68,14 @@ export async function itemExists<T extends Document>(
 ): Promise<boolean>;
 export async function itemExists<T extends Document>(
   collection: Collection<T>,
-  id: ItemExistsIdParam,
+  id_: ItemExistsIdParam,
   options?: ItemExistsOptions
 ): Promise<boolean> {
   let excludeIdProperty: string | null = null;
   let excludeId: string | ObjectId | null = null;
-  const idProperty = typeof id === 'string' || id instanceof ObjectId ? '_id' : id.key;
-  id = typeof id === 'string' || id instanceof ObjectId ? id : id.id;
+  const idProperty =
+    typeof id_ === 'string' || id_ instanceof ObjectId ? '_id' : id_.key;
+  let targetId = typeof id_ === 'string' || id_ instanceof ObjectId ? id_ : id_.id;
 
   if (options?.excludeId) {
     excludeIdProperty =
@@ -83,42 +89,43 @@ export async function itemExists<T extends Document>(
         : options.excludeId.id;
   }
 
-  if (idProperty == excludeIdProperty) {
-    throw new GuruMeditationError(
-      `cannot lookup an item by property "${idProperty}" while also filtering results by that same property`
-    );
-  }
+  assert(
+    idProperty !== excludeIdProperty,
+    `cannot lookup an item by property "${idProperty}" while also filtering results by that same property`
+  );
 
   if (
-    options?.optimisticCoercion !== false &&
-    typeof id === 'string' &&
-    idProperty == '_id'
+    options?.optimisticCoercion === 'force' ||
+    (options?.optimisticCoercion === undefined &&
+      typeof targetId === 'string' &&
+      idProperty === '_id')
   ) {
-    id = new ObjectId(id);
+    targetId = itemToObjectId(targetId);
   }
 
   return (
+    0 !==
     (await collection.countDocuments(
       {
-        [idProperty]: id,
+        [idProperty]: targetId,
         ...(excludeIdProperty ? { [excludeIdProperty]: { $ne: excludeId } } : {})
       } as unknown as Parameters<typeof collection.countDocuments>[0],
       {
         ...(options?.caseInsensitive ? { collation: { locale: 'en', strength: 2 } } : {})
       }
-    )) != 0
+    ))
   );
 }
 
 /**
- * The shape of an object that can be translated into an `ObjectId` (or `T`)
- * instance or is `null`/`undefined`.
+ * The shape of an object that can be translated into an {@link ObjectId} (or
+ * `T`) instance or is `null`/`undefined`.
  */
 export type IdItem<T extends ObjectId> = WithId<unknown> | string | T | null | undefined;
 
 /**
- * The shape of an object that can be translated into an array of `ObjectId` (or
- * `T`) instances or is `null`/`undefined`.
+ * The shape of an object that can be translated into an array of
+ * {@link ObjectId} (or `T`) instances or is `null`/`undefined`.
  */
 export type IdItemArray<T extends ObjectId> =
   | WithId<unknown>[]
@@ -128,55 +135,118 @@ export type IdItemArray<T extends ObjectId> =
   | undefined[];
 
 /**
- * Reduces an `item` down to its `ObjectId` instance.
+ * @see {@link itemToObjectId}
  */
-export function itemToObjectId<T extends ObjectId>(item: IdItem<T>): T;
+export type ItemToObjectIdOptions = {
+  /**
+   * If `true`, `undefined` will be returned upon encountering an irreducible
+   * argument. If `false`, an error will be thrown instead.
+   *
+   * @default false
+   */
+  returnUndefinedOnError?: boolean;
+};
+
 /**
- * Reduces an array of `item`s down to its `ObjectId` instances.
+ * Accepts an `item` that is, represents, or might contain an {@link ObjectId},
+ * and returns one (or more) corresponding {@link ObjectId} instance(s).
  */
-export function itemToObjectId<T extends ObjectId>(item: IdItemArray<T>): T[];
 export function itemToObjectId<T extends ObjectId>(
-  item: IdItem<T> | IdItemArray<T>
-): T | T[] {
-  return item instanceof ObjectId
-    ? item
-    : Array.isArray(item)
-      ? item.map((index) => {
-          return (
-            index instanceof ObjectId
-              ? index
-              : typeof index === 'string'
-                ? new ObjectId(index)
-                : index?._id instanceof ObjectId
-                  ? index._id
-                  : toss(
-                      new GuruMeditationError(
-                        `encountered irreducible sub-item: ${index}`
-                      )
-                    )
-          ) as T;
-        })
-      : typeof item === 'string'
-        ? (new ObjectId(item) as T)
-        : item?._id instanceof ObjectId
-          ? (item._id as T)
-          : toss(new GuruMeditationError(`encountered irreducible item: ${item}`));
+  item: IdItem<T>,
+  options: ItemToObjectIdOptions & { returnUndefinedOnError: true }
+): T | undefined;
+export function itemToObjectId<T extends ObjectId>(
+  item: { id: IdItem<T> },
+  options: ItemToObjectIdOptions & { returnUndefinedOnError: true }
+): T | undefined;
+export function itemToObjectId<T extends ObjectId>(
+  item: IdItem<T> | { id: IdItem<T> },
+  options: ItemToObjectIdOptions & { returnUndefinedOnError: true }
+): T | undefined;
+export function itemToObjectId<T extends ObjectId>(
+  item: IdItem<T>,
+  options?: ItemToObjectIdOptions
+): T;
+export function itemToObjectId<T extends ObjectId>(
+  item: { id: IdItem<T> },
+  options?: ItemToObjectIdOptions
+): T;
+export function itemToObjectId<T extends ObjectId>(
+  item: IdItem<T> | { id: IdItem<T> },
+  options?: ItemToObjectIdOptions
+): T;
+/**
+ * Accepts an array of `items` and returns an array of corresponding
+ * {@link ObjectId} instances.
+ */
+export function itemToObjectId<T extends ObjectId>(
+  items: IdItemArray<T>,
+  options: ItemToObjectIdOptions & { returnUndefinedOnError: true }
+): T[] | undefined;
+export function itemToObjectId<T extends ObjectId>(
+  items: IdItemArray<T>,
+  options?: ItemToObjectIdOptions
+): T[];
+/**
+ * Accepts an `item` or `items` argument and returns one or more corresponding
+ * {@link ObjectId} instances.
+ */
+export function itemToObjectId<T extends ObjectId>(
+  item: IdItem<T> | IdItemArray<T> | { id: IdItem<T> },
+  options: ItemToObjectIdOptions & { returnUndefinedOnError: true }
+): T | T[] | undefined;
+export function itemToObjectId<T extends ObjectId>(
+  item: IdItem<T> | IdItemArray<T> | { id: IdItem<T> },
+  options?: ItemToObjectIdOptions
+): T | T[];
+export function itemToObjectId<T extends ObjectId>(
+  item: IdItem<T> | IdItemArray<T> | { id: IdItem<T> },
+  { returnUndefinedOnError = false }: ItemToObjectIdOptions = {}
+): T | T[] | undefined {
+  try {
+    if (item instanceof ObjectId) {
+      return item;
+    } else if (Array.isArray(item)) {
+      debug.message('recursively reducing sub-items of item %O:', item);
+      return item.map((subItem) => itemToObjectId(subItem));
+    } else if (typeof item === 'string') {
+      return new ObjectId(item) as T;
+    } else if (item) {
+      if ('_id' in item && item._id instanceof ObjectId) {
+        return item._id as T;
+      } else if ('id' in item) {
+        return itemToObjectId(item.id);
+      }
+    }
+  } catch (error) {
+    debug.warn('error occurred while attempting to reduce item %O: %O', item, error);
+  }
+
+  debug.error('encountered irreducible item: %O', item);
+
+  if (returnUndefinedOnError) {
+    return undefined;
+  }
+
+  assert.fail(`encountered irreducible item: ${String(item)}`);
 }
 
 /**
- * Reduces an `item` down to the string representation of its `ObjectId`
+ * Reduces an `item` down to the string representation of its {@link ObjectId}
  * instance.
  */
-export function itemToStringId<T extends ObjectId>(item: IdItem<T>): string;
+export function itemToStringId<T extends ObjectId>(
+  item: IdItem<T> | { id: IdItem<T> }
+): string;
 /**
  * Reduces an array of `item`s down to the string representations of their
- * respective `ObjectId` instances.
+ * respective {@link ObjectId} instances.
  */
 export function itemToStringId<T extends ObjectId>(item: IdItemArray<T>): string[];
 export function itemToStringId<T extends ObjectId>(
-  item: IdItem<T> | IdItemArray<T>
+  item: IdItem<T> | IdItemArray<T> | { id: IdItem<T> }
 ): string | string[] {
   return Array.isArray(item)
-    ? itemToObjectId<T>(item).map((index) => index.toString())
+    ? itemToObjectId<T>(item).map((oid) => oid.toString())
     : itemToObjectId<T>(item).toString();
 }

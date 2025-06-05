@@ -1,8 +1,8 @@
-import { getDb } from 'multiverse/mongo-schema';
-import { getEnv } from 'multiverse/next-env';
+import { getDb } from '@-xun/mongo-schema';
+import { getEnv } from '@-xun/next-env';
 import { getClientIp } from 'request-ip';
 
-import type { HttpStatusCode, UnixEpochMs } from '@xunnamius/types';
+import type { HttpStatusCode, UnixEpochMs } from '@-xun/types';
 import type { WithId, WithoutId } from 'mongodb';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -13,9 +13,11 @@ export type InternalRequestLogEntry = WithId<{
   ip: string | null;
   header: string | null;
   route: string | null;
+  endpoint: string | null;
   method: string | null;
   resStatusCode: HttpStatusCode;
   createdAt: UnixEpochMs;
+  durationMs: number;
 }>;
 
 /**
@@ -32,18 +34,31 @@ export type NewRequestLogEntry = WithoutId<InternalRequestLogEntry>;
  * @example
  * ```
  * doSomeStuff();
- * void addToRequestLog({ req, res });
+ * void addToRequestLog({ req, res, endpoint });
  * doSomeOtherStuff();
  * ```
  */
 export async function addToRequestLog({
   req,
-  res
+  res,
+  endpoint,
+  durationMs
 }: {
   req: NextApiRequest;
   res: NextApiResponse;
+  endpoint: string | null | undefined;
+  durationMs: number;
 }): Promise<void> {
-  void (await getDb({ name: 'root' }))
+  if (!endpoint) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `${
+        req.url ? `API endpoint at ${req.url}` : 'an API endpoint'
+      } is missing its descriptor metadata`
+    );
+  }
+
+  await (await getDb({ name: 'root' }))
     .collection<NewRequestLogEntry>('request-log')
     .insertOne({
       ip: getClientIp(req),
@@ -51,9 +66,11 @@ export async function addToRequestLog({
         req.headers.authorization
           ?.slice(0, getEnv().AUTH_HEADER_MAX_LENGTH)
           .toLowerCase() || null,
-      method: req.method || null,
+      method: req.method?.toUpperCase() || null,
       route: req.url || null,
+      endpoint: endpoint || null,
       resStatusCode: res.statusCode as HttpStatusCode,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      durationMs
     });
 }

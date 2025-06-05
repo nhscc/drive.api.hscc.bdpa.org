@@ -1,9 +1,14 @@
-import { withMiddleware } from 'universe/backend/middleware';
 import { searchNodes } from 'universe/backend';
+import { withMiddleware } from 'universe/backend/middleware';
+import { ErrorMessage, ValidationError } from 'universe/error';
+
 import { sendHttpOk } from 'multiverse/next-api-respond';
-import { ValidationError, ErrorMessage } from 'universe/error';
 
 export { defaultConfig as config } from 'universe/backend/api';
+
+export const metadata = {
+  descriptor: '/v2/users/:username/filesystem/search'
+};
 
 export default withMiddleware(
   async (req, res) => {
@@ -23,17 +28,22 @@ export default withMiddleware(
       }
     })();
 
-    // * GET
-    sendHttpOk(res, {
-      nodes: await searchNodes({
-        after: req.query.after?.toString(),
-        username: req.query.username?.toString(),
-        match,
-        regexMatch
-      })
-    });
+    switch (req.method) {
+      case 'GET': {
+        sendHttpOk(res, {
+          nodes: await searchNodes({
+            after: req.query.after?.toString(),
+            username: req.query.username?.toString(),
+            match,
+            regexMatch
+          })
+        });
+        break;
+      }
+    }
   },
   {
+    descriptor: metadata.descriptor,
     options: { allowedMethods: ['GET'], apiVersion: '2' }
   }
 );

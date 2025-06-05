@@ -1,5 +1,21 @@
-import type { HttpStatusCode, JsonError, JsonSuccess } from '@xunnamius/types';
+import type { HttpStatusCode } from '@-xun/types';
 import type { NextApiResponse } from 'next';
+import type { JsonObject } from 'type-fest';
+
+/**
+ * Generic success JSON result object.
+ */
+export interface JsonSuccess extends JsonObject {
+  success: true;
+}
+
+/**
+ * Generic failure JSON result object.
+ */
+export interface JsonError extends JsonObject {
+  error: string;
+  success: false;
+}
 
 /**
  * Sends a generic HTTP response with the given `statusCode` and optional
@@ -26,7 +42,7 @@ export function sendHttpSuccessResponse(
   statusCode: HttpStatusCode,
   responseJson?: Record<string, unknown>
 ) {
-  const json: JsonSuccess = { ...responseJson, success: true };
+  const json: JsonSuccess = { success: true, ...responseJson };
   sendGenericHttpResponse(res, statusCode, json);
   return json;
 }
@@ -41,7 +57,7 @@ export function sendHttpErrorResponse(
   statusCode: HttpStatusCode,
   responseJson: Record<string, unknown> & { error: string }
 ) {
-  const json: JsonError = { ...responseJson, success: false };
+  const json: JsonError = { success: false, ...responseJson };
   sendGenericHttpResponse(res, statusCode, json);
   return json;
 }

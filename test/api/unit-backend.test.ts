@@ -1,22 +1,20 @@
 /* eslint-disable unicorn/no-array-reduce */
-/* eslint-disable eqeqeq */
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* eslint-disable unicorn/no-keyword-prefix */
-/* eslint-disable unicorn/no-array-callback-reference */
-/* eslint-disable no-await-in-loop */
+import { getDb } from '@-xun/mongo-schema';
+import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { ObjectId } from 'mongodb';
 
 import * as Backend from 'universe/backend';
-import { toPublicNode, toPublicUser } from 'universe/backend/db';
+import { getSchemaConfig, toPublicNode, toPublicUser } from 'universe/backend/db';
 import { getEnv } from 'universe/backend/env';
 import { ErrorMessage } from 'universe/error';
 
-import { dummyAppData } from 'testverse/db';
-import { mockEnvFactory } from 'testverse/setup';
+import { dummyAppData, getDummyData } from 'testverse/db';
 
-import { useMockDateNow } from 'multiverse/mongo-common';
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
+import {
+  expectExceptionsWithMatchingErrors,
+  mockEnvFactory,
+  useMockDateNow
+} from 'testverse/util';
 
 import type {
   InternalFileNode,
@@ -36,8 +34,13 @@ import type {
   Username
 } from 'universe/backend/db';
 
-setupMemoryServerOverride();
+import type { ExpectExceptionsWithMatchingErrorsSpec as Spec } from 'testverse/util';
+
 useMockDateNow();
+setupMemoryServerOverride({
+  schema: getSchemaConfig(),
+  data: getDummyData()
+});
 
 const withMockedEnv = mockEnvFactory({ NODE_ENV: 'test' });
 
@@ -75,7 +78,7 @@ describe('::getAllUsers', () => {
     expect.hasAssertions();
 
     await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual(
-      sortedUsers.map(toPublicUser)
+      sortedUsers.map((u) => toPublicUser(u))
     );
   });
 
@@ -87,10 +90,10 @@ describe('::getAllUsers', () => {
         expect([
           await Backend.getAllUsers({ after: undefined }),
           await Backend.getAllUsers({
-            after: sortedUsers[0]._id.toString()
+            after: sortedUsers[0]!._id.toString()
           }),
           await Backend.getAllUsers({
-            after: sortedUsers[1]._id.toString()
+            after: sortedUsers[1]!._id.toString()
           })
         ]).toStrictEqual(sortedUsers.slice(-3).map((user) => [toPublicUser(user)]));
       },
@@ -122,8 +125,8 @@ describe('::getUser', () => {
     expect.hasAssertions();
 
     await expect(
-      Backend.getUser({ username: dummyAppData.users[0].username })
-    ).resolves.toStrictEqual(toPublicUser(dummyAppData.users[0]));
+      Backend.getUser({ username: dummyAppData.users[0]!.username })
+    ).resolves.toStrictEqual(toPublicUser(dummyAppData.users[0]!));
   });
 
   it('rejects if username missing or not found', async () => {
@@ -144,7 +147,7 @@ describe('::createUser', () => {
   it('creates and returns a new user', async () => {
     expect.hasAssertions();
 
-    const newUser: Required<NewUser> = {
+    const incomingUser: Required<NewUser> = {
       username: 'new-user',
       email: 'new-user@email.com',
       key: '0'.repeat(getEnv().USER_KEY_LENGTH),
@@ -152,12 +155,12 @@ describe('::createUser', () => {
     };
 
     await expect(
-      Backend.createUser({ data: newUser })
+      Backend.createUser({ data: incomingUser })
     ).resolves.toStrictEqual<PublicUser>({
       user_id: expect.any(String),
-      username: newUser.username,
-      email: newUser.email,
-      salt: newUser.salt
+      username: incomingUser.username,
+      email: incomingUser.email,
+      salt: incomingUser.salt
     });
 
     await expect(
@@ -179,7 +182,7 @@ describe('::createUser', () => {
       USER_KEY_LENGTH: keyLength
     } = getEnv();
 
-    const newUsers: [NewUser, string][] = [
+    const incomingUsers: [NewUser, string][] = [
       [undefined as unknown as NewUser, ErrorMessage.InvalidJSON()],
       ['string data' as NewUser, ErrorMessage.InvalidJSON()],
       [
@@ -316,7 +319,7 @@ describe('::createUser', () => {
     ];
 
     await Promise.all(
-      newUsers.map(([data, message]) =>
+      incomingUsers.map(([data, message]) =>
         expect(Backend.createUser({ data })).rejects.toMatchObject({ message })
       )
     );
@@ -343,7 +346,7 @@ describe('::createUser', () => {
     await expect(
       Backend.createUser({
         data: {
-          username: dummyAppData.users[0].username,
+          username: dummyAppData.users[0]!.username,
           email: 'new-user@email.com',
           key: '0'.repeat(getEnv().USER_KEY_LENGTH),
           salt: '0'.repeat(getEnv().USER_SALT_LENGTH)
@@ -357,7 +360,7 @@ describe('::createUser', () => {
       Backend.createUser({
         data: {
           username: 'new-user',
-          email: dummyAppData.users[0].email,
+          email: dummyAppData.users[0]!.email,
           key: '0'.repeat(getEnv().USER_KEY_LENGTH),
           salt: '0'.repeat(getEnv().USER_SALT_LENGTH)
         }
@@ -374,14 +377,14 @@ describe('::updateUser', () => {
 
     await expect(
       usersDb.countDocuments({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         email: 'fake@email.com'
       })
     ).resolves.toBe(0);
 
     await expect(
       Backend.updateUser({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         data: {
           email: 'fake@email.com',
           key: '0'.repeat(getEnv().USER_KEY_LENGTH),
@@ -392,7 +395,7 @@ describe('::updateUser', () => {
 
     await expect(
       usersDb.countDocuments({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         email: 'fake@email.com'
       })
     ).resolves.toBe(1);
@@ -403,8 +406,8 @@ describe('::updateUser', () => {
 
     await expect(
       Backend.updateUser({
-        username: dummyAppData.users[0].username,
-        data: { salt: dummyAppData.users[0].salt }
+        username: dummyAppData.users[0]!.username,
+        data: { salt: dummyAppData.users[0]!.salt }
       })
     ).resolves.toBeUndefined();
   });
@@ -444,9 +447,9 @@ describe('::updateUser', () => {
 
     await expect(
       Backend.updateUser({
-        username: dummyAppData.users[1].username,
+        username: dummyAppData.users[1]!.username,
         data: {
-          email: dummyAppData.users[0].email
+          email: dummyAppData.users[0]!.email
         }
       })
     ).rejects.toMatchObject({ message: ErrorMessage.DuplicateFieldValue('email') });
@@ -532,7 +535,7 @@ describe('::updateUser', () => {
     await Promise.all(
       patchUsers.map(([data, message]) =>
         expect(
-          Backend.updateUser({ username: dummyAppData.users[0].username, data })
+          Backend.updateUser({ username: dummyAppData.users[0]!.username, data })
         ).rejects.toMatchObject({ message })
       )
     );
@@ -546,15 +549,15 @@ describe('::deleteUser', () => {
     const usersDb = (await getDb({ name: 'hscc-api-drive' })).collection('users');
 
     await expect(
-      usersDb.countDocuments({ _id: dummyAppData.users[0]._id })
+      usersDb.countDocuments({ _id: dummyAppData.users[0]!._id })
     ).resolves.toBe(1);
 
     await expect(
-      Backend.deleteUser({ username: dummyAppData.users[0].username })
+      Backend.deleteUser({ username: dummyAppData.users[0]!.username })
     ).resolves.toBeUndefined();
 
     await expect(
-      usersDb.countDocuments({ _id: dummyAppData.users[0]._id })
+      usersDb.countDocuments({ _id: dummyAppData.users[0]!._id })
     ).resolves.toBe(0);
   });
 
@@ -575,7 +578,7 @@ describe('::deleteUser', () => {
   it('deleted users are removed from all permissions objects', async () => {
     expect.hasAssertions();
 
-    const user = dummyAppData.users[0].username;
+    const user = dummyAppData.users[0]!.username;
 
     const numFileNodePerms = dummyAppData['file-nodes'].filter(
       ({ permissions }) => !!permissions[user]
@@ -617,7 +620,7 @@ describe('::authAppUser', () => {
     expect.hasAssertions();
 
     await expect(
-      Backend.authAppUser({ username: 'User1', key: dummyAppData.users[0].key })
+      Backend.authAppUser({ username: 'User1', key: dummyAppData.users[0]!.key })
     ).resolves.toBeTrue();
 
     await expect(
@@ -647,11 +650,11 @@ describe('::getNodes', () => {
     expect.hasAssertions();
 
     const testNodes: [Username, InternalNode[]][] = [
-      [dummyAppData['file-nodes'][0].owner, dummyAppData['file-nodes'].slice(0, 2)],
-      [dummyAppData['file-nodes'][2].owner, []],
-      [dummyAppData['file-nodes'][2].owner, [dummyAppData['file-nodes'][2]]],
+      [dummyAppData['file-nodes'][0]!.owner, dummyAppData['file-nodes'].slice(0, 2)],
+      [dummyAppData['file-nodes'][2]!.owner, []],
+      [dummyAppData['file-nodes'][2]!.owner, [dummyAppData['file-nodes'][2]!]],
       [
-        dummyAppData['file-nodes'][3].owner,
+        dummyAppData['file-nodes'][3]!.owner,
         [...dummyAppData['file-nodes'].slice(3), ...dummyAppData['meta-nodes']]
       ]
     ];
@@ -660,7 +663,7 @@ describe('::getNodes', () => {
       testNodes.map(([username, nodes]) =>
         expect(
           Backend.getNodes({ username, node_ids: nodes.map((n) => n._id.toString()) })
-        ).resolves.toStrictEqual(sortNodes(nodes).map(toPublicNode))
+        ).resolves.toStrictEqual(sortNodes(nodes).map((n) => toPublicNode(n)))
       )
     );
   });
@@ -670,15 +673,15 @@ describe('::getNodes', () => {
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: ['bad']
       })
     ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id.toString(), 'bad']
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_ids: [dummyAppData['file-nodes'][0]!._id.toString(), 'bad']
       })
     ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
   });
@@ -688,7 +691,7 @@ describe('::getNodes', () => {
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: [new ObjectId().toString()]
       })
     ).rejects.toMatchObject({
@@ -697,9 +700,9 @@ describe('::getNodes', () => {
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: [
-          dummyAppData['file-nodes'][0]._id.toString(),
+          dummyAppData['file-nodes'][0]!._id.toString(),
           new ObjectId().toString()
         ]
       })
@@ -709,7 +712,7 @@ describe('::getNodes', () => {
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: undefined
       })
     ).rejects.toMatchObject({
@@ -723,7 +726,7 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: 'does-not-exist',
-        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+        node_ids: [dummyAppData['file-nodes'][0]!._id.toString()]
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound('does-not-exist', 'user')
@@ -732,7 +735,7 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: undefined,
-        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+        node_ids: [dummyAppData['file-nodes'][0]!._id.toString()]
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.InvalidItem('username', 'parameter')
@@ -744,8 +747,8 @@ describe('::getNodes', () => {
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][2].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+        username: dummyAppData['file-nodes'][2]!.owner,
+        node_ids: [dummyAppData['file-nodes'][0]!._id.toString()]
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemOrItemsNotFound('node_ids')
@@ -758,16 +761,16 @@ describe('::getNodes', () => {
     await expect(
       Backend.getNodes({
         username: 'User2',
-        node_ids: [dummyAppData['file-nodes'][3]._id.toString()]
+        node_ids: [dummyAppData['file-nodes'][3]!._id.toString()]
       })
-    ).resolves.toStrictEqual([toPublicNode(dummyAppData['file-nodes'][3])]);
+    ).resolves.toStrictEqual([toPublicNode(dummyAppData['file-nodes'][3]!)]);
 
     await expect(
       Backend.getNodes({
         username: 'User2',
-        node_ids: [dummyAppData['meta-nodes'][1]._id.toString()]
+        node_ids: [dummyAppData['meta-nodes'][1]!._id.toString()]
       })
-    ).resolves.toStrictEqual([toPublicNode(dummyAppData['meta-nodes'][1])]);
+    ).resolves.toStrictEqual([toPublicNode(dummyAppData['meta-nodes'][1]!)]);
   });
 
   it('does not crash when database is empty', async () => {
@@ -780,8 +783,8 @@ describe('::getNodes', () => {
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_ids: [dummyAppData['file-nodes'][0]!._id.toString()]
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemOrItemsNotFound('node_ids')
@@ -791,11 +794,11 @@ describe('::getNodes', () => {
 
     await expect(
       Backend.getNodes({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id.toString()]
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_ids: [dummyAppData['file-nodes'][0]!._id.toString()]
       })
     ).rejects.toMatchObject({
-      message: ErrorMessage.ItemNotFound(dummyAppData['file-nodes'][0].owner, 'user')
+      message: ErrorMessage.ItemNotFound(dummyAppData['file-nodes'][0]!.owner, 'user')
     });
   });
 
@@ -817,7 +820,7 @@ describe('::getNodes', () => {
 
 describe('::searchNodes', () => {
   const getOwnedAndSharedNodes = (username: Username) => {
-    return sortedNodes.filter((n) => n.owner == username || !!n.permissions[username]);
+    return sortedNodes.filter((n) => n.owner === username || !!n.permissions[username]);
   };
 
   it("returns all of a user's nodes if no query params given", async () => {
@@ -827,15 +830,15 @@ describe('::searchNodes', () => {
       async () => {
         await expect(
           Backend.searchNodes({
-            username: dummyAppData.users[2].username,
+            username: dummyAppData.users[2]!.username,
             after: undefined,
             match: {},
             regexMatch: {}
           })
         ).resolves.toStrictEqual(
-          getOwnedAndSharedNodes(dummyAppData.users[2].username)
+          getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
             .slice(0, 4)
-            .map(toPublicNode)
+            .map((n) => toPublicNode(n))
         );
       },
       { RESULTS_PER_PAGE: '4' }
@@ -847,15 +850,15 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[1].username,
+        username: dummyAppData.users[1]!.username,
         after: undefined,
         match: { tags: ['darkshines'] },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[1].username)
-        .filter((n) => n.type == 'file' && n.tags.includes('darkshines'))
-        .map(toPublicNode)
+      getOwnedAndSharedNodes(dummyAppData.users[1]!.username)
+        .filter((n) => n.type === 'file' && n.tags.includes('darkshines'))
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -864,15 +867,15 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[1].username,
+        username: dummyAppData.users[1]!.username,
         after: undefined,
-        match: { owner: dummyAppData.users[2].username },
-        regexMatch: { [`permissions.${dummyAppData.users[1].username}`]: 'view|edit' }
+        match: { owner: dummyAppData.users[2]!.username },
+        regexMatch: { [`permissions.${dummyAppData.users[1]!.username}`]: 'view|edit' }
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[2].username)
-        .filter((n) => !!n.permissions[dummyAppData.users[1].username])
-        .map(toPublicNode)
+      getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
+        .filter((n) => !!n.permissions[dummyAppData.users[1]!.username])
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -882,14 +885,15 @@ describe('::searchNodes', () => {
     await withMockedEnv(
       async () => {
         let previousNode: PublicNode | null = null;
-        const nodes = getOwnedAndSharedNodes(dummyAppData.users[2].username).map(
-          toPublicNode
+        const nodes = getOwnedAndSharedNodes(dummyAppData.users[2]!.username).map((n) =>
+          toPublicNode(n)
         );
 
         for (const node of nodes) {
+          // eslint-disable-next-line no-await-in-loop
           await expect(
             Backend.searchNodes({
-              username: dummyAppData.users[2].username,
+              username: dummyAppData.users[2]!.username,
               after: previousNode ? previousNode.node_id : undefined,
               match: {},
               regexMatch: {}
@@ -900,7 +904,7 @@ describe('::searchNodes', () => {
 
         await expect(
           Backend.searchNodes({
-            username: dummyAppData.users[2].username,
+            username: dummyAppData.users[2]!.username,
             after: previousNode ? previousNode.node_id : undefined,
             match: {},
             regexMatch: {}
@@ -933,7 +937,7 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         after,
         match: {},
         regexMatch: {}
@@ -979,7 +983,7 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: {},
         regexMatch: {}
@@ -994,15 +998,15 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: { createdAt: { $lt: Date.now() } },
         regexMatch: { 'permissions.User2': 'view|edit' }
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[2].username)
-        .filter((n) => n.createdAt < Date.now() && regex.test(n.permissions?.User2))
-        .map(toPublicNode)
+      getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
+        .filter((n) => n.createdAt < Date.now() && regex.test(n.permissions.User2!))
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -1011,31 +1015,31 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         after: undefined,
         match: { tags: ['MuSiC'] },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[0].username)
-        .filter((n) => n.type == 'file' && n.tags.includes('music'))
-        .map(toPublicNode)
+      getOwnedAndSharedNodes(dummyAppData.users[0]!.username)
+        .filter((n) => n.type === 'file' && n.tags.includes('music'))
+        .map((n) => toPublicNode(n))
     );
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         after: undefined,
         match: { tags: ['MuSiC', 'muse'] },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+      getOwnedAndSharedNodes(dummyAppData.users[0]!.username)
         .filter(
           (n) =>
-            n.type == 'file' && (n.tags.includes('music') || n.tags.includes('muse'))
+            n.type === 'file' && (n.tags.includes('music') || n.tags.includes('muse'))
         )
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -1044,15 +1048,15 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         after: undefined,
         match: { name: 'USER1-FILE1' },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[0].username)
-        .filter((n) => n['name-lowercase'] == 'user1-file1')
-        .map(toPublicNode)
+      getOwnedAndSharedNodes(dummyAppData.users[0]!.username)
+        .filter((n) => n['name-lowercase'] === 'user1-file1')
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -1061,35 +1065,35 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         after: undefined,
         match: { createdAt: { $lt: Date.now() - 5000, $gt: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+      getOwnedAndSharedNodes(dummyAppData.users[0]!.username)
         .filter(
           (n) => n.createdAt < Date.now() - 5000 && n.createdAt > Date.now() - 10_000
         )
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         after: undefined,
         match: { modifiedAt: { $lt: Date.now() - 500, $gt: Date.now() - 1000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[0].username)
+      getOwnedAndSharedNodes(dummyAppData.users[0]!.username)
         .filter(
           (n) =>
-            n.type == 'file' &&
+            n.type === 'file' &&
             n.modifiedAt < Date.now() - 500 &&
             n.modifiedAt > Date.now() - 1000
         )
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -1098,54 +1102,54 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: { createdAt: { $lt: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+      getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
         .filter((n) => n.createdAt < Date.now() - 10_000)
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: { createdAt: { $lte: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+      getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
         .filter((n) => n.createdAt <= Date.now() - 10_000)
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: { createdAt: { $gt: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+      getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
         .filter((n) => n.createdAt > Date.now() - 10_000)
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: { createdAt: { $gte: Date.now() - 10_000 } },
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+      getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
         .filter((n) => n.createdAt >= Date.now() - 10_000)
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -1154,7 +1158,7 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: {
           createdAt: {
@@ -1164,11 +1168,11 @@ describe('::searchNodes', () => {
         regexMatch: {}
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[2].username)
+      getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
         .filter(
           (n) => n.createdAt < Date.now() - 10_000 || n.createdAt > Date.now() - 5000
         )
-        .map(toPublicNode)
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -1179,15 +1183,15 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[0].username,
+        username: dummyAppData.users[0]!.username,
         after: undefined,
         match: {},
         regexMatch: { text: '^cause look.*$' }
       })
     ).resolves.toStrictEqual(
-      getOwnedAndSharedNodes(dummyAppData.users[0].username)
-        .filter((n) => n.type == 'file' && regex.test(n.text))
-        .map(toPublicNode)
+      getOwnedAndSharedNodes(dummyAppData.users[0]!.username)
+        .filter((n) => n.type === 'file' && regex.test(n.text))
+        .map((n) => toPublicNode(n))
     );
   });
 
@@ -1196,7 +1200,7 @@ describe('::searchNodes', () => {
 
     await expect(
       Backend.searchNodes({
-        username: dummyAppData.users[2].username,
+        username: dummyAppData.users[2]!.username,
         after: undefined,
         match: {
           tags: Array.from({ length: getEnv().MAX_SEARCHABLE_TAGS + 1 }).map(() =>
@@ -1243,7 +1247,7 @@ describe('::searchNodes', () => {
       matchers.map(([match, regexMatch, message]) =>
         expect(
           Backend.searchNodes({
-            username: dummyAppData.users[0].username,
+            username: dummyAppData.users[0]!.username,
             after: undefined,
             match,
             regexMatch
@@ -1426,7 +1430,7 @@ describe('::searchNodes', () => {
           // eslint-disable-next-line jest/valid-expect
           expect(
             Backend.searchNodes({
-              username: dummyAppData.users[0].username,
+              username: dummyAppData.users[0]!.username,
               after: undefined,
               match: matcher,
               regexMatch: {}
@@ -1435,7 +1439,7 @@ describe('::searchNodes', () => {
           // eslint-disable-next-line jest/valid-expect
           expect(
             Backend.searchNodes({
-              username: dummyAppData.users[0].username,
+              username: dummyAppData.users[0]!.username,
               after: undefined,
               match: {},
               regexMatch: matcher
@@ -1451,7 +1455,7 @@ describe('::createNode', () => {
   it('creates and returns a new file node', async () => {
     expect.hasAssertions();
 
-    const newNode: Required<NewFileNode> = {
+    const NewNode: Required<NewFileNode> = {
       type: 'file',
       name: 'My New File',
       text: "You'll take only seconds to draw me in.",
@@ -1466,27 +1470,30 @@ describe('::createNode', () => {
 
     await expect(
       metaNodesDb.countDocuments({
-        name: newNode.name,
-        'name-lowercase': newNode.name.toLowerCase()
+        name: NewNode.name,
+        'name-lowercase': NewNode.name.toLowerCase()
       })
     ).resolves.toBe(0);
 
     await expect(
-      Backend.createNode({ username: dummyAppData.users[0].username, data: newNode })
+      Backend.createNode({
+        username: dummyAppData.users[0]!.username,
+        data: NewNode
+      })
     ).resolves.toStrictEqual<PublicFileNode>({
       node_id: expect.any(String),
-      ...newNode,
-      tags: Array.from(new Set(newNode.tags.map((tag) => tag.toLowerCase()))),
-      owner: dummyAppData.users[0].username,
+      ...NewNode,
+      tags: Array.from(new Set(NewNode.tags.map((tag) => tag.toLowerCase()))),
+      owner: dummyAppData.users[0]!.username,
       createdAt: Date.now(),
       modifiedAt: Date.now(),
-      size: newNode.text.length
+      size: NewNode.text.length
     });
 
     await expect(
       metaNodesDb.countDocuments({
-        name: newNode.name,
-        'name-lowercase': newNode.name.toLowerCase()
+        name: NewNode.name,
+        'name-lowercase': NewNode.name.toLowerCase()
       })
     ).resolves.toBe(1);
   });
@@ -1494,7 +1501,7 @@ describe('::createNode', () => {
   it('creates and returns a new symlink node', async () => {
     expect.hasAssertions();
 
-    const newNode: Required<NewMetaNode> = {
+    const NewNode: Required<NewMetaNode> = {
       type: 'symlink',
       name: 'Latest Symlink',
       contents: [],
@@ -1505,29 +1512,32 @@ describe('::createNode', () => {
       await getDb({ name: 'hscc-api-drive' })
     ).collection<InternalMetaNode>('meta-nodes');
 
-    await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(0);
+    await expect(metaNodesDb.countDocuments({ name: NewNode.name })).resolves.toBe(0);
 
     await expect(
-      Backend.createNode({ username: dummyAppData.users[0].username, data: newNode })
+      Backend.createNode({
+        username: dummyAppData.users[0]!.username,
+        data: NewNode
+      })
     ).resolves.toStrictEqual<PublicMetaNode>({
       node_id: expect.any(String),
-      ...newNode,
-      owner: dummyAppData.users[0].username,
+      ...NewNode,
+      owner: dummyAppData.users[0]!.username,
       createdAt: Date.now()
     });
 
-    await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(1);
+    await expect(metaNodesDb.countDocuments({ name: NewNode.name })).resolves.toBe(1);
   });
 
   it('creates and returns a new directory node', async () => {
     expect.hasAssertions();
 
-    const newNode: Required<NewMetaNode> = {
+    const NewNode: Required<NewMetaNode> = {
       type: 'directory',
       name: 'New Directory',
       contents: [
-        dummyAppData['file-nodes'][0]._id.toString(),
-        dummyAppData['file-nodes'][0]._id.toString()
+        dummyAppData['file-nodes'][0]!._id.toString(),
+        dummyAppData['file-nodes'][0]!._id.toString()
       ],
       permissions: {}
     };
@@ -1536,19 +1546,22 @@ describe('::createNode', () => {
       await getDb({ name: 'hscc-api-drive' })
     ).collection<InternalMetaNode>('meta-nodes');
 
-    await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(0);
+    await expect(metaNodesDb.countDocuments({ name: NewNode.name })).resolves.toBe(0);
 
     await expect(
-      Backend.createNode({ username: dummyAppData.users[0].username, data: newNode })
+      Backend.createNode({
+        username: dummyAppData.users[0]!.username,
+        data: NewNode
+      })
     ).resolves.toStrictEqual<PublicMetaNode>({
       node_id: expect.any(String),
-      ...newNode,
-      contents: [dummyAppData['file-nodes'][0]._id.toString()],
-      owner: dummyAppData.users[0].username,
+      ...NewNode,
+      contents: [dummyAppData['file-nodes'][0]!._id.toString()],
+      owner: dummyAppData.users[0]!.username,
       createdAt: Date.now()
     });
 
-    await expect(metaNodesDb.countDocuments({ name: newNode.name })).resolves.toBe(1);
+    await expect(metaNodesDb.countDocuments({ name: NewNode.name })).resolves.toBe(1);
   });
 
   it('rejects if the username is missing or not found', async () => {
@@ -1600,14 +1613,11 @@ describe('::createNode', () => {
 
     const knownNewId = new ObjectId().toString();
 
-    const newNodes: [NewNode, string][] = [
-      [undefined as unknown as NewNode, ErrorMessage.InvalidJSON()],
-      ['string data' as NewNode, ErrorMessage.InvalidJSON()],
-      [{ type: null } as unknown as NewNode, ErrorMessage.InvalidFieldValue('type')],
-      [
-        { type: 'bad-type' } as unknown as NewNode,
-        ErrorMessage.InvalidFieldValue('type')
-      ],
+    const errors = [
+      [undefined, ErrorMessage.InvalidJSON()],
+      ['string data', ErrorMessage.InvalidJSON()],
+      [{ type: null }, ErrorMessage.InvalidFieldValue('type')],
+      [{ type: 'bad-type' }, ErrorMessage.InvalidFieldValue('type')],
       [
         { type: 'directory', name: '' },
         ErrorMessage.InvalidStringLength('name', 1, maxNodeNameLength, 'string')
@@ -1621,7 +1631,7 @@ describe('::createNode', () => {
           type: 'symlink',
           name: 'x',
           permissions: null
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidFieldValue('permissions')
       ],
       [
@@ -1629,7 +1639,7 @@ describe('::createNode', () => {
           type: 'directory',
           name: 'x',
           permissions: ['yes']
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidFieldValue('permissions')
       ],
       [
@@ -1644,8 +1654,8 @@ describe('::createNode', () => {
         {
           type: 'directory',
           name: 'x',
-          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
-        } as unknown as NewNode,
+          permissions: { [dummyAppData.users[0]!.username]: 'bad-perm' }
+        },
         ErrorMessage.InvalidObjectKeyValue('permissions')
       ],
       [
@@ -1666,7 +1676,7 @@ describe('::createNode', () => {
           type: 'file',
           name: 'x',
           permissions: ['yes']
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidFieldValue('permissions')
       ],
       [
@@ -1681,8 +1691,8 @@ describe('::createNode', () => {
         {
           type: 'file',
           name: 'x',
-          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
-        } as unknown as NewNode,
+          permissions: { [dummyAppData.users[0]!.username]: 'bad-perm' }
+        },
         ErrorMessage.InvalidObjectKeyValue('permissions')
       ],
       [
@@ -1728,7 +1738,7 @@ describe('::createNode', () => {
           name: 'x',
           permissions: {},
           text: null
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidStringLength('text', 0, maxNodeTextBytes, 'bytes')
       ],
       [
@@ -1747,7 +1757,7 @@ describe('::createNode', () => {
           permissions: {},
           text: 'x',
           tags: null
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidFieldValue('tags')
       ],
       [
@@ -1757,7 +1767,7 @@ describe('::createNode', () => {
           permissions: {},
           text: 'x',
           tags: [1]
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
@@ -1815,7 +1825,7 @@ describe('::createNode', () => {
           text: 'x',
           tags: [],
           lock: 1
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidFieldValue('lock')
       ],
       [
@@ -1864,7 +1874,7 @@ describe('::createNode', () => {
           text: 'x',
           tags: [],
           lock: {
-            user: null as unknown as string,
+            user: null,
             client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now()
           }
@@ -1899,7 +1909,7 @@ describe('::createNode', () => {
           tags: [],
           lock: {
             user: 'x'.repeat(maxUsernameLength - 1),
-            client: null as unknown as string,
+            client: null,
             createdAt: Date.now()
           }
         },
@@ -1930,7 +1940,7 @@ describe('::createNode', () => {
           lock: {
             user: 'x'.repeat(maxUsernameLength - 1),
             client: 'y'.repeat(maxLockClientLength - 1)
-          } as NodeLock
+          }
         },
         ErrorMessage.InvalidFieldValue('lock.createdAt')
       ],
@@ -1945,7 +1955,7 @@ describe('::createNode', () => {
             user: 'x'.repeat(maxUsernameLength - 1),
             client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: null
-          } as unknown as NodeLock
+          }
         },
         ErrorMessage.InvalidFieldValue('lock.createdAt')
       ],
@@ -1957,11 +1967,11 @@ describe('::createNode', () => {
           text: 'x',
           tags: [],
           lock: {
-            user: dummyAppData.users[0].username,
+            user: dummyAppData.users[0]!.username,
             client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now(),
             bad: 1
-          } as unknown as NodeLock
+          }
         },
         ErrorMessage.InvalidObjectKeyValue('lock')
       ],
@@ -1971,7 +1981,7 @@ describe('::createNode', () => {
           name: 'x',
           permissions: {},
           contents: null
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidFieldValue('contents')
       ],
       [
@@ -1980,7 +1990,7 @@ describe('::createNode', () => {
           name: 'x',
           permissions: {},
           contents: [1]
-        } as unknown as NewNode,
+        },
         ErrorMessage.InvalidArrayValue('contents', '1')
       ],
       [
@@ -2001,7 +2011,7 @@ describe('::createNode', () => {
           name: 'x',
           permissions: {},
           contents: Array.from({ length: maxNodeContents + 1 }).map(() =>
-            dummyAppData['file-nodes'][0]._id.toString()
+            dummyAppData['file-nodes'][0]!._id.toString()
           )
         },
         ErrorMessage.TooManyItemsRequested('content node_ids')
@@ -2011,8 +2021,8 @@ describe('::createNode', () => {
           type: 'symlink',
           name: 'x',
           contents: [
-            dummyAppData['file-nodes'][0]._id.toString(),
-            dummyAppData['file-nodes'][0]._id.toString()
+            dummyAppData['file-nodes'][0]!._id.toString(),
+            dummyAppData['file-nodes'][0]!._id.toString()
           ],
           permissions: {}
         },
@@ -2027,7 +2037,7 @@ describe('::createNode', () => {
           tags: ['grandson', 'music'],
           lock: null,
           permissions: {}
-        } as NewNode,
+        },
         ErrorMessage.UnknownField('owner')
       ],
       [
@@ -2039,7 +2049,7 @@ describe('::createNode', () => {
           lock: null,
           permissions: {},
           contents: [new ObjectId().toString()]
-        } as NewNode,
+        },
         ErrorMessage.UnknownField('contents')
       ],
       [
@@ -2049,7 +2059,7 @@ describe('::createNode', () => {
           text: 'Tell me how did we get here?',
           permissions: {},
           contents: []
-        } as NewNode,
+        },
         ErrorMessage.UnknownField('text')
       ],
       [
@@ -2059,7 +2069,7 @@ describe('::createNode', () => {
           tags: ['grandson', 'music'],
           permissions: {},
           contents: []
-        } as NewNode,
+        },
         ErrorMessage.UnknownField('tags')
       ],
       [
@@ -2069,7 +2079,7 @@ describe('::createNode', () => {
           lock: null,
           permissions: {},
           contents: []
-        } as NewNode,
+        },
         ErrorMessage.UnknownField('lock')
       ],
       [
@@ -2079,20 +2089,20 @@ describe('::createNode', () => {
           permissions: {},
           contents: [],
           data: 1
-        } as NewNode,
+        },
         ErrorMessage.UnknownField('data')
       ]
-    ];
+    ] as Spec<[NewNode], 'single-parameter'>;
 
-    await Promise.all(
-      newNodes.map(([data, message]) =>
-        expect(
-          Backend.createNode({
-            username: dummyAppData['file-nodes'][0].owner,
-            data
-          })
-        ).rejects.toMatchObject({ message })
-      )
+    await expectExceptionsWithMatchingErrors(
+      errors,
+      async ([data]) => {
+        await Backend.createNode({
+          username: dummyAppData['file-nodes'][0]!.owner,
+          data
+        });
+      },
+      { singleParameter: true }
     );
   });
 });
@@ -2107,45 +2117,45 @@ describe('::updateNode', () => {
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
-        owner: dummyAppData['file-nodes'][0].owner
+        _id: dummyAppData['file-nodes'][0]!._id,
+        owner: dummyAppData['file-nodes'][0]!.owner
       })
     ).resolves.toBe(1);
 
     await expect(
       metaNodeDb.countDocuments({
-        _id: dummyAppData['meta-nodes'][0]._id,
-        owner: dummyAppData['meta-nodes'][0].owner
+        _id: dummyAppData['meta-nodes'][0]!._id,
+        owner: dummyAppData['meta-nodes'][0]!.owner
       })
     ).resolves.toBe(1);
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
-        data: { owner: dummyAppData.users[2].username }
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
+        data: { owner: dummyAppData.users[2]!.username }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['meta-nodes'][0].owner,
-        node_id: dummyAppData['meta-nodes'][0]._id.toString(),
-        data: { owner: dummyAppData.users[0].username }
+        username: dummyAppData['meta-nodes'][0]!.owner,
+        node_id: dummyAppData['meta-nodes'][0]!._id.toString(),
+        data: { owner: dummyAppData.users[0]!.username }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
-        owner: dummyAppData['file-nodes'][0].owner
+        _id: dummyAppData['file-nodes'][0]!._id,
+        owner: dummyAppData['file-nodes'][0]!.owner
       })
     ).resolves.toBe(0);
 
     await expect(
       metaNodeDb.countDocuments({
-        _id: dummyAppData['meta-nodes'][0]._id,
-        owner: dummyAppData['meta-nodes'][0].owner
+        _id: dummyAppData['meta-nodes'][0]!._id,
+        owner: dummyAppData['meta-nodes'][0]!.owner
       })
     ).resolves.toBe(0);
   });
@@ -2158,22 +2168,22 @@ describe('::updateNode', () => {
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
+        _id: dummyAppData['file-nodes'][0]!._id,
         modifiedAt: Date.now()
       })
     ).resolves.toBe(0);
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
-        data: { owner: dummyAppData.users[2].username }
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
+        data: { owner: dummyAppData.users[2]!.username }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
+        _id: dummyAppData['file-nodes'][0]!._id,
         modifiedAt: Date.now()
       })
     ).resolves.toBe(1);
@@ -2184,24 +2194,24 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][2].owner,
-        node_id: dummyAppData['file-nodes'][2]._id.toString(),
+        username: dummyAppData['file-nodes'][2]!.owner,
+        node_id: dummyAppData['file-nodes'][2]!._id.toString(),
         data: {
-          name: dummyAppData['file-nodes'][2].name,
-          lock: dummyAppData['file-nodes'][2].lock,
-          permissions: dummyAppData['file-nodes'][2].permissions
+          name: dummyAppData['file-nodes'][2]!.name,
+          lock: dummyAppData['file-nodes'][2]!.lock,
+          permissions: dummyAppData['file-nodes'][2]!.permissions
         }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['meta-nodes'][0].owner,
-        node_id: dummyAppData['meta-nodes'][0]._id.toString(),
+        username: dummyAppData['meta-nodes'][0]!.owner,
+        node_id: dummyAppData['meta-nodes'][0]!._id.toString(),
         data: {
-          name: dummyAppData['meta-nodes'][0].name,
-          contents: dummyAppData['meta-nodes'][0].contents.map((id) => id.toString()),
-          permissions: dummyAppData['meta-nodes'][0].permissions
+          name: dummyAppData['meta-nodes'][0]!.name,
+          contents: dummyAppData['meta-nodes'][0]!.contents.map((id) => id.toString()),
+          permissions: dummyAppData['meta-nodes'][0]!.permissions
         }
       })
     ).resolves.toBeUndefined();
@@ -2216,15 +2226,15 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
         data: { tags }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
+        _id: dummyAppData['file-nodes'][0]!._id,
         tags: Array.from(new Set(tags.map((tag) => tag.toLowerCase())))
       })
     ).resolves.toBe(1);
@@ -2240,22 +2250,22 @@ describe('::updateNode', () => {
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
+        _id: dummyAppData['file-nodes'][0]!._id,
         size
       })
     ).resolves.toBe(0);
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
         data: { text }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
+        _id: dummyAppData['file-nodes'][0]!._id,
         size
       })
     ).resolves.toBe(1);
@@ -2270,22 +2280,22 @@ describe('::updateNode', () => {
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
+        _id: dummyAppData['file-nodes'][0]!._id,
         'name-lowercase': name.toLowerCase()
       })
     ).resolves.toBe(0);
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
         data: { name }
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
-        _id: dummyAppData['file-nodes'][0]._id,
+        _id: dummyAppData['file-nodes'][0]!._id,
         'name-lowercase': name.toLowerCase()
       })
     ).resolves.toBe(1);
@@ -2296,7 +2306,7 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_id: 'bad',
         data: { owner: 'new-user' }
       })
@@ -2310,7 +2320,7 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_id,
         data: { owner: 'new-user' }
       })
@@ -2320,7 +2330,7 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_id: undefined,
         data: { owner: 'new-user' }
       })
@@ -2335,7 +2345,7 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: 'does-not-exist',
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
         data: { owner: 'new-user' }
       })
     ).rejects.toMatchObject({
@@ -2345,7 +2355,7 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: undefined,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
         data: { owner: 'new-user' }
       })
     ).rejects.toMatchObject({
@@ -2370,13 +2380,13 @@ describe('::updateNode', () => {
 
     await expect(
       Backend.updateNode({
-        username: dummyAppData.users[2].username,
-        node_id: dummyAppData['file-nodes'][0]._id.toString(),
+        username: dummyAppData.users[2]!.username,
+        node_id: dummyAppData['file-nodes'][0]!._id.toString(),
         data: { owner: 'new-user' }
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound(
-        dummyAppData['file-nodes'][0]._id.toString(),
+        dummyAppData['file-nodes'][0]!._id.toString(),
         'node_id'
       )
     });
@@ -2389,7 +2399,7 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: 'User2',
-        node_id: dummyAppData['file-nodes'][3]._id.toString(),
+        node_id: dummyAppData['file-nodes'][3]!._id.toString(),
         data: { text: 'new text' }
       })
     ).resolves.toBeUndefined();
@@ -2398,12 +2408,12 @@ describe('::updateNode', () => {
     await expect(
       Backend.updateNode({
         username: 'User2',
-        node_id: dummyAppData['meta-nodes'][1]._id.toString(),
+        node_id: dummyAppData['meta-nodes'][1]!._id.toString(),
         data: { name: 'new name' }
       })
     ).rejects.toMatchObject({
       message: ErrorMessage.ItemNotFound(
-        dummyAppData['meta-nodes'][1]._id.toString(),
+        dummyAppData['meta-nodes'][1]!._id.toString(),
         'node_id'
       )
     });
@@ -2425,9 +2435,9 @@ describe('::updateNode', () => {
     } = getEnv();
 
     const knownNewId = new ObjectId().toString();
-    const knownFileNode = dummyAppData['file-nodes'][4];
-    const knownDirNode = dummyAppData['meta-nodes'][1];
-    const knownLinkNode = dummyAppData['meta-nodes'][2];
+    const knownFileNode = dummyAppData['file-nodes'][4]!;
+    const knownDirNode = dummyAppData['meta-nodes'][1]!;
+    const knownLinkNode = dummyAppData['meta-nodes'][2]!;
 
     const patchNodes: [patch: PatchNode, error: string, node: InternalNode][] = [
       [undefined as unknown as PatchNode, ErrorMessage.InvalidJSON(), knownFileNode],
@@ -2465,7 +2475,7 @@ describe('::updateNode', () => {
       ],
       [
         {
-          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
+          permissions: { [dummyAppData.users[0]!.username]: 'bad-perm' }
         } as unknown as PatchNode,
         ErrorMessage.InvalidObjectKeyValue('permissions'),
         knownDirNode
@@ -2498,7 +2508,7 @@ describe('::updateNode', () => {
       ],
       [
         {
-          permissions: { [dummyAppData.users[0].username]: 'bad-perm' }
+          permissions: { [dummyAppData.users[0]!.username]: 'bad-perm' }
         } as unknown as PatchNode,
         ErrorMessage.InvalidObjectKeyValue('permissions'),
         knownFileNode
@@ -2730,7 +2740,7 @@ describe('::updateNode', () => {
       [
         {
           lock: {
-            user: dummyAppData.users[0].username,
+            user: dummyAppData.users[0]!.username,
             client: 'y'.repeat(maxLockClientLength - 1),
             createdAt: Date.now(),
             bad: 1
@@ -2771,7 +2781,7 @@ describe('::updateNode', () => {
       [
         {
           contents: Array.from({ length: maxNodeContents + 1 }).map(() =>
-            dummyAppData['file-nodes'][0]._id.toString()
+            dummyAppData['file-nodes'][0]!._id.toString()
           )
         },
         ErrorMessage.TooManyItemsRequested('content node_ids'),
@@ -2780,12 +2790,12 @@ describe('::updateNode', () => {
       [
         {
           contents: [
-            dummyAppData['meta-nodes'][0]._id.toString(),
-            dummyAppData['meta-nodes'][1]._id.toString()
+            dummyAppData['meta-nodes'][0]!._id.toString(),
+            dummyAppData['meta-nodes'][1]!._id.toString()
           ]
         },
         ErrorMessage.TooManyItemsRequested('content node_ids'),
-        dummyAppData['meta-nodes'][2]
+        dummyAppData['meta-nodes'][2]!
       ],
       [
         {
@@ -2856,42 +2866,42 @@ describe('::deleteNodes', () => {
     await expect(
       fileNodeDb.countDocuments({
         _id: {
-          $in: [dummyAppData['file-nodes'][0]._id, dummyAppData['file-nodes'][1]._id]
+          $in: [dummyAppData['file-nodes'][0]!._id, dummyAppData['file-nodes'][1]!._id]
         }
       })
     ).resolves.toBe(2);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]!._id })
     ).resolves.toBe(1);
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: [
-          dummyAppData['file-nodes'][0]._id.toString(),
-          dummyAppData['file-nodes'][1]._id.toString()
+          dummyAppData['file-nodes'][0]!._id.toString(),
+          dummyAppData['file-nodes'][1]!._id.toString()
         ]
       })
     ).resolves.toBeUndefined();
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['meta-nodes'][0].owner,
-        node_ids: [dummyAppData['meta-nodes'][0]._id.toString()]
+        username: dummyAppData['meta-nodes'][0]!.owner,
+        node_ids: [dummyAppData['meta-nodes'][0]!._id.toString()]
       })
     ).resolves.toBeUndefined();
 
     await expect(
       fileNodeDb.countDocuments({
         _id: {
-          $in: [dummyAppData['file-nodes'][0]._id, dummyAppData['file-nodes'][1]._id]
+          $in: [dummyAppData['file-nodes'][0]!._id, dummyAppData['file-nodes'][1]!._id]
         }
       })
     ).resolves.toBe(0);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]!._id })
     ).resolves.toBe(0);
   });
 
@@ -2900,15 +2910,15 @@ describe('::deleteNodes', () => {
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: ['bad']
       })
     ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][0].owner,
-        node_ids: [dummyAppData['file-nodes'][0]._id.toString(), 'bad']
+        username: dummyAppData['file-nodes'][0]!.owner,
+        node_ids: [dummyAppData['file-nodes'][0]!._id.toString(), 'bad']
       })
     ).rejects.toMatchObject({ message: ErrorMessage.InvalidObjectId('bad') });
   });
@@ -2955,7 +2965,7 @@ describe('::deleteNodes', () => {
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: undefined
       })
     ).rejects.toMatchObject({
@@ -2971,28 +2981,28 @@ describe('::deleteNodes', () => {
     );
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]!._id })
     ).resolves.toBe(1);
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: [new ObjectId().toString()]
       })
     ).resolves.toBeUndefined();
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][0].owner,
+        username: dummyAppData['file-nodes'][0]!.owner,
         node_ids: [
-          dummyAppData['file-nodes'][0]._id.toString(),
+          dummyAppData['file-nodes'][0]!._id.toString(),
           new ObjectId().toString()
         ]
       })
     ).resolves.toBeUndefined();
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]._id })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]!._id })
     ).resolves.toBe(0);
   });
 
@@ -3004,27 +3014,27 @@ describe('::deleteNodes', () => {
     const metaNodeDb = db.collection('meta-nodes');
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]._id })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]!._id })
     ).resolves.toBe(1);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]!._id })
     ).resolves.toBe(1);
 
     await Backend.deleteNodes({
-      username: dummyAppData['file-nodes'][2].owner,
+      username: dummyAppData['file-nodes'][2]!.owner,
       node_ids: [
-        dummyAppData['file-nodes'][2]._id.toString(),
-        dummyAppData['meta-nodes'][0]._id.toString()
+        dummyAppData['file-nodes'][2]!._id.toString(),
+        dummyAppData['meta-nodes'][0]!._id.toString()
       ]
     });
 
     await expect(
-      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]._id })
+      fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][2]!._id })
     ).resolves.toBe(0);
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][0]!._id })
     ).resolves.toBe(1);
   });
 
@@ -3036,23 +3046,23 @@ describe('::deleteNodes', () => {
     );
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]!._id })
     ).resolves.toBe(1);
 
     await Backend.deleteNodes({
       username: 'User2',
-      node_ids: [dummyAppData['meta-nodes'][1]._id.toString()]
+      node_ids: [dummyAppData['meta-nodes'][1]!._id.toString()]
     });
 
     await expect(
-      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]._id })
+      metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]!._id })
     ).resolves.toBe(1);
   });
 
   it('deleted node_ids are removed from all MetaNode contents arrays', async () => {
     expect.hasAssertions();
 
-    const node_id = dummyAppData['file-nodes'][4]._id;
+    const node_id = dummyAppData['file-nodes'][4]!._id;
 
     const numInContentArrays = dummyAppData['meta-nodes'].filter(({ contents }) =>
       contents.includes(node_id)
@@ -3070,7 +3080,7 @@ describe('::deleteNodes', () => {
 
     await expect(
       Backend.deleteNodes({
-        username: dummyAppData['file-nodes'][4].owner,
+        username: dummyAppData['file-nodes'][4]!.owner,
         node_ids: [node_id.toString()]
       })
     ).resolves.toBeUndefined();

@@ -1,15 +1,14 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
-/* eslint-disable @typescript-eslint/no-unused-expressions */
-import { debugFactory } from 'multiverse/debug-extended';
-import { sendNotImplemented } from 'multiverse/next-api-respond';
+import { createDebugLogger } from 'rejoinder';
 import { toss } from 'toss-expression';
 
-import type { NoInfer } from '@xunnamius/types';
-import type { Debugger } from 'multiverse/debug-extended';
-import type { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
+import { sendNotImplemented } from 'multiverse/next-api-respond';
 
-const debug = debugFactory('next-api-glue:runtime');
+import type { NextApiHandler, NextApiRequest, NextApiResponse } from 'next';
+import type { ExtendedDebugger } from 'rejoinder';
+
+const debug = createDebugLogger({ namespace: 'next-api-common:middleware' });
+
+// TODO: dramatically simplify all of this!
 
 /**
  * The shape of a custom middleware function.
@@ -38,9 +37,19 @@ export type MiddlewareContext<
   Options extends Record<string, unknown> = Record<string, unknown>
 > = {
   /**
-   * Contains middleware use chain control functions and metadata.
+   * Contains middleware use chain control functions and various metadata.
    */
   runtime: {
+    /**
+     * Metadata describing the current endpoint.
+     */
+    endpoint: {
+      /**
+       * A parameterized path string in the form of a URI path corresponding to
+       * the current endpoint. For example: `/my-endpoint/:some_id`.
+       */
+      descriptor?: string;
+    };
     /**
      * Call the next middleware function in the use chain. If not called
      * explicitly before a middleware function resolves, and `done()` was also
@@ -90,10 +99,12 @@ export function withMiddleware<
 >(
   pagesHandler: NextApiHandler | undefined,
   {
+    descriptor,
     use,
     useOnError,
     options
   }: {
+    descriptor: MiddlewareContext['runtime']['endpoint']['descriptor'];
     use: Middleware<NoInfer<Options>>[];
     useOnError?: Middleware<NoInfer<Options>>[];
     options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> & NoInfer<Options>;
@@ -111,6 +122,9 @@ export function withMiddleware<
     /* istanbul ignore next */
     const middlewareContext: MiddlewareContext<NoInfer<Options>> = {
       runtime: {
+        endpoint: {
+          descriptor
+        },
         next: () => toss(new Error('runtime.next was called unexpectedly')),
         done: () => toss(new Error('runtime.done was called unexpectedly')),
         error: undefined
@@ -126,7 +140,7 @@ export function withMiddleware<
      */
     const startPullingChain = async (
       chain: IterableIterator<Middleware<NoInfer<Options>>>,
-      localDebug: Debugger
+      localDebug: ExtendedDebugger | typeof debug.error
     ) => {
       let executionWasAborted = false;
       let executionCompleted = false;
@@ -138,6 +152,7 @@ export function withMiddleware<
             'chain will automatically call runtime.done after first call to res.end'
           );
 
+          // eslint-disable-next-line @typescript-eslint/unbound-method
           const send = res.end;
           res.end = ((...args: Parameters<typeof res.end>) => {
             const sent = res.writableEnded || res.headersSent;
@@ -210,13 +225,18 @@ export function withMiddleware<
 
             if (executionWasAborted) {
               localDebug('execution chain aborted manually');
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             } else if (!chainWasPulled) {
               localDebug('selecting next middleware in chain');
               await pullChain();
             }
           } else {
             localDebug('no more middleware to execute');
-            !executionCompleted && localDebug('deactivated runtime control functions');
+
+            if (!executionCompleted) {
+              localDebug('deactivated runtime control functions');
+            }
+
             executionCompleted = true;
           }
         };
@@ -224,7 +244,9 @@ export function withMiddleware<
         await pullChain();
         localDebug('stopped middleware execution chain');
         localDebug(
-          `at least one middleware executed: ${ranAtLeastOneMiddleware ? 'yes' : 'no'}`
+          `at least one middleware executed: %O`,
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          ranAtLeastOneMiddleware ? 'yes' : 'no'
         );
 
         return executionWasAborted;
@@ -277,11 +299,11 @@ export function withMiddleware<
           try {
             debug.error('selecting first middleware in error handling middleware chain');
             await startPullingChain(useOnError[Symbol.iterator](), debug.error);
-          } catch (error_) {
+          } catch (subError) {
             // ? Error in error handler was unhandled
-            debug.error('error in error handling middleware chain: %O', error_);
+            debug.error('error in error handling middleware chain: %O', subError);
             debug.error('throwing unhandled error');
-            throw error_;
+            throw subError;
           }
         } else {
           debug.error('no error handling middleware found');
@@ -322,9 +344,12 @@ export function middlewareFactory<
   useOnError?: Middleware<NoInfer<Options>>[];
   options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> & NoInfer<Options>;
 }) {
-  return <PassedOptions extends Record<string, unknown> = Record<string, unknown>>(
+  return function middleware<
+    PassedOptions extends Record<string, unknown> = Record<string, unknown>
+  >(
     pagesHandler: NextApiHandler | undefined,
-    params?: {
+    params: {
+      descriptor: MiddlewareContext['runtime']['endpoint']['descriptor'];
       prependUse?: Middleware<NoInfer<Options>>[];
       appendUse?: Middleware<NoInfer<Options>>[];
       prependUseOnError?: Middleware<NoInfer<Options>>[];
@@ -332,8 +357,9 @@ export function middlewareFactory<
       options?: Partial<MiddlewareContext<NoInfer<Options>>['options']> &
         NoInfer<PassedOptions>;
     }
-  ) => {
+  ) {
     const {
+      descriptor,
       prependUse,
       appendUse,
       prependUseOnError,
@@ -342,6 +368,7 @@ export function middlewareFactory<
     } = { ...params };
 
     return withMiddleware<NoInfer<Options> & NoInfer<PassedOptions>>(pagesHandler, {
+      descriptor,
       use: [...(prependUse || []), ...defaultUse, ...(appendUse || [])],
       useOnError: [
         ...(prependUseOnError || []),

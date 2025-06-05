@@ -1,18 +1,15 @@
-/* eslint-disable eqeqeq */
-/* eslint-disable @typescript-eslint/no-confusing-void-expression */
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable unicorn/no-anonymous-default-export */
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
-import { debugFactory } from 'multiverse/debug-extended';
-import { sendHttpBadContentType, sendHttpBadRequest } from 'multiverse/next-api-respond';
-import { InvalidAppConfigurationError } from 'named-app-errors';
+import { createDebugLogger } from 'rejoinder';
 import { toss } from 'toss-expression';
 
-import type { ValidHttpMethod } from '@xunnamius/types';
-import type { MiddlewareContext } from 'multiverse/next-api-glue';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { ValidationError } from 'universe/error';
 
-const debug = debugFactory('next-adhesive:check-content-type');
+import { sendHttpBadContentType, sendHttpBadRequest } from 'multiverse/next-api-respond';
+
+import type { ValidHttpMethod } from '@-xun/types';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import type { MiddlewareContext } from 'multiverse/next-api-glue';
+
+const debug = createDebugLogger({ namespace: 'next-api:f:check-content-type' });
 
 /**
  * The shape of a simple configuration object.
@@ -59,7 +56,7 @@ export type Options = {
  * Rejects requests that are not using an allowed content type. This middleware
  * should usually come _after_ check-method.
  */
-export default async function (
+export default async function middlewareFunction(
   req: NextApiRequest,
   res: NextApiResponse,
   context: MiddlewareContext<Options>
@@ -69,49 +66,8 @@ export default async function (
   const contentType = req.headers['content-type']?.toLowerCase();
   const method = req.method?.toUpperCase();
 
-  const configToLowercase = (
-    c: AllowedContentTypesConfig
-  ): AllowedContentTypesConfig => {
-    return typeof c === 'string'
-      ? (c.toLowerCase() as typeof c)
-      : Array.isArray(c)
-        ? c.map((s) => s.toLowerCase())
-        : toss(
-            new InvalidAppConfigurationError(
-              'allowedContentTypes must adhere to type constraints'
-            )
-          );
-  };
-
   // ? Ensure everything is lowercased before we begin
-  const allowed = (() => {
-    if (rawAllowedContentTypes) {
-      if (
-        Array.isArray(rawAllowedContentTypes) ||
-        typeof rawAllowedContentTypes === 'string'
-      ) {
-        return configToLowercase(rawAllowedContentTypes);
-      } else {
-        for (const [subMethod, config] of Object.entries(rawAllowedContentTypes)) {
-          if (config) {
-            rawAllowedContentTypes[subMethod as ValidHttpMethod] =
-              configToLowercase(config);
-          }
-        }
-
-        return rawAllowedContentTypes;
-      }
-    }
-  })();
-
-  const sendError = () => {
-    const error = `unrecognized or disallowed Content-Type header for method ${method}: ${
-      contentType ? `"${contentType}"` : '(none)'
-    }`;
-
-    debug(`content-type check failed: ${error}`);
-    sendHttpBadContentType(res, { error });
-  };
+  const allowedContentTypes = refineRawAllowedTypes();
 
   if (!method) {
     debug('content-type check failed: method is undefined');
@@ -119,57 +75,105 @@ export default async function (
   } else {
     const isPayloadMethod = ['PUT', 'POST', 'PATCH'].includes(method);
 
-    if (!allowed) {
+    if (!allowedContentTypes) {
       if (isPayloadMethod || contentType) {
         debug(
-          'content-type check failed: this request cannot be handled with the current configuration'
+          'content-type check failed: this request cannot be handled with the current configuration (missing allowedContentTypes)'
         );
+
         sendHttpBadContentType(res, {
           error: 'the server is not configured to handle this type of request'
         });
       }
     } else {
-      if (allowed == 'none') {
+      if (allowedContentTypes === 'none') {
         if (contentType) {
-          return sendError();
+          sendError();
         }
-      } else if (allowed != 'any') {
-        if (Array.isArray(allowed)) {
+      } else if (allowedContentTypes !== 'any') {
+        if (Array.isArray(allowedContentTypes)) {
           if (isPayloadMethod || contentType) {
-            const allowsNone = allowed.includes('none');
+            const allowsNone = allowedContentTypes.includes('none');
             if (!contentType) {
               if (!allowsNone) {
-                return sendError();
+                sendError();
               }
-            } else if (contentType == 'none' || !allowed.includes(contentType)) {
-              return sendError();
+            } else if (
+              contentType === 'none' ||
+              !allowedContentTypes.includes(contentType)
+            ) {
+              sendError();
             }
           }
         } else {
-          if (Object.keys(allowed).includes(method)) {
-            const allowedSubset = allowed[method as ValidHttpMethod];
+          if (Object.keys(allowedContentTypes).includes(method)) {
+            const allowedSubset = allowedContentTypes[method as ValidHttpMethod];
 
-            if (allowedSubset == 'none') {
+            if (allowedSubset === 'none') {
               if (contentType) {
-                return sendError();
+                sendError();
               }
-            } else if (allowedSubset && allowedSubset != 'any') {
+            } else if (allowedSubset && allowedSubset !== 'any') {
               const allowsNone = allowedSubset.includes('none');
               if (!contentType) {
                 if (!allowsNone) {
-                  return sendError();
+                  sendError();
                 }
-              } else if (contentType == 'none' || !allowedSubset.includes(contentType)) {
-                return sendError();
+              } else if (
+                contentType === 'none' ||
+                !allowedSubset.includes(contentType)
+              ) {
+                sendError();
               }
             }
           } else if (isPayloadMethod || contentType) {
-            return sendError();
+            sendError();
           }
         }
       }
 
-      debug(`content-type check succeeded: type "${contentType}" is allowed`);
+      debug(`content-type check succeeded: type "${String(contentType)}" is allowed`);
     }
+  }
+
+  function configToLowercase(
+    contentTypes: AllowedContentTypesConfig | undefined
+  ): AllowedContentTypesConfig {
+    return typeof contentTypes === 'string'
+      ? (contentTypes.toLowerCase() as typeof contentTypes)
+      : Array.isArray(contentTypes)
+        ? contentTypes.map((s) => s.toLowerCase())
+        : toss(
+            new ValidationError('allowedContentTypes must adhere to type constraints')
+          );
+  }
+
+  function refineRawAllowedTypes() {
+    if (
+      Array.isArray(rawAllowedContentTypes) ||
+      typeof rawAllowedContentTypes === 'string'
+    ) {
+      return configToLowercase(rawAllowedContentTypes);
+    } else if (rawAllowedContentTypes) {
+      const refined: AllowedContentTypesPerMethodConfig = {};
+
+      for (const [subMethod, config] of Object.entries(rawAllowedContentTypes)) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (config) {
+          refined[subMethod as ValidHttpMethod] = configToLowercase(config);
+        }
+      }
+
+      return refined;
+    }
+  }
+
+  function sendError() {
+    const error = `unrecognized or disallowed Content-Type header for method ${String(method)}: ${
+      contentType ? `"${contentType}"` : '(none)'
+    }`;
+
+    debug(`content-type check failed: ${error}`);
+    sendHttpBadContentType(res, { error });
   }
 }

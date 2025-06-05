@@ -1,24 +1,26 @@
+import { getDb } from '@-xun/mongo-schema';
+import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { ObjectId } from 'mongodb';
-import { getDb } from 'multiverse/mongo-schema';
-import { setupMemoryServerOverride } from 'multiverse/mongo-test';
-import { DUMMY_BEARER_TOKEN, NULL_BEARER_TOKEN } from 'multiverse/next-auth';
-import { TrialError } from 'named-app-errors';
 import { toss } from 'toss-expression';
 
+import { getCommonDummyData, getCommonSchemaConfig } from 'multiverse/mongo-common';
 import { itemExists, itemToObjectId, itemToStringId } from 'multiverse/mongo-item';
+import { DUMMY_BEARER_TOKEN, NULL_BEARER_TOKEN } from 'multiverse/next-auth';
 
 import type { InternalAuthBearerEntry } from 'multiverse/next-auth';
 
-setupMemoryServerOverride();
+setupMemoryServerOverride({
+  schema: getCommonSchemaConfig(),
+  data: getCommonDummyData()
+});
 
 describe('::itemExists', () => {
-  it('returns true if an item exists in a collection where [key] == id', async () => {
+  it('returns true if an item exists in a collection where [key] === id', async () => {
     expect.hasAssertions();
 
     const col = (await getDb({ name: 'root' })).collection('auth');
     const item =
-      (await col.findOne<InternalAuthBearerEntry>()) ||
-      toss(new TrialError('assert failed'));
+      (await col.findOne<InternalAuthBearerEntry>()) || toss(new Error('assert failed'));
 
     await expect(itemExists(col, item._id)).resolves.toBeTrue();
     await expect(itemExists(col, new ObjectId())).resolves.toBeFalse();
@@ -37,8 +39,7 @@ describe('::itemExists', () => {
 
     const col = (await getDb({ name: 'root' })).collection('auth');
     const item =
-      (await col.findOne<InternalAuthBearerEntry>()) ||
-      toss(new TrialError('assert failed'));
+      (await col.findOne<InternalAuthBearerEntry>()) || toss(new Error('assert failed'));
 
     await expect(itemExists(col, item._id.toString())).resolves.toBeTrue();
     await expect(
@@ -51,8 +52,7 @@ describe('::itemExists', () => {
 
     const col = (await getDb({ name: 'root' })).collection('auth');
     const item =
-      (await col.findOne<InternalAuthBearerEntry>()) ||
-      toss(new TrialError('assert failed'));
+      (await col.findOne<InternalAuthBearerEntry>()) || toss(new Error('assert failed'));
 
     await expect(itemExists(col, item._id)).resolves.toBeTrue();
     await expect(
@@ -77,8 +77,7 @@ describe('::itemExists', () => {
 
     const col = (await getDb({ name: 'root' })).collection('auth');
     const item =
-      (await col.findOne<InternalAuthBearerEntry>()) ||
-      toss(new TrialError('assert failed'));
+      (await col.findOne<InternalAuthBearerEntry>()) || toss(new Error('assert failed'));
 
     await expect(itemExists(col, item._id, { excludeId: item._id })).rejects.toThrow(
       'cannot lookup an item by property "_id"'
@@ -111,8 +110,7 @@ describe('::itemExists', () => {
     ).resolves.toBeFalse();
 
     const item =
-      (await col.findOne<InternalAuthBearerEntry>()) ||
-      toss(new TrialError('assert failed'));
+      (await col.findOne<InternalAuthBearerEntry>()) || toss(new Error('assert failed'));
 
     await expect(itemExists(col, item._id)).resolves.toBeTrue();
 
@@ -166,8 +164,8 @@ describe('::itemToObjectId', () => {
     expect(() => itemToObjectId({})).toThrow('irreducible');
     // @ts-expect-error: bad param
     expect(() => itemToObjectId([{}])).toThrow('irreducible');
-    expect(() => itemToObjectId('bad')).toThrow('must be a 24 character');
-    expect(() => itemToObjectId(['bad'])).toThrow('must be a 24 character');
+    expect(() => itemToObjectId('bad')).toThrow('irreducible');
+    expect(() => itemToObjectId(['bad'])).toThrow('irreducible');
   });
 });
 
@@ -210,7 +208,7 @@ describe('::itemToStringId', () => {
     expect(() => itemToStringId({})).toThrow('irreducible');
     // @ts-expect-error: bad param
     expect(() => itemToStringId([{}])).toThrow('irreducible');
-    expect(() => itemToStringId('bad')).toThrow('must be a 24 character');
-    expect(() => itemToStringId(['bad'])).toThrow('must be a 24 character');
+    expect(() => itemToStringId('bad')).toThrow('irreducible');
+    expect(() => itemToStringId(['bad'])).toThrow('irreducible');
   });
 });

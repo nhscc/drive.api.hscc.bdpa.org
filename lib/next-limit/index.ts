@@ -1,10 +1,10 @@
-import { getDb } from 'multiverse/mongo-schema';
-import { getEnv } from 'multiverse/next-env';
+import { getDb } from '@-xun/mongo-schema';
+import { getEnv } from '@-xun/next-env';
 import { getClientIp } from 'request-ip';
 
 import { ValidationError } from 'universe/error';
 
-import type { UnixEpochMs } from '@xunnamius/types';
+import type { UnixEpochMs } from '@-xun/types';
 import type { UpdateResult, WithId, WithoutId } from 'mongodb';
 import type { NextApiRequest } from 'next';
 

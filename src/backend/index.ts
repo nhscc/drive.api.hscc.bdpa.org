@@ -1,7 +1,6 @@
 /* eslint-disable unicorn/no-array-reduce */
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable eqeqeq */
-import { isPlainObject } from 'is-plain-object';
+import { isRecord } from '@-xun/js';
+import { getDb } from '@-xun/mongo-schema';
 import { MongoServerError, ObjectId } from 'mongodb';
 import { toss } from 'toss-expression';
 
@@ -12,17 +11,9 @@ import {
 } from 'universe/backend/db';
 
 import { getEnv } from 'universe/backend/env';
-
-import {
-  ErrorMessage,
-  InvalidItemError,
-  ItemNotFoundError,
-  ItemsNotFoundError,
-  ValidationError
-} from 'universe/error';
+import { ErrorMessage, NotFoundError, ValidationError } from 'universe/error';
 
 import { itemExists } from 'multiverse/mongo-item';
-import { getDb } from 'multiverse/mongo-schema';
 
 import type {
   InternalFileNode,
@@ -45,6 +36,8 @@ import type {
 } from 'universe/backend/db';
 
 // TODO: switch to using itemToObjectId from mongo-item library
+
+// TODO: replace validation logic with Arktype
 
 const emailRegex = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 const usernameRegex = /^[a-zA-Z0-9_-]+$/;
@@ -138,7 +131,7 @@ function validateUserData(
   data: NewUser | PatchUser | undefined,
   { required }: { required: boolean }
 ): asserts data is NewUser | PatchUser {
-  if (!data || !isPlainObject(data)) {
+  if (!data || !isRecord(data)) {
     throw new ValidationError(ErrorMessage.InvalidJSON());
   }
 
@@ -172,7 +165,7 @@ function validateUserData(
     (required || (!required && data.salt !== undefined)) &&
     (typeof data.salt !== 'string' ||
       !hexadecimalRegex.test(data.salt) ||
-      data.salt.length != USER_SALT_LENGTH)
+      data.salt.length !== USER_SALT_LENGTH)
   ) {
     throw new ValidationError(
       ErrorMessage.InvalidStringLength('salt', USER_SALT_LENGTH, null, 'hexadecimal')
@@ -184,7 +177,7 @@ function validateUserData(
     (required || (!required && data.key !== undefined)) &&
     (typeof data.key !== 'string' ||
       !hexadecimalRegex.test(data.key) ||
-      data.key.length != USER_KEY_LENGTH)
+      data.key.length !== USER_KEY_LENGTH)
   ) {
     throw new ValidationError(
       ErrorMessage.InvalidStringLength('key', USER_KEY_LENGTH, null, 'hexadecimal')
@@ -202,7 +195,7 @@ async function validateNodeData(
   data: NewNode | PatchNode | undefined,
   { type }: { type: NonNullable<NewNode['type']> | null }
 ) {
-  if (!data || !isPlainObject(data)) {
+  if (!data || !isRecord(data)) {
     throw new ValidationError(ErrorMessage.InvalidJSON());
   }
 
@@ -211,11 +204,11 @@ async function validateNodeData(
   };
 
   const isNewFileNode = (obj: NewNode): obj is NewFileNode => {
-    return isNewNode(obj) && obj.type == 'file';
+    return isNewNode(obj) && obj.type === 'file';
   };
 
   const isNewMetaNode = (obj: NewNode): obj is NewMetaNode => {
-    return isNewNode(obj) && obj.type != 'file';
+    return isNewNode(obj) && obj.type !== 'file';
   };
 
   const isPatchNode = (_obj: typeof data): _obj is PatchNode => {
@@ -223,11 +216,11 @@ async function validateNodeData(
   };
 
   const isPatchFileNode = (obj: typeof data): obj is PatchFileNode => {
-    return isPatchNode(obj) && type == 'file';
+    return isPatchNode(obj) && type === 'file';
   };
 
   const isPatchMetaNode = (obj: typeof data): obj is PatchMetaNode => {
-    return isPatchNode(obj) && type != 'file';
+    return isPatchNode(obj) && type !== 'file';
   };
 
   const {
@@ -267,7 +260,7 @@ async function validateNodeData(
   }
 
   if (isNewNode(data) || data.permissions !== undefined) {
-    if (!data.permissions || !isPlainObject(data.permissions)) {
+    if (!data.permissions || !isRecord(data.permissions)) {
       throw new ValidationError(ErrorMessage.InvalidFieldValue('permissions'));
     } else {
       const permsEntries = Object.entries(data.permissions);
@@ -277,7 +270,7 @@ async function validateNodeData(
           return (
             typeof k === 'string' &&
             ['view', 'edit'].includes(v) &&
-            (k != 'public' || (typeActual == 'file' && v == 'view'))
+            (k !== 'public' || (typeActual === 'file' && v === 'view'))
           );
         })
       ) {
@@ -288,10 +281,12 @@ async function validateNodeData(
         await Promise.all(
           permsEntries.map(async ([username]) => {
             if (
-              username != 'public' &&
+              username !== 'public' &&
               !(await itemExists(users, { key: 'username', id: username }))
             ) {
-              throw new ItemNotFoundError(username, 'user (permissions)');
+              throw new NotFoundError(
+                ErrorMessage.ItemNotFound(username, 'user (permissions)')
+              );
             }
           })
         );
@@ -339,7 +334,7 @@ async function validateNodeData(
     (isNewFileNode(data) || (isPatchFileNode(data) && data.lock !== undefined)) &&
     data.lock !== null
   ) {
-    if (!data.lock || !isPlainObject(data.lock)) {
+    if (!data.lock || !isRecord(data.lock)) {
       throw new ValidationError(ErrorMessage.InvalidFieldValue('lock'));
     } else if (!validateUsername(data.lock.user)) {
       throw new ValidationError(
@@ -364,7 +359,7 @@ async function validateNodeData(
       );
     } else if (typeof data.lock.createdAt !== 'number' || data.lock.createdAt <= 0) {
       throw new ValidationError(ErrorMessage.InvalidFieldValue('lock.createdAt'));
-    } else if (Object.keys(data.lock).length != 3) {
+    } else if (Object.keys(data.lock).length !== 3) {
       throw new ValidationError(ErrorMessage.InvalidObjectKeyValue('lock'));
     }
   }
@@ -374,7 +369,7 @@ async function validateNodeData(
       throw new ValidationError(ErrorMessage.InvalidFieldValue('contents'));
     } else if (
       data.contents.length > MAX_NODE_CONTENTS ||
-      (typeActual == 'symlink' && data.contents.length > 1)
+      (typeActual === 'symlink' && data.contents.length > 1)
     ) {
       throw new ValidationError(ErrorMessage.TooManyItemsRequested('content node_ids'));
     } else {
@@ -385,14 +380,14 @@ async function validateNodeData(
         data.contents.map(async (node_id) => {
           try {
             if (
-              !(await itemExists(fileNodes, node_id)) &&
-              !(await itemExists(metaNodes, node_id))
+              !(await itemExists(fileNodes, node_id, { optimisticCoercion: 'force' })) &&
+              !(await itemExists(metaNodes, node_id, { optimisticCoercion: 'force' }))
             ) {
-              throw new ItemNotFoundError(node_id, 'node_id');
+              throw new NotFoundError(ErrorMessage.ItemNotFound(node_id, 'node_id'));
             }
           } catch (error) {
             const error_ =
-              error instanceof ItemNotFoundError
+              error instanceof NotFoundError
                 ? error
                 : new ValidationError(
                     ErrorMessage.InvalidArrayValue('contents', node_id)
@@ -409,7 +404,7 @@ async function validateNodeData(
     data.owner !== undefined &&
     !(await itemExists(users, { key: 'username', id: data.owner }))
   ) {
-    throw new ItemNotFoundError(data.owner, 'user');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(data.owner, 'user'));
   }
 
   return true;
@@ -439,7 +434,7 @@ export async function getAllUsers({
   const users = db.collection<InternalUser>('users');
 
   if (afterId && !(await itemExists(users, afterId))) {
-    throw new ItemNotFoundError(after, 'user_id');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(after, 'user_id'));
   }
 
   return users
@@ -456,7 +451,7 @@ export async function getUser({
   username: Username | undefined;
 }): Promise<PublicUser> {
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   const db = await getDb({ name: 'hscc-api-drive' });
@@ -464,7 +459,7 @@ export async function getUser({
 
   return (
     (await users.find({ username }).project<PublicUser>(publicUserProjection).next()) ||
-    toss(new ItemNotFoundError(username, 'user'))
+    toss(new NotFoundError(ErrorMessage.ItemNotFound(username, 'user')))
   );
 }
 
@@ -487,15 +482,15 @@ export async function createUser({
     );
   }
 
-  if (data.username == 'public') {
+  if (data.username === 'public') {
     throw new ValidationError(ErrorMessage.IllegalUsername());
   }
 
   const { email, username, key, salt, ...rest } = data as Required<NewUser>;
   const restKeys = Object.keys(rest);
 
-  if (restKeys.length != 0) {
-    throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]));
+  if (restKeys.length !== 0) {
+    throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
   }
 
   const db = await getDb({ name: 'hscc-api-drive' });
@@ -513,7 +508,7 @@ export async function createUser({
     });
   } catch (error) {
     /* istanbul ignore else */
-    if (error instanceof MongoServerError && error.code == 11_000) {
+    if (error instanceof MongoServerError && error.code === 11_000) {
       if (error.keyPattern?.username !== undefined) {
         throw new ValidationError(ErrorMessage.DuplicateFieldValue('username'));
       }
@@ -541,7 +536,7 @@ export async function updateUser({
   if (data && !Object.keys(data).length) return;
 
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   validateUserData(data, { required: false });
@@ -549,8 +544,8 @@ export async function updateUser({
   const { email, key, salt, ...rest } = data as Required<PatchUser>;
   const restKeys = Object.keys(rest);
 
-  if (restKeys.length != 0) {
-    throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]));
+  if (restKeys.length !== 0) {
+    throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
   }
 
   const db = await getDb({ name: 'hscc-api-drive' });
@@ -571,12 +566,12 @@ export async function updateUser({
     );
 
     if (!result.matchedCount) {
-      throw new ItemNotFoundError(username, 'user');
+      throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
     }
   } catch (error) {
     if (
       error instanceof MongoServerError &&
-      error.code == 11_000 /* istanbul ignore else */ &&
+      error.code === 11_000 /* istanbul ignore else */ &&
       error.keyPattern?.email !== undefined
     ) {
       throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
@@ -592,7 +587,7 @@ export async function deleteUser({
   username: Username | undefined;
 }): Promise<void> {
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   const db = await getDb({ name: 'hscc-api-drive' });
@@ -602,7 +597,7 @@ export async function deleteUser({
   const result = await users.deleteOne({ username });
 
   if (!result.deletedCount) {
-    throw new ItemNotFoundError(username, 'user');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
   }
 
   await Promise.all(
@@ -638,11 +633,11 @@ export async function getNodes({
   node_ids: string[] | undefined;
 }): Promise<PublicNode[]> {
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   if (!node_ids) {
-    throw new InvalidItemError('node_ids', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('node_ids', 'parameter'));
   }
 
   const db = await getDb({ name: 'hscc-api-drive' });
@@ -653,7 +648,7 @@ export async function getNodes({
   }
 
   if (!(await itemExists(users, { key: 'username', id: username }))) {
-    throw new ItemNotFoundError(username, 'user');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
   }
 
   const nodeIds = normalizeNodeIds(node_ids);
@@ -682,8 +677,8 @@ export async function getNodes({
     ])
     .toArray();
 
-  if (nodes.length != node_ids.length) {
-    throw new ItemsNotFoundError('node_ids');
+  if (nodes.length !== node_ids.length) {
+    throw new NotFoundError(ErrorMessage.ItemOrItemsNotFound('node_ids'));
   } else return nodes;
 }
 
@@ -710,7 +705,7 @@ export async function searchNodes({
   };
 }): Promise<PublicNode[]> {
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   const { MAX_SEARCHABLE_TAGS, RESULTS_PER_PAGE } = getEnv();
@@ -725,9 +720,9 @@ export async function searchNodes({
   })();
 
   // ? Initial matcher validation
-  if (!isPlainObject(match)) {
+  if (!isRecord(match)) {
     throw new ValidationError(ErrorMessage.InvalidMatcher('match'));
-  } else if (!isPlainObject(regexMatch)) {
+  } else if (!isRecord(regexMatch)) {
     throw new ValidationError(ErrorMessage.InvalidMatcher('regexMatch'));
   }
 
@@ -755,17 +750,17 @@ export async function searchNodes({
     !(await itemExists(fileNodes, afterId)) &&
     !(await itemExists(metaNodes, afterId))
   ) {
-    throw new ItemNotFoundError(after, 'node_id');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(after, 'node_id'));
   }
 
   if (!(await itemExists(users, { key: 'username', id: username }))) {
-    throw new ItemNotFoundError(username, 'user');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
   }
 
   // ? Validate the match object
   let sawPermissionsSpecifier = false;
   for (const [key, val] of Object.entries(match)) {
-    if (key == 'tags') {
+    if (key === 'tags') {
       if (!Array.isArray(val)) {
         throw new ValidationError(
           ErrorMessage.InvalidSpecifierValueType(key, 'an array')
@@ -775,7 +770,7 @@ export async function searchNodes({
       if (val.length > MAX_SEARCHABLE_TAGS) {
         throw new ValidationError(ErrorMessage.TooManyItemsRequested('searchable tags'));
       }
-    } else if (key == 'permissions') {
+    } else if (key === 'permissions') {
       throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
     } else if (key.startsWith('permissions.')) {
       if (sawPermissionsSpecifier) {
@@ -789,18 +784,18 @@ export async function searchNodes({
         throw new ValidationError(ErrorMessage.UnknownSpecifier(key));
       }
 
-      if (isPlainObject(val)) {
+      if (isRecord(val)) {
         let valNotEmpty = false;
 
         for (const [subkey, subval] of Object.entries(val)) {
-          if (subkey == '$or') {
-            if (!Array.isArray(subval) || subval.length != 2) {
+          if (subkey === '$or') {
+            if (!Array.isArray(subval) || subval.length !== 2) {
               throw new ValidationError(ErrorMessage.InvalidOrSpecifier());
             }
 
             if (
               subval.every((sv, ndx) => {
-                if (!isPlainObject(sv)) {
+                if (!isRecord(sv)) {
                   throw new ValidationError(
                     ErrorMessage.InvalidOrSpecifierNonObject(ndx)
                   );
@@ -809,7 +804,7 @@ export async function searchNodes({
                 const entries = Object.entries(sv);
 
                 if (!entries.length) return false;
-                if (entries.length != 1) {
+                if (entries.length !== 1) {
                   throw new ValidationError(
                     ErrorMessage.InvalidOrSpecifierBadLength(ndx)
                   );
@@ -907,7 +902,7 @@ export async function searchNodes({
 
   // ? Separate out the $or sub-specifiers for special treatment
   Object.entries(match).forEach(([spec, val]) => {
-    if (isPlainObject(val)) {
+    if (isRecord(val)) {
       const obj = val as { $or?: unknown };
 
       if (obj.$or) {
@@ -964,7 +959,7 @@ export async function createNode({
   data: NewNode | undefined;
 }): Promise<PublicNode> {
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   await validateNodeData(data, { type: null });
@@ -975,17 +970,17 @@ export async function createNode({
   const node_id = new ObjectId();
 
   if (!(await itemExists(users, { key: 'username', id: username }))) {
-    throw new ItemNotFoundError(username, 'user');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
   }
 
-  if (data.type == 'file') {
+  if (data.type === 'file') {
     const fileNodes = db.collection<InternalFileNode>('file-nodes');
     const { type, name, text, tags, lock, permissions, ...rest } =
       data as Required<NewFileNode>;
     const restKeys = Object.keys(rest);
 
-    if (restKeys.length != 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]));
+    if (restKeys.length !== 0) {
+      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1008,8 +1003,8 @@ export async function createNode({
     const { type, name, contents, permissions, ...rest } = data as Required<NewMetaNode>;
     const restKeys = Object.keys(rest);
 
-    if (restKeys.length != 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]));
+    if (restKeys.length !== 0) {
+      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1025,7 +1020,7 @@ export async function createNode({
     });
   }
 
-  return (await getNodes({ username, node_ids: [node_id.toString()] }))[0];
+  return (await getNodes({ username, node_ids: [node_id.toString()] }))[0]!;
 }
 
 export async function updateNode({
@@ -1040,9 +1035,9 @@ export async function updateNode({
   if (data && !Object.keys(data).length) return;
 
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   } else if (!node_id) {
-    throw new InvalidItemError('node_id', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('node_id', 'parameter'));
   }
 
   const db = await getDb({ name: 'hscc-api-drive' });
@@ -1059,7 +1054,7 @@ export async function updateNode({
   })();
 
   if (!(await itemExists(users, { key: 'username', id: username }))) {
-    throw new ItemNotFoundError(username, 'user');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
   }
 
   const $match = {
@@ -1082,19 +1077,19 @@ export async function updateNode({
     .next();
 
   if (!node) {
-    throw new ItemNotFoundError(node_id, 'node_id');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(node_id, 'node_id'));
   }
 
   await validateNodeData(data, { type: node.type });
   assertNodeDataWasValidated(data);
 
-  if (node.type == 'file') {
+  if (node.type === 'file') {
     const { name, text, tags, lock, permissions, owner, ...rest } =
       data as PatchFileNode;
     const restKeys = Object.keys(rest);
 
-    if (restKeys.length != 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]));
+    if (restKeys.length !== 0) {
+      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1116,8 +1111,8 @@ export async function updateNode({
     const { name, contents, permissions, owner, ...rest } = data as PatchMetaNode;
     const restKeys = Object.keys(rest);
 
-    if (restKeys.length != 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]));
+    if (restKeys.length !== 0) {
+      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1143,9 +1138,9 @@ export async function deleteNodes({
   node_ids: string[] | undefined;
 }): Promise<void> {
   if (!username) {
-    throw new InvalidItemError('username', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   } else if (!node_ids) {
-    throw new InvalidItemError('node_ids', 'parameter');
+    throw new ValidationError(ErrorMessage.InvalidItem('node_ids', 'parameter'));
   }
 
   if (node_ids.length > getEnv().MAX_PARAMS_PER_REQUEST) {
@@ -1159,7 +1154,7 @@ export async function deleteNodes({
   const nodeIds = normalizeNodeIds(node_ids);
 
   if (!(await itemExists(users, { key: 'username', id: username }))) {
-    throw new ItemNotFoundError(username, 'user');
+    throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
   }
 
   await Promise.all([

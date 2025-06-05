@@ -1,9 +1,8 @@
-/* eslint-disable eqeqeq */
-import { debugFactory } from 'multiverse/debug-extended';
-import { getDb } from 'multiverse/mongo-schema';
-import { getEnv } from 'multiverse/next-env';
+import { getDb } from '@-xun/mongo-schema';
+import { getEnv } from '@-xun/next-env';
+import { createDebugLogger } from 'rejoinder';
 
-const debug = debugFactory('next-contrived:isDueForContrivedError');
+const debug = createDebugLogger({ namespace: 'next-api-common:contrived' });
 
 /**
  * Returns `true` if a request should be rejected with a pseudo-error.
@@ -20,7 +19,7 @@ export async function isDueForContrivedError() {
 
     debug(`${count}%${reqPerError} = ${count % reqPerError}`);
 
-    if (count % reqPerError == 0) {
+    if (count % reqPerError === 0) {
       debug('determined request is due for contrived error');
       return true;
     }

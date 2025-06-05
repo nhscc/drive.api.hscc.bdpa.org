@@ -1,26 +1,30 @@
-import { withMiddleware } from 'multiverse/next-api-glue';
 import { testApiHandler } from 'next-test-api-route-handler';
 
-import { noopHandler, withMockedOutput, wrapHandler } from 'testverse/setup';
+import { noopHandler, withMockedOutput, wrapHandler } from 'testverse/util';
 
 import addRawBody, {
   ensureNextApiRequestHasRawBody,
   isNextApiRequestWithRawBody
-} from 'multiverse/next-adhesive/add-raw-body';
+} from 'multiverse/next-adhesive/parse-body.ts';
+
+import { withMiddleware } from 'multiverse/next-api-glue';
 
 import type { NextApiRequest } from 'next';
-import type { Options, WithRawBody } from 'multiverse/next-adhesive/add-raw-body';
+import type { Options, WithRawBody } from 'multiverse/next-adhesive/parse-body';
 
 describe('::<default export>', () => {
   it('throws if bodyParser is not disabled', async () => {
     expect.hasAssertions();
 
     const pagesHandler = wrapHandler(
-      withMiddleware<Options>(noopHandler, { use: [addRawBody] }),
+      withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
+        use: [addRawBody]
+      }),
       {}
     );
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
@@ -30,6 +34,8 @@ describe('::<default export>', () => {
       ).rejects.toMatchObject({
         message: expect.stringContaining('body parser must be disabled')
       });
+
+      expect(errorSpy).toHaveBeenCalled();
     });
 
     pagesHandler.config = { api: { bodyParser: false } };
@@ -44,7 +50,10 @@ describe('::<default export>', () => {
     expect.hasAssertions();
 
     const normalHandler = wrapHandler(
-      withMiddleware<Options>(noopHandler, { use: [addRawBody] })
+      withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
+        use: [addRawBody]
+      })
     );
 
     normalHandler.config = { api: { bodyParser: false } };
@@ -56,12 +65,15 @@ describe('::<default export>', () => {
 
     const obsoleterHandler = wrapHandler(async (req, res) => {
       (req as WithRawBody<NextApiRequest>).rawBody = 'fake raw body';
-      return withMiddleware<Options>(noopHandler, { use: [addRawBody] })(req, res);
+      return withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
+        use: [addRawBody]
+      })(req, res);
     });
 
     obsoleterHandler.config = { api: { bodyParser: false } };
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
@@ -71,6 +83,8 @@ describe('::<default export>', () => {
       ).rejects.toMatchObject({
         message: expect.stringContaining('already has a defined "rawBody" property')
       });
+
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
@@ -78,12 +92,15 @@ describe('::<default export>', () => {
     expect.hasAssertions();
 
     const pagesHandler = wrapHandler(
-      withMiddleware<Options>(noopHandler, { use: [addRawBody] })
+      withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
+        use: [addRawBody]
+      })
     );
 
     pagesHandler.config = { api: { bodyParser: false } };
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
@@ -98,6 +115,8 @@ describe('::<default export>', () => {
       ).rejects.toMatchObject({
         message: expect.stringContaining('invalid JSON body')
       });
+
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
@@ -105,12 +124,15 @@ describe('::<default export>', () => {
     expect.hasAssertions();
 
     const pagesHandler = wrapHandler(
-      withMiddleware<Options>(noopHandler, { use: [addRawBody] })
+      withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
+        use: [addRawBody]
+      })
     );
 
     pagesHandler.config = { api: { bodyParser: false } };
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
@@ -123,6 +145,8 @@ describe('::<default export>', () => {
       ).rejects.toMatchObject({
         message: expect.stringContaining('invalid body')
       });
+
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
@@ -136,7 +160,10 @@ describe('::<default export>', () => {
             res.status(200).send({ body: req.body, rawBody: req.rawBody });
           }
         },
-        { use: [addRawBody] }
+        {
+          descriptor: '/fake',
+          use: [addRawBody]
+        }
       )
     );
 
@@ -228,6 +255,7 @@ describe('::<default export>', () => {
 
     const pagesHandler = wrapHandler(
       withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
         use: [addRawBody],
         options: { requestBodySizeLimit: 1 }
       })

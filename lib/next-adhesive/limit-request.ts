@@ -1,22 +1,23 @@
-/* eslint-disable unicorn/no-anonymous-default-export */
-import { debugFactory } from 'multiverse/debug-extended';
+import { getEnv } from '@-xun/next-env';
+import { createDebugLogger } from 'rejoinder';
+
 import { sendHttpRateLimited, sendHttpUnauthorized } from 'multiverse/next-api-respond';
-import { getEnv } from 'multiverse/next-env';
 import { clientIsRateLimited } from 'multiverse/next-limit';
 
 import type { NextApiRequest, NextApiResponse } from 'next';
+import type { EmptyObject } from 'type-fest';
 
-const debug = debugFactory('next-adhesive:limit-request');
+const debug = createDebugLogger({ namespace: 'next-api:f:limit-request' });
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type Options = {
-  // No options
-};
+export type Options = EmptyObject;
 
 /**
  * Rejects requests from clients that have sent too many previous requests.
  */
-export default async function (req: NextApiRequest, res: NextApiResponse) {
+export default async function middlewareFunction(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   debug('entered middleware runtime');
 
   if (getEnv().LOCKOUT_ALL_CLIENTS) {

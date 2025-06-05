@@ -1,11 +1,9 @@
-/* eslint-disable unicorn/prevent-abbreviations */
-/* eslint-disable @typescript-eslint/no-meaningless-void-operator */
-import { withMiddleware } from 'multiverse/next-api-glue';
 import { testApiHandler } from 'next-test-api-route-handler';
 
-import { isolatedImport, noopHandler, wrapHandler } from 'testverse/setup';
+import { isolatedImport, noopHandler, wrapHandler } from 'testverse/util';
 
 import useCors from 'multiverse/next-adhesive/use-cors';
+import { withMiddleware } from 'multiverse/next-api-glue';
 
 import type { Options } from 'multiverse/next-adhesive/use-cors';
 
@@ -17,7 +15,12 @@ it('works', async () => {
   expect.hasAssertions();
 
   await testApiHandler({
-    pagesHandler: wrapHandler(withMiddleware(noopHandler, { use: [] })),
+    pagesHandler: wrapHandler(
+      withMiddleware(noopHandler, {
+        descriptor: '/fake',
+        use: []
+      })
+    ),
     test: async ({ fetch }) => {
       const res = await fetch({ method: 'OPTIONS' });
       expect(res.status).toBe(200);
@@ -29,6 +32,7 @@ it('works', async () => {
   await testApiHandler({
     pagesHandler: wrapHandler(
       withMiddleware<Options>(noopHandler, {
+        descriptor: '/fake',
         use: [useCors],
         options: { allowedMethods: ['GET', 'POST', 'HEAD'] }
       })
@@ -48,24 +52,23 @@ it('works', async () => {
 it('handles cors package errors gracefully', async () => {
   expect.hasAssertions();
 
-  jest.doMock<typeof import('cors')>(
+  jest.doMock(
     'cors',
-    () => () => (_req: unknown, _res: unknown, callback: (e: Error) => void) => {
-      return void callback(new Error('fake error'));
-    }
+    (): typeof import('cors') =>
+      () =>
+      (_req: unknown, _res: unknown, callback: (error: Error) => void) => {
+        callback(new Error('fake error'));
+      }
   );
 
   await testApiHandler({
     pagesHandler: wrapHandler(
       withMiddleware(noopHandler, {
-        use: [
-          isolatedImport<typeof useCors>({
-            path: 'multiverse/next-adhesive/use-cors'
-          })
-        ],
+        descriptor: '/fake',
+        use: [isolatedImport<typeof useCors>('multiverse/next-adhesive/use-cors')],
         useOnError: [
-          (_req, res, ctx) => {
-            expect(ctx.runtime.error).toMatchObject({ message: 'fake error' });
+          (_req, res, context) => {
+            expect(context.runtime.error).toMatchObject({ message: 'fake error' });
             res.status(555).end();
           }
         ]

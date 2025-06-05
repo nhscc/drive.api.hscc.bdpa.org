@@ -1,9 +1,9 @@
-/* eslint-disable eqeqeq */
 import { getCommonSchemaConfig } from 'multiverse/mongo-common';
 
-import type { UnixEpochMs } from '@xunnamius/types';
+import type { DbSchema } from '@-xun/mongo-schema';
+import type { UnixEpochMs } from '@-xun/types';
 import type { ObjectId, WithId, WithoutId } from 'mongodb';
-import type { DbSchema } from 'multiverse/mongo-schema';
+import type { TokenAttributes } from 'multiverse/next-auth';
 
 /**
  * A JSON representation of the backend Mongo database structure. This is used
@@ -21,6 +21,8 @@ export function getSchemaConfig(): DbSchema {
             // ? https://stackoverflow.com/a/40914924/1367414
             createOptions: { collation: { locale: 'en', strength: 2 } },
             indices: [
+              { spec: '__provenance' },
+              { spec: 'deleted' },
               { spec: 'key' },
               {
                 spec: 'username',
@@ -57,10 +59,20 @@ export function getSchemaConfig(): DbSchema {
         ]
       }
     },
-    aliases: {}
+    aliases: {
+      app: 'hscc-api-drive'
+    }
   });
 }
 
+/**
+ * Represents an object that tracks provenance.
+ */
+export type WithProvenance<T> = {
+  __provenance: TokenAttributeOwner;
+} & T;
+
+export type TokenAttributeOwner = TokenAttributes['owner'];
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface UserId extends ObjectId {}
 export type Username = string;
@@ -234,7 +246,7 @@ export function toPublicNode(internalNode: InternalNode): PublicNode {
       | PublicMetaNode[key];
   };
 
-  if (internalNode.type == 'file') {
+  if (internalNode.type === 'file') {
     const publicNode = publicNodeIntersection as PublicFileNode;
 
     publicNode.modifiedAt = internalNode.modifiedAt;

@@ -1,55 +1,55 @@
-/* eslint-disable eqeqeq */
-/* eslint-disable unicorn/prevent-abbreviations */
-import { ErrorMessage as NamedErrorMessage } from 'named-app-errors';
-
-export * from 'named-app-errors';
-
 /**
  * A collection of possible error and warning messages.
  */
 export const ErrorMessage = {
-  ...NamedErrorMessage,
+  GuruMeditation: () => 'an impossible scenario occurred',
+  InvalidItem: (item: unknown, itemName: string) =>
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+    `invalid ${itemName}${item !== undefined ? ` "${String(item)}"` : ''}`,
+  InvalidSecret: (secretType?: string) =>
+    ErrorMessage.InvalidItem(undefined, secretType ?? 'secret'),
   TooManyItemsRequested: (itemsName: string) => `too many ${itemsName} requested`,
-  DuplicateFieldValue: (prop: string) => `an item with that "${prop}" already exists`,
-  InvalidFieldValue: (prop: string) =>
-    `\`${prop}\` field has a missing, invalid, or illegal value`,
-  InvalidArrayValue: (prop: string, value: string) =>
-    `the \`${prop}\` array element "${value}" is invalid or illegal`,
-  InvalidObjectKeyValue: (prop: string) =>
-    `a \`${prop}\` object key has an invalid or illegal value`,
+  DuplicateFieldValue: (item: string) => `an item with that "${item}" already exists`,
+  InvalidFieldValue: (item: string) =>
+    `\`${item}\` field has a missing, invalid, or illegal value`,
+  InvalidArrayValue: (item: string, value: string) =>
+    `the \`${item}\` array element "${value}" is invalid or illegal`,
+  InvalidObjectKeyValue: (item: string) =>
+    `a \`${item}\` object key has an invalid or illegal value`,
   IllegalUsername: () => 'a user with that username cannot be created',
-  InvalidJSON: () => 'encountered invalid JSON',
+  InvalidJSON: (property?: string) =>
+    'encountered invalid JSON' + (property ? ` in property \`${property}\`` : ''),
   InvalidStringLength: (
-    prop: string,
+    item: string,
     min: number | string,
     max: number | string | null,
     syntax: 'string' | 'alphanumeric' | 'hexadecimal' | 'bytes' = 'alphanumeric',
     nullable = false,
     isArray = false
   ) =>
-    `${isArray ? `each \`${prop}\` element` : `\`${prop}\``} must be a${
-      syntax == 'alphanumeric'
+    `${isArray ? `each \`${item}\` element` : `\`${item}\``} must be a${
+      syntax === 'alphanumeric'
         ? 'n alphanumeric'
-        : syntax == 'hexadecimal'
+        : syntax === 'hexadecimal'
           ? ' hexadecimal'
           : ''
     } ${
       max
         ? `string between ${min} and ${max} ${
-            syntax == 'bytes' ? 'byte' : 'character'
+            syntax === 'bytes' ? 'byte' : 'character'
           }s (inclusive)`
-        : `${min} ${syntax == 'bytes' ? 'byte' : 'character'} string`
+        : `${min} ${syntax === 'bytes' ? 'byte' : 'character'} string`
     }${nullable ? ' or null' : ''}`,
   InvalidObjectId: (id: string) => `invalid id "${id}"`,
-  UnknownField: (prop: string) => `encountered unknown or illegal field \`${prop}\``,
-  UnknownSpecifier: (prop: string, sub = false) =>
-    `encountered unknown or illegal ${sub ? 'sub-' : ''}specifier \`${prop}\``,
+  UnknownField: (item: string) => `encountered unknown or illegal field \`${item}\``,
+  UnknownSpecifier: (item: string, sub = false) =>
+    `encountered unknown or illegal ${sub ? 'sub-' : ''}specifier \`${item}\``,
   UnknownPermissionsSpecifier: () =>
     'encountered unknown specifier `permissions`. Did you mean to use `permissions.username-goes-here`?',
-  InvalidSpecifierValueType: (prop: string, type: string, sub = false) =>
-    `\`${prop}\` has invalid ${sub ? 'sub-' : ''}specifier value type (must be ${type})`,
-  InvalidRegexString: (prop: string) => `\`${prop}\` has invalid or illegal regex value`,
-  InvalidMatcher: (prop: string) => `invalid \`${prop}\`: must be object`,
+  InvalidSpecifierValueType: (item: string, type: string, sub = false) =>
+    `\`${item}\` has invalid ${sub ? 'sub-' : ''}specifier value type (must be ${type})`,
+  InvalidRegexString: (item: string) => `\`${item}\` has invalid or illegal regex value`,
+  InvalidMatcher: (item: string) => `invalid \`${item}\`: must be object`,
   InvalidOrSpecifier: () =>
     'invalid "$or" sub-specifier: must be array with exactly two elements',
   InvalidOrSpecifierNonObject: (index: number) =>
@@ -59,5 +59,19 @@ export const ErrorMessage = {
   InvalidOrSpecifierInvalidKey: (index: number, key: string) =>
     `invalid "$or" sub-specifier at index ${index}: invalid sub-key "${key}"`,
   InvalidOrSpecifierInvalidValueType: (index: number, key: string) =>
-    `invalid "$or" sub-specifier at index ${index}: sub-key "${key}" has invalid value type (must be number)`
+    `invalid "$or" sub-specifier at index ${index}: sub-key "${key}" has invalid value type (must be number)`,
+  NotFound: () => 'item or resource was not found',
+  ItemNotFound: (item: unknown, itemName: string) =>
+    // eslint-disable-next-line @typescript-eslint/no-base-to-string
+    item ? `${itemName} "${String(item)}" was not found` : 'item was not found',
+  ItemOrItemsNotFound: (itemsName: string) => `one or more ${itemsName} were not found`
 };
+
+// TODO: replace with @-xun/error
+
+export class AppError extends Error {}
+export class ValidationError extends AppError {}
+export class AppValidationError extends ValidationError {}
+export class AuthError extends AppError {}
+export class NotFoundError extends AppError {}
+export class NotImplementedError extends AppError {}

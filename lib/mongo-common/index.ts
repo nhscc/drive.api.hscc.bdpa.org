@@ -1,7 +1,9 @@
-/* eslint-disable import/no-cycle */
-import cloneDeep from 'clone-deep';
-import { ObjectId } from 'mongodb';
-import { mockDateNowMs } from 'multiverse/jest-mock-date';
+import { safeDeepClone } from '@-xun/js';
+import { generateMockSensitiveObjectId } from '@-xun/mongo-test';
+
+import { AppValidationError } from 'universe/error.ts';
+
+import { mockDateNowMs } from 'testverse/util';
 
 import {
   BANNED_BEARER_TOKEN,
@@ -9,13 +11,11 @@ import {
   DUMMY_BEARER_TOKEN
 } from 'multiverse/next-auth';
 
-import type { DbSchema } from 'multiverse/mongo-schema';
-import type { DummyData } from 'multiverse/mongo-test';
+import type { DbSchema } from '@-xun/mongo-schema';
+import type { DummyData } from '@-xun/mongo-test';
 import type { InternalAuthEntry } from 'multiverse/next-auth';
 import type { InternalLimitedLogEntry } from 'multiverse/next-limit';
 import type { InternalRequestLogEntry } from 'multiverse/next-log';
-
-export * from 'multiverse/jest-mock-date';
 
 /**
  * A JSON representation of the backend Mongo database structure. This is used
@@ -25,7 +25,7 @@ export * from 'multiverse/jest-mock-date';
  *   - `root` (collections: `auth`, `request-log`, `limited-log`)
  */
 export function getCommonSchemaConfig(additionalSchemaConfig?: DbSchema): DbSchema {
-  return {
+  const schema: DbSchema = {
     databases: {
       root: {
         collections: [
@@ -33,6 +33,7 @@ export function getCommonSchemaConfig(additionalSchemaConfig?: DbSchema): DbSche
             name: 'auth',
             indices: [
               { spec: 'attributes.owner' },
+              { spec: 'deleted' },
               // ! When performing equality matches on embedded documents, field
               // ! order matters and the embedded documents must match exactly.
               // * https://xunn.at/mongo-docs-query-embedded-docs
@@ -42,7 +43,7 @@ export function getCommonSchemaConfig(additionalSchemaConfig?: DbSchema): DbSche
           },
           {
             name: 'request-log',
-            indices: [{ spec: 'header' }, { spec: 'ip' }]
+            indices: [{ spec: 'header' }, { spec: 'ip' }, { spec: 'durationMs' }]
           },
           {
             name: 'limited-log',
@@ -54,6 +55,26 @@ export function getCommonSchemaConfig(additionalSchemaConfig?: DbSchema): DbSche
     },
     aliases: { ...additionalSchemaConfig?.aliases }
   };
+
+  const actualDatabaseNames = Object.keys(schema.databases);
+
+  for (const [alias, actual] of Object.entries(schema.aliases)) {
+    if (!actualDatabaseNames.includes(actual)) {
+      throw new AppValidationError(
+        `aliased database "${actual}" (referred to by alias "${alias}") does not exist in database schema or is not aliasable. Existing aliasable databases: ${actualDatabaseNames.join(
+          ', '
+        )}`
+      );
+    }
+
+    if (actualDatabaseNames.includes(alias)) {
+      throw new AppValidationError(
+        `database alias "${alias}" (referring to actual database "${actual}") is invalid: an actual database with that name already exists in the database schema. You must choose a different alias`
+      );
+    }
+  }
+
+  return schema;
 }
 
 /**
@@ -64,7 +85,7 @@ export function getCommonSchemaConfig(additionalSchemaConfig?: DbSchema): DbSche
  *   - `root` (collections: `auth`, `request-log`, `limited-log`)
  */
 export function getCommonDummyData(additionalDummyData?: DummyData): DummyData {
-  return cloneDeep({ root: dummyRootData, ...additionalDummyData });
+  return safeDeepClone({ root: dummyRootData, ...additionalDummyData });
 }
 
 /**
@@ -84,41 +105,54 @@ export type DummyRootData = {
 export const dummyRootData: DummyRootData = {
   _generatedAt: mockDateNowMs,
   auth: [
-    // ! Must maintain order or various unit tests will fail
+    // ! Must maintain order or various unit tests across projects will fail !
     {
-      _id: new ObjectId(),
+      _id: generateMockSensitiveObjectId(),
+      deleted: false,
       attributes: { owner: 'local developer', isGlobalAdmin: true },
       scheme: 'bearer',
       token: { bearer: DEV_BEARER_TOKEN }
     },
     {
-      _id: new ObjectId(),
+      _id: generateMockSensitiveObjectId(),
+      deleted: false,
       attributes: { owner: 'dummy owner' },
       scheme: 'bearer',
       token: { bearer: DUMMY_BEARER_TOKEN }
     },
     {
-      _id: new ObjectId(),
+      _id: generateMockSensitiveObjectId(),
+      deleted: false,
       attributes: { owner: 'banned dummy owner' },
       scheme: 'bearer',
       token: { bearer: BANNED_BEARER_TOKEN }
     }
   ],
   'request-log': Array.from({ length: 22 }).map((_, ndx) => ({
-    _id: new ObjectId(),
+    _id: generateMockSensitiveObjectId(),
     ip: '1.2.3.4',
     header: ndx % 2 ? null : `bearer ${BANNED_BEARER_TOKEN}`,
     method: ndx % 3 ? 'GET' : 'POST',
     route: 'fake/route',
+    endpoint: '/fake/:route',
     createdAt: mockDateNowMs + 10 ** 6,
-    resStatusCode: 200
+    resStatusCode: 200,
+    durationMs: 1234
   })),
   'limited-log': [
     // ! Must maintain order or various unit tests will fail
-    { _id: new ObjectId(), ip: '1.2.3.4', until: mockDateNowMs + 1000 * 60 * 15 },
-    { _id: new ObjectId(), ip: '5.6.7.8', until: mockDateNowMs + 1000 * 60 * 15 },
     {
-      _id: new ObjectId(),
+      _id: generateMockSensitiveObjectId(),
+      ip: '1.2.3.4',
+      until: mockDateNowMs + 1000 * 60 * 15
+    },
+    {
+      _id: generateMockSensitiveObjectId(),
+      ip: '5.6.7.8',
+      until: mockDateNowMs + 1000 * 60 * 15
+    },
+    {
+      _id: generateMockSensitiveObjectId(),
       header: `bearer ${BANNED_BEARER_TOKEN}`,
       until: mockDateNowMs + 1000 * 60 * 60
     }

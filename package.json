@@ -33,10 +33,11 @@
     "test-unit": "NODE_ENV=test jest $JEST_CLI --coverage --testPathIgnorePatterns '/(integration|e2e).*?\\.test\\.tsx?' '/dist/'"
   },
   "devDependencies": {
+    "@-xun/jest": "^2.2.1",
     "@-xun/mongo-schema": "^1.1.1",
     "@-xun/mongo-test": "^1.1.1",
     "@-xun/next-env": "^1.0.2",
-    "@-xun/symbiote": "^4.2.6",
+    "@-xun/symbiote": "^4.2.7",
     "@-xun/types": "^1.1.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -53,6 +54,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "http-terminator": "^3.2.0",
+    "jest-fixed-jsdom": "^0.0.9",
     "mongodb": "^6.17.0",
     "mongodb-memory-server": "^10.1.4",
     "msw": "^2.9.0",

@@ -1,25 +1,39 @@
+import { deleteUser, getUser, updateUser } from 'universe/backend';
 import { withMiddleware } from 'universe/backend/middleware';
-import { getUser, updateUser, deleteUser } from 'universe/backend';
+
 import { sendHttpOk } from 'multiverse/next-api-respond';
 
 export { defaultConfig as config } from 'universe/backend/api';
+
+export const metadata = {
+  descriptor: '/v2/users/:username'
+};
 
 export default withMiddleware(
   async (req, res) => {
     const username = req.query.username?.toString();
 
-    if (req.method == 'GET') {
-      sendHttpOk(res, { user: await getUser({ username }) });
-    } else if (req.method == 'DELETE') {
-      await deleteUser({ username });
-      sendHttpOk(res);
-    } // * PUT
-    else {
-      await updateUser({ username, data: req.body });
-      sendHttpOk(res);
+    switch (req.method) {
+      case 'GET': {
+        sendHttpOk(res, { user: await getUser({ username }) });
+        break;
+      }
+
+      case 'DELETE': {
+        await deleteUser({ username });
+        sendHttpOk(res);
+        break;
+      }
+
+      case 'PUT': {
+        await updateUser({ username, data: req.body });
+        sendHttpOk(res);
+        break;
+      }
     }
   },
   {
+    descriptor: metadata.descriptor,
     options: { allowedMethods: ['GET', 'DELETE', 'PUT'], apiVersion: '2' }
   }
 );

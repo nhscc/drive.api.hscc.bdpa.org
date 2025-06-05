@@ -1,16 +1,15 @@
-import { asMockedFunction } from '@xunnamius/jest-types';
-import { withMiddleware } from 'multiverse/next-api-glue';
-import { addToRequestLog } from 'multiverse/next-log';
 import { testApiHandler } from 'next-test-api-route-handler';
 import { toss } from 'toss-expression';
 
-import { noopHandler, wrapHandler } from 'testverse/setup';
+import { asMocked, noopHandler, wrapHandler } from 'testverse/util';
 
 import logRequest from 'multiverse/next-adhesive/log-request';
+import { withMiddleware } from 'multiverse/next-api-glue';
+import { addToRequestLog } from 'multiverse/next-log';
 
 jest.mock('multiverse/next-log');
 
-const mockAddToRequestLog = asMockedFunction(addToRequestLog);
+const mockAddToRequestLog = asMocked(addToRequestLog);
 
 beforeEach(() => {
   mockAddToRequestLog.mockReturnValue(Promise.resolve());
@@ -23,6 +22,7 @@ it('logs requests on call to res.send', async () => {
     pagesHandler: wrapHandler(
       wrapHandler(
         withMiddleware(async (_req, res) => res.status(404).send({}), {
+          descriptor: '/fake',
           use: [logRequest]
         })
       )
@@ -41,6 +41,7 @@ it('logs requests on call to res.end', async () => {
     pagesHandler: wrapHandler(
       wrapHandler(
         withMiddleware(async (_req, res) => void res.status(404).end(), {
+          descriptor: '/fake',
           use: [logRequest]
         })
       )
@@ -64,6 +65,7 @@ it('logs requests once on multiple calls to res.end', async () => {
             res.end();
           },
           {
+            descriptor: '/fake',
             use: [logRequest]
           }
         )
@@ -85,10 +87,11 @@ it('handles request log errors after res.end as gracefully as possible', async (
   await testApiHandler({
     pagesHandler: wrapHandler(
       withMiddleware(noopHandler, {
+        descriptor: '/fake',
         use: [logRequest],
         useOnError: [
-          (_req, _res, ctx) => {
-            expect(ctx.runtime.error).toMatchObject({ message: 'fake error' });
+          (_req, _res, context) => {
+            expect(context.runtime.error).toMatchObject({ message: 'fake error' });
             called = true;
           }
         ]

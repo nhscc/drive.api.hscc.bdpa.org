@@ -18,9 +18,8 @@ export default {
     '^package$': '<rootDir>/package.json',
     // ? These are used at various points (including at compile time by
     // ? Next.js) to get mongo schema configuration and/or test dummy data.
-    // ! Must be defined if using @xunnamius/mongo-schema
+    // TODO: delete all of this everything
     '^configverse/get-schema-config$': '<rootDir>/src/backend/db.ts',
-    // ! Must be defined if using @xunnamius/mongo-test
     '^configverse/get-dummy-data$': '<rootDir>/test/db.ts'
   },
   setupFilesAfterEnv: ['./test/setup.ts'],

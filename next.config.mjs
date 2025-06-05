@@ -1,12 +1,5 @@
-/* eslint-disable unicorn/no-anonymous-default-export */
-'use strict';
-
-const withBundleAnalyzer = require('@next/bundle-analyzer');
-
-module.exports = () => {
-  return withBundleAnalyzer({
-    enabled: process.env.ANALYZE === 'true'
-  })({
+export default function nextConfig() {
+  return {
     // ? Renames the build dir "build" instead of ".next"
     distDir: 'build',
 
@@ -43,5 +36,5 @@ module.exports = () => {
         }
       ];
     }
-  });
-};
+  };
+}

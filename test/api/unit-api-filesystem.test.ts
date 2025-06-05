@@ -138,7 +138,7 @@ describe('api/v1/filesystem/:username', () => {
     });
   });
 
-  describe('/:node_id1/:node_id2/.../:node_idN [GET]', () => {
+  describe('/:...node_id [GET]', () => {
     it('accepts GET requests', async () => {
       expect.hasAssertions();
 
@@ -197,7 +197,7 @@ describe('api/v1/filesystem/:username', () => {
     });
   });
 
-  describe('/:node_id1/:node_id2/.../:node_idN [DELETE]', () => {
+  describe('/:...node_id [DELETE]', () => {
     it('accepts DELETE requests', async () => {
       expect.hasAssertions();
 
@@ -352,7 +352,7 @@ describe('api/v2/users/:username/filesystem', () => {
     });
   });
 
-  describe('/:node_id1/:node_id2/.../:node_idN [GET]', () => {
+  describe('/:...node_id [GET]', () => {
     it('accepts GET requests', async () => {
       expect.hasAssertions();
 
@@ -411,7 +411,7 @@ describe('api/v2/users/:username/filesystem', () => {
     });
   });
 
-  describe('/:node_id1/:node_id2/.../:node_idN [DELETE]', () => {
+  describe('/:...node_id [DELETE]', () => {
     it('accepts DELETE requests', async () => {
       expect.hasAssertions();
 

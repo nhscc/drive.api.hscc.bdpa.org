@@ -1,4 +1,5 @@
-import { withMiddleware } from 'multiverse/next-api-glue';
+import { AssertionError } from 'node:assert';
+
 import { testApiHandler } from 'next-test-api-route-handler';
 import { toss } from 'toss-expression';
 
@@ -6,33 +7,15 @@ import {
   AppError,
   AppValidationError,
   AuthError,
-  ClientValidationError,
-  DummyError,
-  GuruMeditationError,
-  HttpError,
-  InvalidAppConfigurationError,
-  InvalidAppEnvironmentError,
-  InvalidClientConfigurationError,
-  InvalidItemError,
-  InvalidSecretError,
-  ItemNotFoundError,
-  ItemsNotFoundError,
-  NotAuthenticatedError,
-  NotAuthorizedError,
   NotFoundError,
   NotImplementedError,
-  TrialError,
   ValidationError
 } from 'universe/error';
 
-import {
-  itemFactory,
-  noopHandler,
-  withMockedOutput,
-  wrapHandler
-} from 'testverse/setup';
+import { itemFactory, noopHandler, withMockedOutput, wrapHandler } from 'testverse/util';
 
 import handleError from 'multiverse/next-adhesive/handle-error';
+import { withMiddleware } from 'multiverse/next-api-glue';
 
 import type { Options } from 'multiverse/next-adhesive/handle-error';
 
@@ -41,39 +24,25 @@ it('sends correct HTTP error codes when certain errors occur', async () => {
 
   const factory = itemFactory<[AppError | string, number]>([
     [new ValidationError(), 400],
-    [new ValidationError(''), 400], // ! Edge case for code coverage
     [new AppValidationError(), 500],
-    [new InvalidAppConfigurationError(), 500],
-    [new InvalidAppEnvironmentError(), 500],
-    [new ClientValidationError(), 400],
-    [new InvalidClientConfigurationError(), 400],
-    [new InvalidItemError(), 400],
-    [new InvalidSecretError(), 400],
     [new AuthError(), 403],
-    [new NotAuthenticatedError(), 403],
-    [new NotAuthorizedError(), 403],
     [new NotFoundError(), 404],
-    [new ItemNotFoundError(), 404],
-    [new ItemsNotFoundError(), 404],
-    [new HttpError(), 500],
-    [new TrialError(), 500],
-    [new DummyError(), 500],
     [new AppError(), 500],
-    [new GuruMeditationError(), 500],
+    [new AssertionError({}), 500],
     [new NotImplementedError(), 501],
-    // eslint-disable-next-line unicorn/error-message
-    [new Error(), 500], // ? Every other error type should return 500
+    [new Error('dummy'), 500], // ? Every other error type should return 500
     ['strange error', 500] // ? This too
   ]);
 
-  await Promise.all(
-    factory.items.map(async (item) => {
-      const [expectedError, expectedStatus] = item;
+  await withMockedOutput(async () => {
+    await Promise.all(
+      factory.items.map(async (item) => {
+        const [expectedError, expectedStatus] = item;
 
-      await withMockedOutput(async () => {
         await testApiHandler({
           pagesHandler: wrapHandler(
             withMiddleware(async () => toss(expectedError), {
+              descriptor: '/fake',
               use: [],
               useOnError: [handleError]
             })
@@ -81,9 +50,9 @@ it('sends correct HTTP error codes when certain errors occur', async () => {
           test: async ({ fetch }) =>
             fetch().then((res) => expect(res.status).toStrictEqual(expectedStatus))
         });
-      });
-    })
-  );
+      })
+    );
+  });
 });
 
 it('throws without calling res.end if response is no longer writable', async () => {
@@ -93,6 +62,7 @@ it('throws without calling res.end if response is no longer writable', async () 
     pagesHandler: async (rq, rs) => {
       await expect(
         withMiddleware(noopHandler, {
+          descriptor: '/fake',
           use: [
             (_req, res) => {
               // eslint-disable-next-line jest/unbound-method
@@ -116,13 +86,14 @@ it('throws without calling res.end if response is no longer writable', async () 
 it('supports pluggable error handlers', async () => {
   expect.hasAssertions();
 
-  const MyError = class extends DummyError {};
+  const MyError = class extends ValidationError {};
 
   const MyUnusedError = class extends Error {};
 
   await testApiHandler({
     rejectOnHandlerError: true,
     pagesHandler: withMiddleware<Options>(undefined, {
+      descriptor: '/fake',
       use: [
         () => {
           throw new MyError('bad bad not good');
@@ -157,6 +128,7 @@ it('supports pluggable error handlers', async () => {
   await testApiHandler({
     rejectOnHandlerError: true,
     pagesHandler: withMiddleware<Options>(undefined, {
+      descriptor: '/fake',
       use: [
         () => {
           throw new MyError('bad good not good');

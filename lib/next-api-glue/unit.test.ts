@@ -1,10 +1,7 @@
-/* eslint-disable eqeqeq */
 import { testApiHandler } from 'next-test-api-route-handler';
 import { toss } from 'toss-expression';
 
-import { DummyError } from 'universe/error';
-
-import { mockOutputFactory, withDebugEnabled } from 'testverse/setup';
+import { withDebugEnabled, withMockedOutput } from 'testverse/util';
 
 import { middlewareFactory, withMiddleware } from 'multiverse/next-api-glue';
 
@@ -13,8 +10,6 @@ import type { Middleware, MiddlewareContext } from 'multiverse/next-api-glue';
 
 const MAX_CONTENT_LENGTH_BYTES = 100_000;
 const MAX_CONTENT_LENGTH_BYTES_PLUS_1 = 100_001;
-
-const withMockedOutput = mockOutputFactory({ passthrough: { stdErrSpy: false } });
 
 const noopHandler = async (_req: NextApiRequest, res: NextApiResponse) => {
   res.status(200).send({});
@@ -33,6 +28,7 @@ describe('::withMiddleware', () => {
 
     expect(() =>
       withMiddleware(async () => undefined, {
+        descriptor: '/fake',
         use: [],
         // @ts-expect-error: testing bad param
         useOnError: true
@@ -43,9 +39,10 @@ describe('::withMiddleware', () => {
   it('rejects requests that are too big when exporting config (next.js)', async () => {
     expect.hasAssertions();
 
-    const pagesHandler = withMiddleware(noopHandler, { use: [] }) as ReturnType<
-      typeof withMiddleware
-    > & { config: NextConfig };
+    const pagesHandler = withMiddleware(noopHandler, {
+      descriptor: '/fake',
+      use: []
+    }) as ReturnType<typeof withMiddleware> & { config: NextConfig };
 
     pagesHandler.config = {
       api: {
@@ -78,9 +75,9 @@ describe('::withMiddleware', () => {
       rejectOnHandlerError: true,
       pagesHandler: withMiddleware(
         async (req, res) => {
-          res.status(req.headers.key == '1234' ? 200 : 555).send({});
+          res.status(req.headers.key === '1234' ? 200 : 555).send({});
         },
-        { use: [] }
+        { descriptor: '/fake', use: [] }
       ),
       test: async ({ fetch }) =>
         expect((await fetch({ headers: { KEY: '1234' } })).status).toBe(200)
@@ -100,7 +97,7 @@ describe('::withMiddleware', () => {
           expect(req.query).toStrictEqual({ some: 'url', yes: '' });
           res.status(200).send({});
         },
-        { use: [] }
+        { descriptor: '/fake', use: [] }
       ),
       test: async ({ fetch }) => {
         expect((await fetch()).status).toBe(200);
@@ -115,7 +112,10 @@ describe('::withMiddleware', () => {
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      pagesHandler: withMiddleware(noopHandler, { use: [middleware] }),
+      pagesHandler: withMiddleware(noopHandler, {
+        descriptor: '/fake',
+        use: [middleware]
+      }),
       test: async ({ fetch }) => {
         expect((await fetch()).status).toBe(200);
         expect(middleware).toHaveBeenCalledTimes(1);
@@ -130,7 +130,10 @@ describe('::withMiddleware', () => {
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      pagesHandler: withMiddleware(noopHandler, { use: middleware }),
+      pagesHandler: withMiddleware(noopHandler, {
+        descriptor: '/fake',
+        use: middleware
+      }),
       test: async ({ fetch }) => {
         expect((await fetch()).status).toBe(200);
         middleware.forEach((m) => expect(m).toHaveBeenCalledTimes(1));
@@ -138,103 +141,134 @@ describe('::withMiddleware', () => {
     });
   });
 
-  it('runs primary chain middleware then pagesHandler', async () => {
+  it('runs primary chain middleware then handler', async () => {
     expect.hasAssertions();
 
     const middleware = jest.fn(() =>
-      expect(pagesHandler).toHaveBeenCalledTimes(0)
+      expect(handler).toHaveBeenCalledTimes(0)
     ) as Middleware;
-    const pagesHandler = jest.fn(() => expect(middleware).toHaveBeenCalledTimes(1));
+    const handler = jest.fn(() => expect(middleware).toHaveBeenCalledTimes(1));
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      pagesHandler: withMiddleware(pagesHandler, { use: [middleware] }),
+      pagesHandler: withMiddleware(handler, {
+        descriptor: '/fake',
+        use: [middleware]
+      }),
       test: async ({ fetch }) => {
         await fetch();
         expect(middleware).toHaveBeenCalledTimes(1);
-        expect(pagesHandler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
       }
     });
   });
 
-  it('runs pagesHandler even if no middleware used', async () => {
+  it('runs handler even if no middleware used', async () => {
     expect.hasAssertions();
 
-    const pagesHandler = jest.fn();
+    const handler = jest.fn();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      pagesHandler: withMiddleware(pagesHandler, { use: [] }),
+      pagesHandler: withMiddleware(handler, { descriptor: '/fake', use: [] }),
       test: async ({ fetch }) => {
         await fetch();
-        expect(pagesHandler).toHaveBeenCalledTimes(1);
+        expect(handler).toHaveBeenCalledTimes(1);
       }
     });
   });
 
-  it('skips running pagesHandler if not a function', async () => {
+  it('skips running handler if not a function', async () => {
     expect.hasAssertions();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      // @ts-expect-error: bad pagesHandler
-      pagesHandler: withMiddleware(true, { use: [(_, res) => res.status(200).end()] }),
+      // @ts-expect-error: bad handler
+      pagesHandler: withMiddleware(true, {
+        descriptor: '/fake',
+        use: [(_, res) => res.status(200).end()]
+      }),
       test: async ({ fetch }) => {
-        await fetch();
         expect((await fetch()).status).toBe(200);
       }
     });
   });
 
-  it('skips running pagesHandler if primary chain was aborted', async () => {
+  it('populates runtime.endpoint with endpoint metadata if available', async () => {
     expect.hasAssertions();
-
-    const pagesHandler = jest.fn();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      pagesHandler: withMiddleware(pagesHandler, {
-        use: [(_, __, ctx) => ctx.runtime.done()]
+      pagesHandler: withMiddleware(undefined, {
+        descriptor: '/fake/:path',
+        use: [
+          (_, res, context) =>
+            res.status(200).send({ endpoint: context.runtime.endpoint })
+        ]
       }),
       test: async ({ fetch }) => {
-        await fetch();
-        expect(pagesHandler).toHaveBeenCalledTimes(0);
-      }
-    });
-
-    await withMockedOutput(async () => {
-      await expect(
-        testApiHandler({
-          rejectOnHandlerError: true,
-          pagesHandler: withMiddleware(pagesHandler, {
-            use: [() => toss(new Error('bad'))]
-          }),
-          test: async ({ fetch }) => {
-            await fetch();
+        await expect((await fetch()).json()).resolves.toStrictEqual({
+          endpoint: {
+            descriptor: '/fake/:path'
           }
-        })
-      ).rejects.toMatchObject({ message: 'bad' });
-
-      expect(pagesHandler).toHaveBeenCalledTimes(0);
+        });
+      }
     });
   });
 
-  it('sends 501 if pagesHandler is undefined', async () => {
+  it('skips running handler if primary chain was aborted', async () => {
+    expect.hasAssertions();
+
+    const handler = jest.fn();
+
+    await testApiHandler({
+      rejectOnHandlerError: true,
+      pagesHandler: withMiddleware(handler, {
+        descriptor: '/fake',
+        use: [(_, __, context) => context.runtime.done()]
+      }),
+      test: async ({ fetch }) => {
+        await fetch();
+        expect(handler).toHaveBeenCalledTimes(0);
+      }
+    });
+
+    await withMockedOutput(async ({ errorSpy }) => {
+      await expect(
+        testApiHandler({
+          rejectOnHandlerError: true,
+          pagesHandler: withMiddleware(handler, {
+            descriptor: '/fake',
+            use: [() => toss(new Error('bad'))]
+          }),
+          test: async ({ fetch }) => void (await fetch())
+        })
+      ).rejects.toMatchObject({ message: 'bad' });
+
+      expect(handler).toHaveBeenCalledTimes(0);
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
+  it('sends 501 if handler is undefined', async () => {
     expect.hasAssertions();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      pagesHandler: withMiddleware(undefined, { use: [] }),
+      pagesHandler: withMiddleware(undefined, { descriptor: '/fake', use: [] }),
       test: async ({ fetch }) => expect((await fetch()).status).toBe(501)
     });
   });
 
-  it('sends 501 if res.end not called by the time pagesHandler completes', async () => {
+  it('sends 501 if res.end not called by the time handler completes', async () => {
     expect.hasAssertions();
 
     await testApiHandler({
       rejectOnHandlerError: true,
-      pagesHandler: withMiddleware(async () => undefined, { use: [] }),
+      pagesHandler: withMiddleware(async () => undefined, {
+        descriptor: '/fake',
+        use: []
+      }),
       test: async ({ fetch }) => expect((await fetch()).status).toBe(501)
     });
   });
@@ -244,24 +278,27 @@ describe('::withMiddleware', () => {
 
     const error = new Error('bad stuff happened');
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(noopHandler, {
+            descriptor: '/fake',
             use: [
-              (_, __, ctx) => expect(ctx.runtime.error).toBeUndefined(),
-              (_, __, ctx) => expect(ctx.runtime.error).toBeUndefined(),
+              (_, __, context) => expect(context.runtime.error).toBeUndefined(),
+              (_, __, context) => expect(context.runtime.error).toBeUndefined(),
               () => toss(error)
             ],
             useOnError: [
-              (_, __, ctx) => expect(ctx.runtime.error).toBe(error),
-              (_, __, ctx) => expect(ctx.runtime.error).toBe(error)
+              (_, __, context) => expect(context.runtime.error).toBe(error),
+              (_, __, context) => expect(context.runtime.error).toBe(error)
             ]
           }),
           test: async ({ fetch }) => void (await fetch())
         })
       ).toReject();
+
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
@@ -274,6 +311,7 @@ describe('::withMiddleware', () => {
       await testApiHandler({
         rejectOnHandlerError: true,
         pagesHandler: withMiddleware(noopHandler, {
+          descriptor: '/fake',
           use: [() => toss(new Error('error'))],
           useOnError: [middleware, (_, res) => res.end()]
         }),
@@ -294,6 +332,7 @@ describe('::withMiddleware', () => {
       await testApiHandler({
         rejectOnHandlerError: true,
         pagesHandler: withMiddleware(noopHandler, {
+          descriptor: '/fake',
           use: [() => toss(new Error('error'))],
           useOnError: middleware
         }),
@@ -305,7 +344,7 @@ describe('::withMiddleware', () => {
     });
   });
 
-  it('runs one middleware in error handling chain on error in pagesHandler', async () => {
+  it('runs one middleware in error handling chain on error in handler', async () => {
     expect.hasAssertions();
 
     const middleware = jest.fn();
@@ -314,6 +353,7 @@ describe('::withMiddleware', () => {
       await testApiHandler({
         rejectOnHandlerError: true,
         pagesHandler: withMiddleware(() => toss(new Error('error')), {
+          descriptor: '/fake',
           use: [],
           useOnError: [middleware, (_, res) => res.end()]
         }),
@@ -325,7 +365,7 @@ describe('::withMiddleware', () => {
     });
   });
 
-  it('runs multiple middleware in error handling chain on error in pagesHandler', async () => {
+  it('runs multiple middleware in error handling chain on error in handler', async () => {
     expect.hasAssertions();
 
     const middleware = [jest.fn(), jest.fn(), ((_, res) => res.end()) as Middleware];
@@ -334,6 +374,7 @@ describe('::withMiddleware', () => {
       await testApiHandler({
         rejectOnHandlerError: true,
         pagesHandler: withMiddleware(() => toss(new Error('error')), {
+          descriptor: '/fake',
           use: [],
           useOnError: middleware
         }),
@@ -350,12 +391,17 @@ describe('::withMiddleware', () => {
 
     const middleware = jest.fn();
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await testApiHandler({
         rejectOnHandlerError: true,
         pagesHandler: withMiddleware(noopHandler, {
-          use: [(_, __, ctx) => ctx.runtime.done(), middleware, middleware],
-          useOnError: [(_, __, ctx) => ctx.runtime.done(), middleware, middleware]
+          descriptor: '/fake',
+          use: [(_, __, context) => context.runtime.done(), middleware, middleware],
+          useOnError: [
+            (_, __, context) => context.runtime.done(),
+            middleware,
+            middleware
+          ]
         }),
         test: async ({ fetch }) => {
           await fetch();
@@ -367,73 +413,76 @@ describe('::withMiddleware', () => {
         testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(noopHandler, {
+            descriptor: '/fake',
             use: [() => toss(new Error('bad')), middleware, middleware],
             useOnError: [() => toss(new Error('bad')), middleware, middleware]
           }),
-          test: async ({ fetch }) => {
-            await fetch();
-          }
+          test: async ({ fetch }) => void (await fetch())
         })
       ).toReject();
 
       expect(middleware).toHaveBeenCalledTimes(0);
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
   it('throws on error in error handling chain', async () => {
     expect.hasAssertions();
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [() => toss(new Error('bad'))],
             useOnError: [() => toss(new Error('worse'))]
           }),
-          test: async ({ fetch }) => {
-            await fetch();
-          }
+          test: async ({ fetch }) => void (await fetch())
         })
       ).rejects.toMatchObject({ message: 'worse' });
+
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
   it('throws on error in primary chain if no error handling middleware available', async () => {
     expect.hasAssertions();
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [() => toss(new Error('bad'))],
             useOnError: []
           }),
-          test: async ({ fetch }) => {
-            await fetch();
-          }
+          test: async ({ fetch }) => void (await fetch())
         })
       ).rejects.toMatchObject({ message: 'bad' });
+
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
   it('throws if res.end not called by the time error handling chain completes', async () => {
     expect.hasAssertions();
 
-    await withMockedOutput(async () => {
+    await withMockedOutput(async ({ errorSpy }) => {
       await expect(
         testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [() => toss(new Error('bad'))],
             useOnError: [() => undefined]
           }),
-          test: async ({ fetch }) => {
-            await fetch();
-          }
+          test: async ({ fetch }) => void (await fetch())
         })
       ).rejects.toMatchObject({ message: 'bad' });
+
+      expect(errorSpy).toHaveBeenCalled();
     });
   });
 
@@ -451,24 +500,25 @@ describe('::withMiddleware', () => {
     let next: () => Promise<void>, done: () => void;
 
     await withDebugEnabled(async () => {
-      await withMockedOutput(async ({ stdErrSpy }) => {
+      await withMockedOutput(async ({ nodeErrorSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(
             async () => {
-              expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
-              expect(stdErrSpy).not.toHaveBeenCalledWith(doneWarning);
+              expect(nodeErrorSpy).not.toHaveBeenCalledWith(nextWarning);
+              expect(nodeErrorSpy).not.toHaveBeenCalledWith(doneWarning);
 
               await next();
-              expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
+              expect(nodeErrorSpy).toHaveBeenCalledWith(nextWarning);
 
               done();
-              expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
+              expect(nodeErrorSpy).toHaveBeenCalledWith(doneWarning);
 
               throw new Error('badness');
             },
             {
               options: { callDoneOnEnd: false },
+              descriptor: '/fake',
               use: [
                 (_req, _res, { runtime }) => {
                   next = runtime.next;
@@ -489,13 +539,13 @@ describe('::withMiddleware', () => {
           test: async ({ fetch }) => {
             await fetch();
 
-            stdErrSpy.mockClear();
+            nodeErrorSpy.mockClear();
 
             await next();
-            expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
+            expect(nodeErrorSpy).toHaveBeenCalledWith(nextWarning);
 
             done();
-            expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
+            expect(nodeErrorSpy).toHaveBeenCalledWith(doneWarning);
           }
         });
       });
@@ -516,11 +566,12 @@ describe('::withMiddleware', () => {
     let next: () => Promise<void>, done: () => void;
 
     await withDebugEnabled(async () => {
-      await withMockedOutput(async ({ stdErrSpy }) => {
+      await withMockedOutput(async ({ errorSpy, nodeErrorSpy }) => {
         await expect(
           testApiHandler({
             rejectOnHandlerError: true,
             pagesHandler: withMiddleware(undefined, {
+              descriptor: '/fake',
               use: [
                 (_req, _res, { runtime }) => {
                   next = runtime.next;
@@ -530,14 +581,14 @@ describe('::withMiddleware', () => {
               ],
               useOnError: [
                 async (_req, _res, { runtime }) => {
-                  expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
-                  expect(stdErrSpy).not.toHaveBeenCalledWith(doneWarning);
+                  expect(nodeErrorSpy).not.toHaveBeenCalledWith(nextWarning);
+                  expect(nodeErrorSpy).not.toHaveBeenCalledWith(doneWarning);
 
                   await next();
-                  expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
+                  expect(nodeErrorSpy).toHaveBeenCalledWith(nextWarning);
 
                   done();
-                  expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
+                  expect(nodeErrorSpy).toHaveBeenCalledWith(doneWarning);
 
                   next = runtime.next;
                   done = runtime.done;
@@ -546,19 +597,18 @@ describe('::withMiddleware', () => {
                 }
               ]
             }),
-            test: async ({ fetch }) => {
-              await fetch();
-            }
+            test: async ({ fetch }) => void (await fetch())
           })
         ).rejects.toMatchObject({ message: 'aborted again' });
 
-        stdErrSpy.mockClear();
+        nodeErrorSpy.mockClear();
 
         await next();
-        expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
+        expect(nodeErrorSpy).toHaveBeenCalledWith(nextWarning);
 
         done();
-        expect(stdErrSpy).toHaveBeenCalledWith(doneWarning);
+        expect(nodeErrorSpy).toHaveBeenCalledWith(doneWarning);
+        expect(errorSpy).toHaveBeenCalled();
       });
     });
   });
@@ -571,22 +621,23 @@ describe('::withMiddleware', () => {
     );
 
     await withDebugEnabled(async () => {
-      await withMockedOutput(async ({ stdErrSpy }) => {
+      await withMockedOutput(async ({ nodeErrorSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [
               async (_req, res, { runtime: { next } }) => {
                 await next();
-                expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
+                expect(nodeErrorSpy).not.toHaveBeenCalledWith(nextWarning);
 
                 await next();
-                expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
+                expect(nodeErrorSpy).toHaveBeenCalledWith(nextWarning);
 
-                stdErrSpy.mockClear();
+                nodeErrorSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
+                expect(nodeErrorSpy).toHaveBeenCalledWith(nextWarning);
 
                 res.status(200).end();
               }
@@ -608,20 +659,21 @@ describe('::withMiddleware', () => {
       'already finished executing; calling runtime.next() at this point is a noop'
     );
 
-    await withMockedOutput(async ({ stdErrSpy }) => {
+    await withMockedOutput(async ({ nodeErrorSpy }) => {
       await withDebugEnabled(async () => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [
               async (_req, _res, { runtime: { next } }) => {
                 await next();
-                expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
+                expect(nodeErrorSpy).not.toHaveBeenCalledWith(nextWarning);
 
-                stdErrSpy.mockClear();
+                nodeErrorSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).toHaveBeenCalledWith(nextWarning);
+                expect(nodeErrorSpy).toHaveBeenCalledWith(nextWarning);
 
                 throw new Error('not good bad bad');
               },
@@ -632,15 +684,15 @@ describe('::withMiddleware', () => {
               async (_req, _res, { runtime: { next, error } }) => {
                 expect(middleware).toHaveBeenCalledTimes(2);
                 expect(error).toMatchObject({ message: 'not good bad bad' });
-                stdErrSpy.mockClear();
+                nodeErrorSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).not.toHaveBeenCalledWith(nextWarning);
+                expect(nodeErrorSpy).not.toHaveBeenCalledWith(nextWarning);
 
-                stdErrSpy.mockClear();
+                nodeErrorSpy.mockClear();
 
                 await next();
-                expect(stdErrSpy).toHaveBeenCalledWith(
+                expect(nodeErrorSpy).toHaveBeenCalledWith(
                   expect.stringContaining(
                     'aborted; calling runtime.next() at this point is a noop'
                   )
@@ -666,10 +718,11 @@ describe('::withMiddleware', () => {
     expect.hasAssertions();
 
     await withDebugEnabled(async () => {
-      await withMockedOutput(async ({ stdErrSpy }) => {
+      await withMockedOutput(async ({ nodeErrorSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [
               // @ts-expect-error: bad middleware value
               'bad',
@@ -682,7 +735,7 @@ describe('::withMiddleware', () => {
           }),
           test: async ({ fetch }) => {
             expect((await fetch()).status).toBe(403);
-            expect(stdErrSpy).toHaveBeenCalledWith(
+            expect(nodeErrorSpy).toHaveBeenCalledWith(
               expect.stringContaining('skipping execution of non-function item in chain')
             );
           }
@@ -699,6 +752,7 @@ describe('::withMiddleware', () => {
     await testApiHandler({
       rejectOnHandlerError: true,
       pagesHandler: withMiddleware(undefined, {
+        descriptor: '/fake',
         use: [(_, res) => res.status(404).end(), middleware],
         options: { callDoneOnEnd: false }
       }),
@@ -711,6 +765,7 @@ describe('::withMiddleware', () => {
     await testApiHandler({
       rejectOnHandlerError: true,
       pagesHandler: withMiddleware(undefined, {
+        descriptor: '/fake',
         use: [(_, res) => res.status(403).end(), middleware],
         options: { callDoneOnEnd: true }
       }),
@@ -727,16 +782,17 @@ describe('::withMiddleware', () => {
     const skippedMessage = expect.stringContaining('skipped calling runtime.done');
 
     await withDebugEnabled(async () => {
-      await withMockedOutput(async ({ stdErrSpy }) => {
+      await withMockedOutput(async ({ nodeErrorSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [
               async (_, res, { runtime: { done } }) => {
                 done();
-                expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
+                expect(nodeErrorSpy).not.toHaveBeenCalledWith(skippedMessage);
                 res.status(404).end();
-                expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
+                expect(nodeErrorSpy).toHaveBeenCalledWith(skippedMessage);
               }
             ]
           }),
@@ -748,6 +804,7 @@ describe('::withMiddleware', () => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(undefined, {
+            descriptor: '/fake',
             use: [
               async () => {
                 throw new Error('contrived');
@@ -759,10 +816,10 @@ describe('::withMiddleware', () => {
 
                 done();
 
-                stdErrSpy.mockClear();
-                expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
+                nodeErrorSpy.mockClear();
+                expect(nodeErrorSpy).not.toHaveBeenCalledWith(skippedMessage);
                 res.status(404).end();
-                expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
+                expect(nodeErrorSpy).toHaveBeenCalledWith(skippedMessage);
               }
             ]
           }),
@@ -780,16 +837,17 @@ describe('::withMiddleware', () => {
     const skippedMessage = expect.stringContaining('skipped calling runtime.done');
 
     await withDebugEnabled(async () => {
-      await withMockedOutput(async ({ stdErrSpy }) => {
+      await withMockedOutput(async ({ nodeErrorSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(
             async (_, res) => {
-              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
+              expect(nodeErrorSpy).not.toHaveBeenCalledWith(skippedMessage);
               res.status(404).end();
-              expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
+              expect(nodeErrorSpy).toHaveBeenCalledWith(skippedMessage);
             },
             {
+              descriptor: '/fake',
               use: []
             }
           ),
@@ -807,20 +865,21 @@ describe('::withMiddleware', () => {
     const skippedMessage = expect.stringContaining('skipped calling runtime.done');
 
     await withDebugEnabled(async () => {
-      await withMockedOutput(async ({ stdErrSpy }) => {
+      await withMockedOutput(async ({ nodeErrorSpy }) => {
         await testApiHandler({
           rejectOnHandlerError: true,
           pagesHandler: withMiddleware(
             async (_, res) => {
-              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
+              expect(nodeErrorSpy).not.toHaveBeenCalledWith(skippedMessage);
               res.status(404).end();
-              expect(stdErrSpy).toHaveBeenCalledWith(skippedMessage);
-              stdErrSpy.mockClear();
-              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
+              expect(nodeErrorSpy).toHaveBeenCalledWith(skippedMessage);
+              nodeErrorSpy.mockClear();
+              expect(nodeErrorSpy).not.toHaveBeenCalledWith(skippedMessage);
               res.status(404).end();
-              expect(stdErrSpy).not.toHaveBeenCalledWith(skippedMessage);
+              expect(nodeErrorSpy).not.toHaveBeenCalledWith(skippedMessage);
             },
             {
+              descriptor: '/fake',
               use: []
             }
           ),
@@ -859,8 +918,9 @@ describe('::withMiddleware', () => {
     });
 
     withMiddleware<myMiddlewareOptions>(undefined, {
+      descriptor: '/fake',
       use: [myMiddleware]
-      // TODO: improve TypeScript skills to enforce required options here
+      // TODO: simplify middleware and then enforce required options here
     });
 
     withMiddleware<myMiddlewareOptions>(undefined, {
@@ -887,10 +947,12 @@ describe('::withMiddleware', () => {
     });
 
     withMiddleware(undefined, {
+      descriptor: '/fake',
       use: [myPartialMiddleware]
     });
 
     withMiddleware<Partial<myMiddlewareOptions>>(undefined, {
+      descriptor: '/fake',
       use: [myPartialMiddleware],
       options: {}
     });
@@ -916,7 +978,9 @@ describe('::middlewareFactory', () => {
     const pagesHandler = middlewareFactory<myMiddlewareOptions>({
       use: [myMiddleware],
       options: { customOption }
-    })(undefined);
+    })(undefined, {
+      descriptor: '/fake'
+    });
 
     await testApiHandler({
       pagesHandler,
@@ -945,7 +1009,10 @@ describe('::middlewareFactory', () => {
       pagesHandler: middlewareFactory<myMiddlewareOptions>({
         use: [myMiddleware],
         options: { customOption }
-      })(undefined, { prependUse: [(_, res) => res.status(201).send({ a: 1 })] }),
+      })(undefined, {
+        descriptor: '/fake',
+        prependUse: [(_, res) => res.status(201).send({ a: 1 })]
+      }),
       test: async ({ fetch }) => {
         const res = await fetch();
         expect(res.status).toBe(201);
@@ -956,7 +1023,10 @@ describe('::middlewareFactory', () => {
     await testApiHandler({
       pagesHandler: middlewareFactory({
         use: [(_, res) => void res.status(202)]
-      })(undefined, { appendUse: [(_, res) => res.send({ b: 1 })] }),
+      })(undefined, {
+        descriptor: '/fake',
+        appendUse: [(_, res) => res.send({ b: 1 })]
+      }),
       test: async ({ fetch }) => {
         const res = await fetch();
         expect(res.status).toBe(202);
@@ -969,7 +1039,8 @@ describe('::middlewareFactory', () => {
         use: [myMiddleware],
         options: { customOption }
       })(undefined, {
-        prependUse: [() => toss(new DummyError('bad bad not good'))],
+        descriptor: '/fake',
+        prependUse: [() => toss(new Error('bad bad not good'))],
         prependUseOnError: [(_, res) => void res.status(203)],
         appendUseOnError: [(_, res) => res.send({ c: 1 })]
       }),
@@ -1002,22 +1073,34 @@ describe('::middlewareFactory', () => {
       res.status(200).send(customOption);
     };
 
-    // @ts-expect-error: MiddlewareContext != MiddlewareContext<myMiddlewareOptions>
-    middlewareFactory({ use: [myMiddleware] })(undefined);
+    middlewareFactory({
+      // @ts-expect-error: MiddlewareContext != MiddlewareContext<myMiddlewareOptions>
+      use: [myMiddleware]
+    })(undefined, {
+      descriptor: '/fake'
+    });
 
-    middlewareFactory<myMiddlewareOptions>({ use: [myMiddleware] })(undefined);
+    middlewareFactory<myMiddlewareOptions>({
+      use: [myMiddleware]
+    })(undefined, {
+      descriptor: '/fake'
+    });
 
     middlewareFactory<myMiddlewareOptions>({
       use: [myMiddleware],
       // @ts-expect-error: missing required property: customOption
       options: {}
-    })(undefined);
+    })(undefined, {
+      descriptor: '/fake'
+    });
 
     middlewareFactory<myMiddlewareOptions>({
       use: [myMiddleware],
       // @ts-expect-error: bad type for required property: customOption
       options: { customOption: 5 }
-    })(undefined);
+    })(undefined, {
+      descriptor: '/fake'
+    });
 
     middlewareFactory<myMiddlewareOptions & { anotherOpt: boolean }>({
       use: [
@@ -1028,27 +1111,35 @@ describe('::middlewareFactory', () => {
       ],
       // @ts-expect-error: missing required property: anotherOpt
       options: { customOption: true }
-    })(undefined);
-
-    middlewareFactory({
-      use: [myPartialMiddleware]
-    })(undefined);
-
-    middlewareFactory<Partial<myMiddlewareOptions>>({
-      use: [myPartialMiddleware],
-      options: {}
-    })(undefined);
+    })(undefined, {
+      descriptor: '/fake'
+    });
 
     middlewareFactory({
       use: [myPartialMiddleware]
     })(undefined, {
-      // @ts-expect-error: MiddlewareContext != MiddlewareContext<myMiddlewareOptions>
+      descriptor: '/fake'
+    });
+
+    middlewareFactory<Partial<myMiddlewareOptions>>({
+      use: [myPartialMiddleware],
+      options: {}
+    })(undefined, {
+      descriptor: '/fake'
+    });
+
+    middlewareFactory({
+      use: [myPartialMiddleware]
+    })(undefined, {
+      descriptor: '/fake',
+      // @ts-expect-error: MiddlewareContext !== MiddlewareContext<myMiddlewareOptions>
       appendUse: [myMiddleware]
     });
 
     middlewareFactory({
       use: [myPartialMiddleware]
     })(undefined, {
+      descriptor: '/fake',
       appendUse: [myPartialMiddleware],
       appendUseOnError: [myPartialMiddleware]
     });
@@ -1056,6 +1147,7 @@ describe('::middlewareFactory', () => {
     middlewareFactory<myMiddlewareOptions>({
       use: [myPartialMiddleware]
     })(undefined, {
+      descriptor: '/fake',
       prependUse: [myMiddleware],
       prependUseOnError: [myMiddleware]
     });
@@ -1063,6 +1155,7 @@ describe('::middlewareFactory', () => {
     middlewareFactory<myMiddlewareOptions>({
       use: [myPartialMiddleware]
     })(undefined, {
+      descriptor: '/fake',
       // @ts-expect-error: bad type for required property: customOption
       options: { customOption: 5 }
     });
