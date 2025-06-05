@@ -70,7 +70,7 @@ describe('::getAllUsers', () => {
       []
     );
 
-    await (await getDb({ name: 'hscc-api-drive' })).collection('users').deleteMany({});
+    await (await getDb({ name: 'app' })).collection('users').deleteMany({});
     await expect(Backend.getAllUsers({ after: undefined })).resolves.toStrictEqual([]);
   });
 
@@ -164,7 +164,7 @@ describe('::createUser', () => {
     });
 
     await expect(
-      (await getDb({ name: 'hscc-api-drive' }))
+      (await getDb({ name: 'app' }))
         .collection('users')
         .countDocuments({ username: 'new-user' })
     ).resolves.toBe(1);
@@ -373,7 +373,7 @@ describe('::updateUser', () => {
   it('updates an existing user', async () => {
     expect.hasAssertions();
 
-    const usersDb = (await getDb({ name: 'hscc-api-drive' })).collection('users');
+    const usersDb = (await getDb({ name: 'app' })).collection('users');
 
     await expect(
       usersDb.countDocuments({
@@ -546,7 +546,7 @@ describe('::deleteUser', () => {
   it('deletes a user', async () => {
     expect.hasAssertions();
 
-    const usersDb = (await getDb({ name: 'hscc-api-drive' })).collection('users');
+    const usersDb = (await getDb({ name: 'app' })).collection('users');
 
     await expect(
       usersDb.countDocuments({ _id: dummyAppData.users[0]!._id })
@@ -591,7 +591,7 @@ describe('::deleteUser', () => {
     expect(numFileNodePerms).toBeGreaterThan(0);
     expect(numMetaNodePerms).toBeGreaterThan(0);
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const metaNodeDb = db.collection('meta-nodes');
 
@@ -776,7 +776,7 @@ describe('::getNodes', () => {
   it('does not crash when database is empty', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
 
     await db.collection('file-nodes').deleteMany({});
     await db.collection('meta-nodes').deleteMany({});
@@ -974,7 +974,7 @@ describe('::searchNodes', () => {
   it('does not crash when database is empty', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const metaNodeDb = db.collection('meta-nodes');
 
@@ -1464,9 +1464,9 @@ describe('::createNode', () => {
       permissions: {}
     };
 
-    const metaNodesDb = (
-      await getDb({ name: 'hscc-api-drive' })
-    ).collection<InternalFileNode>('file-nodes');
+    const metaNodesDb = (await getDb({ name: 'app' })).collection<InternalFileNode>(
+      'file-nodes'
+    );
 
     await expect(
       metaNodesDb.countDocuments({
@@ -1508,9 +1508,9 @@ describe('::createNode', () => {
       permissions: {}
     };
 
-    const metaNodesDb = (
-      await getDb({ name: 'hscc-api-drive' })
-    ).collection<InternalMetaNode>('meta-nodes');
+    const metaNodesDb = (await getDb({ name: 'app' })).collection<InternalMetaNode>(
+      'meta-nodes'
+    );
 
     await expect(metaNodesDb.countDocuments({ name: NewNode.name })).resolves.toBe(0);
 
@@ -1542,9 +1542,9 @@ describe('::createNode', () => {
       permissions: {}
     };
 
-    const metaNodesDb = (
-      await getDb({ name: 'hscc-api-drive' })
-    ).collection<InternalMetaNode>('meta-nodes');
+    const metaNodesDb = (await getDb({ name: 'app' })).collection<InternalMetaNode>(
+      'meta-nodes'
+    );
 
     await expect(metaNodesDb.countDocuments({ name: NewNode.name })).resolves.toBe(0);
 
@@ -2111,7 +2111,7 @@ describe('::updateNode', () => {
   it('updates an existing node', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const metaNodeDb = db.collection('meta-nodes');
 
@@ -2163,7 +2163,7 @@ describe('::updateNode', () => {
   it('updates modifiedAt', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
 
     await expect(
@@ -2220,7 +2220,7 @@ describe('::updateNode', () => {
   it('treats tags as lowercase set', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const tags = ['TAG-1', 'tag-1', 'tag-2'];
 
@@ -2243,7 +2243,7 @@ describe('::updateNode', () => {
   it('updates size', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const size = 4096;
     const text = 'x'.repeat(size);
@@ -2274,7 +2274,7 @@ describe('::updateNode', () => {
   it('updates name-lowercase', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const name = 'TEST-NAME';
 
@@ -2859,7 +2859,7 @@ describe('::deleteNodes', () => {
   it('deletes one or more existing nodes', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const metaNodeDb = db.collection('meta-nodes');
 
@@ -2976,9 +2976,7 @@ describe('::deleteNodes', () => {
   it('does not reject if one or more of the node_ids is not found', async () => {
     expect.hasAssertions();
 
-    const fileNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection(
-      'file-nodes'
-    );
+    const fileNodeDb = (await getDb({ name: 'app' })).collection('file-nodes');
 
     await expect(
       fileNodeDb.countDocuments({ _id: dummyAppData['file-nodes'][0]!._id })
@@ -3009,7 +3007,7 @@ describe('::deleteNodes', () => {
   it('does nothing to any node_ids not owned by username', async () => {
     expect.hasAssertions();
 
-    const db = await getDb({ name: 'hscc-api-drive' });
+    const db = await getDb({ name: 'app' });
     const fileNodeDb = db.collection('file-nodes');
     const metaNodeDb = db.collection('meta-nodes');
 
@@ -3041,9 +3039,7 @@ describe('::deleteNodes', () => {
   it('does nothing to node_ids even when user has edit permissions', async () => {
     expect.hasAssertions();
 
-    const metaNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection(
-      'meta-nodes'
-    );
+    const metaNodeDb = (await getDb({ name: 'app' })).collection('meta-nodes');
 
     await expect(
       metaNodeDb.countDocuments({ _id: dummyAppData['meta-nodes'][1]!._id })
@@ -3070,9 +3066,7 @@ describe('::deleteNodes', () => {
 
     expect(numInContentArrays).toBeGreaterThan(0);
 
-    const metaNodeDb = (await getDb({ name: 'hscc-api-drive' })).collection(
-      'meta-nodes'
-    );
+    const metaNodeDb = (await getDb({ name: 'app' })).collection('meta-nodes');
 
     await expect(metaNodeDb.countDocuments({ contents: node_id })).resolves.toBe(
       numInContentArrays

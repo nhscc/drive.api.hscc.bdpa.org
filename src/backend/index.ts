@@ -235,7 +235,7 @@ async function validateNodeData(
     MAX_NODE_TEXT_LENGTH_BYTES
   } = getEnv();
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection('users');
 
   if (
@@ -430,7 +430,7 @@ export async function getAllUsers({
     }
   })();
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
 
   if (afterId && !(await itemExists(users, afterId))) {
@@ -454,7 +454,7 @@ export async function getUser({
     throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
 
   return (
@@ -493,7 +493,7 @@ export async function createUser({
     throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
   }
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
 
   // * At this point, we can finally trust this data is not malicious, but not
@@ -548,7 +548,7 @@ export async function updateUser({
     throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
   }
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
 
   // * At this point, we can finally trust this data is not malicious, but not
@@ -590,7 +590,7 @@ export async function deleteUser({
     throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
   const fileNodes = db.collection<InternalNode>('file-nodes');
   const metaNodes = db.collection<InternalNode>('meta-nodes');
@@ -619,7 +619,7 @@ export async function authAppUser({
 }): Promise<boolean> {
   if (!key || !username) return false;
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
 
   return !!(await users.countDocuments({ username, key }));
@@ -640,7 +640,7 @@ export async function getNodes({
     throw new ValidationError(ErrorMessage.InvalidItem('node_ids', 'parameter'));
   }
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
 
   if (node_ids.length > getEnv().MAX_PARAMS_PER_REQUEST) {
@@ -740,7 +740,7 @@ export async function searchNodes({
 
   // ? Validate username and after_id
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
   const fileNodes = db.collection('file-nodes');
   const metaNodes = db.collection('meta-nodes');
@@ -965,7 +965,7 @@ export async function createNode({
   await validateNodeData(data, { type: null });
   assertNodeDataWasValidated(data);
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
   const node_id = new ObjectId();
 
@@ -1040,7 +1040,7 @@ export async function updateNode({
     throw new ValidationError(ErrorMessage.InvalidItem('node_id', 'parameter'));
   }
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
   const fileNodes = db.collection<InternalFileNode>('file-nodes');
   const metaNodes = db.collection<InternalMetaNode>('meta-nodes');
@@ -1147,7 +1147,7 @@ export async function deleteNodes({
     throw new ValidationError(ErrorMessage.TooManyItemsRequested('node_ids'));
   }
 
-  const db = await getDb({ name: 'hscc-api-drive' });
+  const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
   const fileNodes = db.collection<InternalNode>('file-nodes');
   const metaNodes = db.collection<InternalNode>('meta-nodes');

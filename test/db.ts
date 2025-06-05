@@ -88,7 +88,7 @@ export const dummyAppData: DummyAppData = {
       name: 'User1-File1',
       'name-lowercase': 'user1-file1',
       size: 109,
-      text: "NOW I GOT A FRONT ROW SEAT WATCH THE SYSTEM FALL!\n\nCause look who's in control!\n\nTELL ME HOW DID WE GET HERE?",
+      text: 'BLAH BLAH BLAH! '.repeat(100),
       tags: ['grandson', 'music'],
       lock: null,
       permissions: {}
@@ -120,7 +120,7 @@ export const dummyAppData: DummyAppData = {
       name: 'USER3-FILE3',
       'name-lowercase': 'user3-file3',
       size: 28,
-      text: 'Tell me how did we get here?',
+      text: 'Tell me how did we get here??????',
       tags: ['grandson', 'music'],
       lock: null,
       permissions: {
