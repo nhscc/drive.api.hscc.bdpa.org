@@ -1,5 +1,14 @@
 // TODO: simplify simplify simplify!
 
+import { getDb, setSchemaConfig } from '@-xun/mongo-schema';
+import { hydrateDbWithDummyData, setDummyData } from '@-xun/mongo-test';
+import { createDebugLogger } from 'rejoinder';
+
+import { getSchemaConfig } from 'universe/backend/db.ts';
+import { getEnv } from 'universe/backend/env.ts';
+
+import { getDummyData } from 'testverse/db.ts';
+
 import authRequest from 'multiverse/next-adhesive/auth-request';
 import checkContentType from 'multiverse/next-adhesive/check-content-type';
 import checkMethod from 'multiverse/next-adhesive/check-method';
@@ -26,6 +35,45 @@ type ExposedOptions = LogRequestOptions &
   CheckVersionOptions &
   CheckMethodOptions &
   CheckContentTypeOptions;
+
+const setSchemaAndHydrateDbDebug = createDebugLogger({
+  namespace: 'next-api:f:hydrate-prod'
+});
+
+/**
+ * Sets the database schema if NODE_ENV starts with "production" or
+ * "development". Additionally hydrates the database with dummy data if NODE_ENV
+ * starts with "development".
+ */
+export default async function setSchemaAndMaybeHydrateDb() {
+  setSchemaAndHydrateDbDebug('entered middleware runtime');
+
+  const isProduction = getEnv().NODE_ENV.startsWith('production');
+  const isDevelopment = getEnv().NODE_ENV.startsWith('development');
+
+  if (isProduction || isDevelopment) {
+    setSchemaConfig(() => getSchemaConfig());
+
+    if (isDevelopment && getEnv().API_HYDRATE_DB) {
+      setSchemaAndHydrateDbDebug('executing api db hydration directive');
+      setDummyData(getDummyData());
+
+      await getDb({ name: 'root' });
+      await getDb({ name: 'app' });
+
+      setSchemaAndHydrateDbDebug('dbs initialized successfully: root, app');
+
+      await hydrateDbWithDummyData({ name: 'root' });
+      await hydrateDbWithDummyData({ name: 'app' });
+
+      setSchemaAndHydrateDbDebug('db hydrated successfully: root, app');
+
+      throw new Error(
+        'database was hydrated successfully. You may invoke the app normally now (without API_HYDRATE_DB)'
+      );
+    }
+  }
+}
 
 /**
  * The shape of an API endpoint metadata object.
@@ -54,6 +102,7 @@ const withMiddleware = middlewareFactory<
     ContriveErrorOptions
 >({
   use: [
+    setSchemaAndMaybeHydrateDb,
     logRequest,
     checkVersion,
     useCors,
@@ -88,7 +137,14 @@ const withSysMiddleware = middlewareFactory<
     CheckContentTypeOptions &
     HandleErrorOptions
 >({
-  use: [logRequest, authRequest, limitRequest, checkMethod, checkContentType],
+  use: [
+    setSchemaAndMaybeHydrateDb,
+    logRequest,
+    authRequest,
+    limitRequest,
+    checkMethod,
+    checkContentType
+  ],
   useOnError: [handleError],
   options: {
     allowedContentTypes: ['application/json'],
