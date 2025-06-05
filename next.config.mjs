@@ -7,7 +7,7 @@ export default function nextConfig() {
     allowedDevOrigins: ['*.romulus'],
 
     // ? Renames the build dir "build" instead of ".next"
-    distDir: 'build',
+    //distDir: 'build',
 
     // ? Select some environment variables defined in .env to push to the
     // ? client.
