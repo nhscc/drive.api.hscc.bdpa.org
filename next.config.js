@@ -1,13 +1,13 @@
 /**
  * @type {() => import('next').NextConfig}
  */
-export default function nextConfig() {
+module.exports = function nextConfig() {
   return {
     // * https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
     allowedDevOrigins: ['*.romulus'],
 
     // ? Renames the build dir "build" instead of ".next"
-    //distDir: 'build',
+    distDir: 'build',
 
     // ? Select some environment variables defined in .env to push to the
     // ? client.
@@ -43,4 +43,4 @@ export default function nextConfig() {
       ];
     }
   };
-}
+};
