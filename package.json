@@ -35,7 +35,7 @@
   "devDependencies": {
     "@-xun/jest": "^2.2.1",
     "@-xun/mongo-schema": "^1.1.2",
-    "@-xun/mongo-test": "^1.1.1",
+    "@-xun/mongo-test": "^1.1.2",
     "@-xun/next-env": "^1.0.2",
     "@-xun/symbiote": "^4.2.7",
     "@-xun/types": "^1.1.0",
