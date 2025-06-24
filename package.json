@@ -45,7 +45,7 @@
     "@types/content-type": "^1.1.8",
     "@types/cors": "^2.8.18",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.15.29",
+    "@types/node": "^24.0.4",
     "@types/react": "^19.1.6",
     "@types/request-ip": "^0.0.41",
     "babel-plugin-explicit-exports-references": "^1.0.2",
