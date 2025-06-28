@@ -52,7 +52,7 @@
     "bytes": "^3.1.2",
     "content-type": "^1.0.5",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
+    "dotenv": "^17.0.0",
     "http-terminator": "^3.2.0",
     "jest-fixed-jsdom": "^0.0.9",
     "mongodb": "^6.17.0",
