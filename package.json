@@ -33,7 +33,7 @@
     "test-unit": "NODE_ENV=test jest $JEST_CLI --coverage --testPathIgnorePatterns '/(integration|e2e).*?\\.test\\.tsx?' '/dist/'"
   },
   "dependencies": {
-    "@-xun/jest": "^2.2.1",
+    "@-xun/jest": "^2.2.4",
     "@-xun/mongo-schema": "^1.1.2",
     "@-xun/mongo-test": "^1.1.2",
     "@-xun/next-env": "^1.1.0",
