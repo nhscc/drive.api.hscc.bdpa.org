@@ -6,7 +6,6 @@
 
 # Re-add root-level dirs
 !/data
-!/lib
 !/public
 !/src
 !/types
@@ -14,10 +13,9 @@
 # Re-add root-level files
 !/.gitignore
 !/babel.config.js
-!/next.config.js
+!/next.config.mjs
 !/package-lock.json
 !/package.json
 !/tsconfig.json
 
 # Custom adds
-!/expect-env.js

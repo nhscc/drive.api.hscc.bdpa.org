@@ -93,7 +93,7 @@ type checking the project, building the docs, etc.
 `package.json` and `package-lock.json` are used by NPM to describe the
 dependencies that will be automatically installed when executing `npm install`.
 
-`next.config.js` returns a JSON object used to configure [Next.js][45].
+`next.config.mjs` returns a JSON object used to configure [Next.js][45].
 `vercel.json` serves a similar purpose.
 
 `.env.example` is the [distributed environment file][46]. It's meaningless on

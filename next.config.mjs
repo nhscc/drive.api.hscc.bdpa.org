@@ -6,8 +6,8 @@ export default function nextConfig() {
     // * https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
     allowedDevOrigins: ['*.romulus'],
 
-    // ? Renames the build dir "build" instead of ".next"
-    //distDir: 'build',
+    // ? Default is explicitly provided for the benefit of tooling
+    distDir: '.next',
 
     // ? Select some environment variables defined in .env to push to the
     // ? client.
