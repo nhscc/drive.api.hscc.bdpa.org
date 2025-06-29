@@ -6,4 +6,4 @@ import '@testing-library/jest-dom';
 import 'jest-extended';
 import 'jest-extended/all';
 
-loadEnv({ path: toPath(__dirname, '..', '.env') });
+loadEnv({ path: toPath(__dirname, '..', '.env'), quiet: true });
