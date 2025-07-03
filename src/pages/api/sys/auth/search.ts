@@ -19,10 +19,7 @@ export default withSysMiddleware(
     switch (req.method) {
       case 'GET': {
         sendHttpOk(res, {
-          fullTokens: await getTokens({
-            filter,
-            after_id: req.query.after?.toString()
-          })
+          fullTokens: await getTokens({ filter, after_id: req.query.after?.toString() })
         });
         break;
       }
