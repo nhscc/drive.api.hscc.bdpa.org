@@ -1,8 +1,7 @@
+import { getCommonDummyData } from '@-xun/api-strategy/mongo/dummy';
 import { ObjectId } from 'mongodb';
 
 import { mockDateNowMs } from 'testverse/util';
-
-import { getCommonDummyData } from 'multiverse/mongo-common';
 
 import type { DummyData } from '@-xun/mongo-test';
 

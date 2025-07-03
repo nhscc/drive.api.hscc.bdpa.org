@@ -16,13 +16,17 @@ const config = await moduleExport({
   ...(await assertEnvironment())
 });
 
-config.push({
-  /* Add custom config here, such as disabling certain rules */
-  rules: {
-    'import/extensions': 'off',
-    'no-restricted-syntax': 'off'
+config.push(
+  // TODO: delete this the next time you see it (unless webpack is still around)
+  { ignores: ['**/webpack.config.js', '**/ban-hammer.js'] },
+  {
+    /* Add custom config here, such as disabling certain rules */
+    rules: {
+      'import/extensions': 'off',
+      'no-restricted-syntax': 'off'
+    }
   }
-});
+);
 
 // TODO: delete this the next time you see it (unless /test/fixtures/ still
 // TODO: unwisely contains integration.ts)

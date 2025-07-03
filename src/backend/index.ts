@@ -1,5 +1,6 @@
 /* eslint-disable unicorn/no-array-reduce */
 import { isRecord } from '@-xun/js';
+import { itemExists, itemToObjectId } from '@-xun/mongo-item';
 import { getDb } from '@-xun/mongo-schema';
 import { MongoServerError, ObjectId } from 'mongodb';
 import { toss } from 'toss-expression';
@@ -11,9 +12,7 @@ import {
 } from 'universe/backend/db';
 
 import { getEnv } from 'universe/backend/env';
-import { ErrorMessage, NotFoundError, ValidationError } from 'universe/error';
-
-import { itemExists } from 'multiverse/mongo-item';
+import { ClientValidationError, ErrorMessage, NotFoundError } from 'universe/error';
 
 import type {
   InternalFileNode,
@@ -34,8 +33,6 @@ import type {
   UserId,
   Username
 } from 'universe/backend/db';
-
-// TODO: switch to using itemToObjectId from mongo-item library
 
 // TODO: replace validation logic with Arktype
 
@@ -90,22 +87,6 @@ type SubSpecifierObject = {
 };
 
 /**
- * Convert an array of node_id strings into a set of node_id ObjectIds.
- * TODO: replace with ItemToObjectIds
- */
-const normalizeNodeIds = (ids: string[]) => {
-  let node_id = '<uninitialized>';
-  try {
-    return Array.from(new Set(ids)).map((id) => {
-      node_id = id;
-      return new ObjectId(id);
-    });
-  } catch {
-    throw new ValidationError(ErrorMessage.InvalidObjectId(node_id));
-  }
-};
-
-/**
  * Convert an array of strings into a set of proper node tags (still strings).
  */
 const normalizeTags = (tags: string[]) => {
@@ -132,7 +113,7 @@ function validateUserData(
   { required }: { required: boolean }
 ): asserts data is NewUser | PatchUser {
   if (!data || !isRecord(data)) {
-    throw new ValidationError(ErrorMessage.InvalidJSON());
+    throw new ClientValidationError(ErrorMessage.InvalidJSON());
   }
 
   const {
@@ -150,7 +131,7 @@ function validateUserData(
       data.email.length < MIN_USER_EMAIL_LENGTH ||
       data.email.length > MAX_USER_EMAIL_LENGTH)
   ) {
-    throw new ValidationError(
+    throw new ClientValidationError(
       ErrorMessage.InvalidStringLength(
         'email',
         MIN_USER_EMAIL_LENGTH,
@@ -167,7 +148,7 @@ function validateUserData(
       !hexadecimalRegex.test(data.salt) ||
       data.salt.length !== USER_SALT_LENGTH)
   ) {
-    throw new ValidationError(
+    throw new ClientValidationError(
       ErrorMessage.InvalidStringLength('salt', USER_SALT_LENGTH, null, 'hexadecimal')
     );
   }
@@ -179,7 +160,7 @@ function validateUserData(
       !hexadecimalRegex.test(data.key) ||
       data.key.length !== USER_KEY_LENGTH)
   ) {
-    throw new ValidationError(
+    throw new ClientValidationError(
       ErrorMessage.InvalidStringLength('key', USER_KEY_LENGTH, null, 'hexadecimal')
     );
   }
@@ -196,7 +177,7 @@ async function validateNodeData(
   { type }: { type: NonNullable<NewNode['type']> | null }
 ) {
   if (!data || !isRecord(data)) {
-    throw new ValidationError(ErrorMessage.InvalidJSON());
+    throw new ClientValidationError(ErrorMessage.InvalidJSON());
   }
 
   const isNewNode = (_obj: typeof data): _obj is NewNode => {
@@ -243,7 +224,7 @@ async function validateNodeData(
     (typeof data.type !== 'string' ||
       !['file', 'directory', 'symlink'].includes(data.type))
   ) {
-    throw new ValidationError(ErrorMessage.InvalidFieldValue('type'));
+    throw new ClientValidationError(ErrorMessage.InvalidFieldValue('type'));
   }
 
   const typeActual = (isNewNode(data) ? data.type : type)!;
@@ -254,14 +235,14 @@ async function validateNodeData(
       !data.name.length ||
       data.name.length > MAX_NODE_NAME_LENGTH)
   ) {
-    throw new ValidationError(
+    throw new ClientValidationError(
       ErrorMessage.InvalidStringLength('name', 1, MAX_NODE_NAME_LENGTH, 'string')
     );
   }
 
   if (isNewNode(data) || data.permissions !== undefined) {
     if (!data.permissions || !isRecord(data.permissions)) {
-      throw new ValidationError(ErrorMessage.InvalidFieldValue('permissions'));
+      throw new ClientValidationError(ErrorMessage.InvalidFieldValue('permissions'));
     } else {
       const permsEntries = Object.entries(data.permissions);
 
@@ -274,9 +255,13 @@ async function validateNodeData(
           );
         })
       ) {
-        throw new ValidationError(ErrorMessage.InvalidObjectKeyValue('permissions'));
+        throw new ClientValidationError(
+          ErrorMessage.InvalidObjectKeyValue('permissions')
+        );
       } else if (permsEntries.length > MAX_NODE_PERMISSIONS) {
-        throw new ValidationError(ErrorMessage.TooManyItemsRequested('permissions'));
+        throw new ClientValidationError(
+          ErrorMessage.TooManyItemsRequested('permissions')
+        );
       } else {
         await Promise.all(
           permsEntries.map(async ([username]) => {
@@ -298,16 +283,16 @@ async function validateNodeData(
     (isNewFileNode(data) || (isPatchFileNode(data) && data.text !== undefined)) &&
     (typeof data.text !== 'string' || data.text.length > MAX_NODE_TEXT_LENGTH_BYTES)
   ) {
-    throw new ValidationError(
+    throw new ClientValidationError(
       ErrorMessage.InvalidStringLength('text', 0, MAX_NODE_TEXT_LENGTH_BYTES, 'bytes')
     );
   }
 
   if (isNewFileNode(data) || (isPatchFileNode(data) && data.tags !== undefined)) {
     if (!Array.isArray(data.tags)) {
-      throw new ValidationError(ErrorMessage.InvalidFieldValue('tags'));
+      throw new ClientValidationError(ErrorMessage.InvalidFieldValue('tags'));
     } else if (data.tags.length > MAX_NODE_TAGS) {
-      throw new ValidationError(ErrorMessage.TooManyItemsRequested('tags'));
+      throw new ClientValidationError(ErrorMessage.TooManyItemsRequested('tags'));
     } else if (
       !data.tags.every(
         (tag) =>
@@ -317,7 +302,7 @@ async function validateNodeData(
           tag.length <= MAX_NODE_TAG_LENGTH
       )
     ) {
-      throw new ValidationError(
+      throw new ClientValidationError(
         ErrorMessage.InvalidStringLength(
           'tags',
           1,
@@ -335,9 +320,9 @@ async function validateNodeData(
     data.lock !== null
   ) {
     if (!data.lock || !isRecord(data.lock)) {
-      throw new ValidationError(ErrorMessage.InvalidFieldValue('lock'));
+      throw new ClientValidationError(ErrorMessage.InvalidFieldValue('lock'));
     } else if (!validateUsername(data.lock.user)) {
-      throw new ValidationError(
+      throw new ClientValidationError(
         ErrorMessage.InvalidStringLength(
           'lock.user',
           MIN_USER_NAME_LENGTH,
@@ -349,7 +334,7 @@ async function validateNodeData(
       data.lock.client.length < 1 ||
       data.lock.client.length > MAX_LOCK_CLIENT_LENGTH
     ) {
-      throw new ValidationError(
+      throw new ClientValidationError(
         ErrorMessage.InvalidStringLength(
           'lock.client',
           1,
@@ -358,20 +343,22 @@ async function validateNodeData(
         )
       );
     } else if (typeof data.lock.createdAt !== 'number' || data.lock.createdAt <= 0) {
-      throw new ValidationError(ErrorMessage.InvalidFieldValue('lock.createdAt'));
+      throw new ClientValidationError(ErrorMessage.InvalidFieldValue('lock.createdAt'));
     } else if (Object.keys(data.lock).length !== 3) {
-      throw new ValidationError(ErrorMessage.InvalidObjectKeyValue('lock'));
+      throw new ClientValidationError(ErrorMessage.InvalidObjectKeyValue('lock'));
     }
   }
 
   if (isNewMetaNode(data) || (isPatchMetaNode(data) && data.contents !== undefined)) {
     if (!Array.isArray(data.contents)) {
-      throw new ValidationError(ErrorMessage.InvalidFieldValue('contents'));
+      throw new ClientValidationError(ErrorMessage.InvalidFieldValue('contents'));
     } else if (
       data.contents.length > MAX_NODE_CONTENTS ||
       (typeActual === 'symlink' && data.contents.length > 1)
     ) {
-      throw new ValidationError(ErrorMessage.TooManyItemsRequested('content node_ids'));
+      throw new ClientValidationError(
+        ErrorMessage.TooManyItemsRequested('content node_ids')
+      );
     } else {
       const fileNodes = db.collection('file-nodes');
       const metaNodes = db.collection('meta-nodes');
@@ -380,8 +367,8 @@ async function validateNodeData(
         data.contents.map(async (node_id) => {
           try {
             if (
-              !(await itemExists(fileNodes, node_id, { optimisticCoercion: 'force' })) &&
-              !(await itemExists(metaNodes, node_id, { optimisticCoercion: 'force' }))
+              !(await itemExists(fileNodes, node_id)) &&
+              !(await itemExists(metaNodes, node_id))
             ) {
               throw new NotFoundError(ErrorMessage.ItemNotFound(node_id, 'node_id'));
             }
@@ -389,7 +376,7 @@ async function validateNodeData(
             const error_ =
               error instanceof NotFoundError
                 ? error
-                : new ValidationError(
+                : new ClientValidationError(
                     ErrorMessage.InvalidArrayValue('contents', node_id)
                   );
             throw error_;
@@ -426,7 +413,7 @@ export async function getAllUsers({
     try {
       return after ? new ObjectId(after) : undefined;
     } catch {
-      throw new ValidationError(ErrorMessage.InvalidObjectId(after!));
+      throw new ClientValidationError(ErrorMessage.InvalidObjectId(after!));
     }
   })();
 
@@ -451,7 +438,7 @@ export async function getUser({
   username: Username | undefined;
 }): Promise<PublicUser> {
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   const db = await getDb({ name: 'app' });
@@ -473,7 +460,7 @@ export async function createUser({
   const { MAX_USER_NAME_LENGTH, MIN_USER_NAME_LENGTH } = getEnv();
 
   if (!validateUsername(data.username)) {
-    throw new ValidationError(
+    throw new ClientValidationError(
       ErrorMessage.InvalidStringLength(
         'username',
         MIN_USER_NAME_LENGTH,
@@ -483,14 +470,14 @@ export async function createUser({
   }
 
   if (data.username === 'public') {
-    throw new ValidationError(ErrorMessage.IllegalUsername());
+    throw new ClientValidationError(ErrorMessage.IllegalUsername());
   }
 
   const { email, username, key, salt, ...rest } = data as Required<NewUser>;
   const restKeys = Object.keys(rest);
 
   if (restKeys.length !== 0) {
-    throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
+    throw new ClientValidationError(ErrorMessage.UnknownField(restKeys[0]!));
   }
 
   const db = await getDb({ name: 'app' });
@@ -510,12 +497,12 @@ export async function createUser({
     /* istanbul ignore else */
     if (error instanceof MongoServerError && error.code === 11_000) {
       if (error.keyPattern?.username !== undefined) {
-        throw new ValidationError(ErrorMessage.DuplicateFieldValue('username'));
+        throw new ClientValidationError(ErrorMessage.DuplicateFieldValue('username'));
       }
 
       /* istanbul ignore else */
       if (error.keyPattern?.email !== undefined) {
-        throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
+        throw new ClientValidationError(ErrorMessage.DuplicateFieldValue('email'));
       }
     }
 
@@ -536,7 +523,7 @@ export async function updateUser({
   if (data && !Object.keys(data).length) return;
 
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   validateUserData(data, { required: false });
@@ -545,7 +532,7 @@ export async function updateUser({
   const restKeys = Object.keys(rest);
 
   if (restKeys.length !== 0) {
-    throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
+    throw new ClientValidationError(ErrorMessage.UnknownField(restKeys[0]!));
   }
 
   const db = await getDb({ name: 'app' });
@@ -574,7 +561,7 @@ export async function updateUser({
       error.code === 11_000 /* istanbul ignore else */ &&
       error.keyPattern?.email !== undefined
     ) {
-      throw new ValidationError(ErrorMessage.DuplicateFieldValue('email'));
+      throw new ClientValidationError(ErrorMessage.DuplicateFieldValue('email'));
     }
 
     throw error;
@@ -587,7 +574,7 @@ export async function deleteUser({
   username: Username | undefined;
 }): Promise<void> {
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   const db = await getDb({ name: 'app' });
@@ -633,25 +620,25 @@ export async function getNodes({
   node_ids: string[] | undefined;
 }): Promise<PublicNode[]> {
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   if (!node_ids) {
-    throw new ValidationError(ErrorMessage.InvalidItem('node_ids', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('node_ids', 'parameter'));
   }
 
   const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
 
   if (node_ids.length > getEnv().MAX_PARAMS_PER_REQUEST) {
-    throw new ValidationError(ErrorMessage.TooManyItemsRequested('node_ids'));
+    throw new ClientValidationError(ErrorMessage.TooManyItemsRequested('node_ids'));
   }
 
   if (!(await itemExists(users, { key: 'username', id: username }))) {
     throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));
   }
 
-  const nodeIds = normalizeNodeIds(node_ids);
+  const nodeIds = itemToObjectId(node_ids);
   const $match = {
     _id: { $in: nodeIds },
     $or: [{ owner: username }, { [`permissions.${username}`]: { $exists: true } }]
@@ -705,7 +692,7 @@ export async function searchNodes({
   };
 }): Promise<PublicNode[]> {
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   const { MAX_SEARCHABLE_TAGS, RESULTS_PER_PAGE } = getEnv();
@@ -715,15 +702,15 @@ export async function searchNodes({
     try {
       return after ? new ObjectId(after) : undefined;
     } catch {
-      throw new ValidationError(ErrorMessage.InvalidObjectId(after!));
+      throw new ClientValidationError(ErrorMessage.InvalidObjectId(after!));
     }
   })();
 
   // ? Initial matcher validation
   if (!isRecord(match)) {
-    throw new ValidationError(ErrorMessage.InvalidMatcher('match'));
+    throw new ClientValidationError(ErrorMessage.InvalidMatcher('match'));
   } else if (!isRecord(regexMatch)) {
-    throw new ValidationError(ErrorMessage.InvalidMatcher('regexMatch'));
+    throw new ClientValidationError(ErrorMessage.InvalidMatcher('regexMatch'));
   }
 
   // ? Handle aliasing/proxying
@@ -762,26 +749,28 @@ export async function searchNodes({
   for (const [key, val] of Object.entries(match)) {
     if (key === 'tags') {
       if (!Array.isArray(val)) {
-        throw new ValidationError(
+        throw new ClientValidationError(
           ErrorMessage.InvalidSpecifierValueType(key, 'an array')
         );
       }
 
       if (val.length > MAX_SEARCHABLE_TAGS) {
-        throw new ValidationError(ErrorMessage.TooManyItemsRequested('searchable tags'));
+        throw new ClientValidationError(
+          ErrorMessage.TooManyItemsRequested('searchable tags')
+        );
       }
     } else if (key === 'permissions') {
-      throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
+      throw new ClientValidationError(ErrorMessage.UnknownPermissionsSpecifier());
     } else if (key.startsWith('permissions.')) {
       if (sawPermissionsSpecifier) {
-        throw new ValidationError(
+        throw new ClientValidationError(
           ErrorMessage.TooManyItemsRequested('permissions specifiers')
         );
       }
       sawPermissionsSpecifier = true;
     } else {
       if (!matchableStrings.includes(key)) {
-        throw new ValidationError(ErrorMessage.UnknownSpecifier(key));
+        throw new ClientValidationError(ErrorMessage.UnknownSpecifier(key));
       }
 
       if (isRecord(val)) {
@@ -790,13 +779,13 @@ export async function searchNodes({
         for (const [subkey, subval] of Object.entries(val)) {
           if (subkey === '$or') {
             if (!Array.isArray(subval) || subval.length !== 2) {
-              throw new ValidationError(ErrorMessage.InvalidOrSpecifier());
+              throw new ClientValidationError(ErrorMessage.InvalidOrSpecifier());
             }
 
             if (
               subval.every((sv, ndx) => {
                 if (!isRecord(sv)) {
-                  throw new ValidationError(
+                  throw new ClientValidationError(
                     ErrorMessage.InvalidOrSpecifierNonObject(ndx)
                   );
                 }
@@ -805,20 +794,20 @@ export async function searchNodes({
 
                 if (!entries.length) return false;
                 if (entries.length !== 1) {
-                  throw new ValidationError(
+                  throw new ClientValidationError(
                     ErrorMessage.InvalidOrSpecifierBadLength(ndx)
                   );
                 }
 
                 entries.forEach(([k, v]) => {
                   if (!matchableSubStrings.includes(k)) {
-                    throw new ValidationError(
+                    throw new ClientValidationError(
                       ErrorMessage.InvalidOrSpecifierInvalidKey(ndx, k)
                     );
                   }
 
                   if (typeof v !== 'number') {
-                    throw new ValidationError(
+                    throw new ClientValidationError(
                       ErrorMessage.InvalidOrSpecifierInvalidValueType(ndx, k)
                     );
                   }
@@ -832,11 +821,13 @@ export async function searchNodes({
           } else {
             valNotEmpty = true;
             if (!matchableSubStrings.includes(subkey)) {
-              throw new ValidationError(ErrorMessage.UnknownSpecifier(subkey, true));
+              throw new ClientValidationError(
+                ErrorMessage.UnknownSpecifier(subkey, true)
+              );
             }
 
             if (typeof subval !== 'number') {
-              throw new ValidationError(
+              throw new ClientValidationError(
                 ErrorMessage.InvalidSpecifierValueType(subkey, 'a number', true)
               );
             }
@@ -844,12 +835,12 @@ export async function searchNodes({
         }
 
         if (!valNotEmpty)
-          throw new ValidationError(
+          throw new ClientValidationError(
             ErrorMessage.InvalidSpecifierValueType(key, 'a non-empty object')
           );
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       } else if (val !== null && !['number', 'string', 'boolean'].includes(typeof val)) {
-        throw new ValidationError(
+        throw new ClientValidationError(
           ErrorMessage.InvalidSpecifierValueType(
             key,
             'a number, string, boolean, or sub-specifier object'
@@ -862,21 +853,21 @@ export async function searchNodes({
   // ? Validate the regexMatch object
   for (const [key, val] of Object.entries(regexMatch)) {
     if (key === 'permissions') {
-      throw new ValidationError(ErrorMessage.UnknownPermissionsSpecifier());
+      throw new ClientValidationError(ErrorMessage.UnknownPermissionsSpecifier());
     } else if (key.startsWith('permissions.')) {
       if (sawPermissionsSpecifier) {
-        throw new ValidationError(
+        throw new ClientValidationError(
           ErrorMessage.TooManyItemsRequested('permissions specifiers')
         );
       }
       sawPermissionsSpecifier = true;
     } else {
       if (!regexMatchableStrings.includes(key)) {
-        throw new ValidationError(ErrorMessage.UnknownSpecifier(key));
+        throw new ClientValidationError(ErrorMessage.UnknownSpecifier(key));
       }
 
       if (!val || typeof val !== 'string') {
-        throw new ValidationError(ErrorMessage.InvalidRegexString(key));
+        throw new ClientValidationError(ErrorMessage.InvalidRegexString(key));
       }
     }
   }
@@ -959,7 +950,7 @@ export async function createNode({
   data: NewNode | undefined;
 }): Promise<PublicNode> {
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   }
 
   await validateNodeData(data, { type: null });
@@ -980,7 +971,7 @@ export async function createNode({
     const restKeys = Object.keys(rest);
 
     if (restKeys.length !== 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
+      throw new ClientValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1004,7 +995,7 @@ export async function createNode({
     const restKeys = Object.keys(rest);
 
     if (restKeys.length !== 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
+      throw new ClientValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1015,7 +1006,7 @@ export async function createNode({
       type,
       name,
       'name-lowercase': name.toLowerCase(),
-      contents: normalizeNodeIds(contents),
+      contents: itemToObjectId(contents),
       permissions
     });
   }
@@ -1035,9 +1026,9 @@ export async function updateNode({
   if (data && !Object.keys(data).length) return;
 
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   } else if (!node_id) {
-    throw new ValidationError(ErrorMessage.InvalidItem('node_id', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('node_id', 'parameter'));
   }
 
   const db = await getDb({ name: 'app' });
@@ -1049,7 +1040,7 @@ export async function updateNode({
     try {
       return new ObjectId(node_id);
     } catch {
-      throw new ValidationError(ErrorMessage.InvalidObjectId(node_id));
+      throw new ClientValidationError(ErrorMessage.InvalidObjectId(node_id));
     }
   })();
 
@@ -1089,7 +1080,7 @@ export async function updateNode({
     const restKeys = Object.keys(rest);
 
     if (restKeys.length !== 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
+      throw new ClientValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1112,7 +1103,7 @@ export async function updateNode({
     const restKeys = Object.keys(rest);
 
     if (restKeys.length !== 0) {
-      throw new ValidationError(ErrorMessage.UnknownField(restKeys[0]!));
+      throw new ClientValidationError(ErrorMessage.UnknownField(restKeys[0]!));
     }
 
     // * At this point, we can finally trust this data is not malicious.
@@ -1122,7 +1113,7 @@ export async function updateNode({
         $set: {
           ...(owner ? { owner } : {}),
           ...(name ? { name, 'name-lowercase': name.toLowerCase() } : {}),
-          ...(contents ? { contents: normalizeNodeIds(contents) } : {}),
+          ...(contents ? { contents: itemToObjectId(contents) } : {}),
           ...(permissions ? { permissions } : {})
         }
       }
@@ -1138,20 +1129,20 @@ export async function deleteNodes({
   node_ids: string[] | undefined;
 }): Promise<void> {
   if (!username) {
-    throw new ValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('username', 'parameter'));
   } else if (!node_ids) {
-    throw new ValidationError(ErrorMessage.InvalidItem('node_ids', 'parameter'));
+    throw new ClientValidationError(ErrorMessage.InvalidItem('node_ids', 'parameter'));
   }
 
   if (node_ids.length > getEnv().MAX_PARAMS_PER_REQUEST) {
-    throw new ValidationError(ErrorMessage.TooManyItemsRequested('node_ids'));
+    throw new ClientValidationError(ErrorMessage.TooManyItemsRequested('node_ids'));
   }
 
   const db = await getDb({ name: 'app' });
   const users = db.collection<InternalUser>('users');
   const fileNodes = db.collection<InternalNode>('file-nodes');
   const metaNodes = db.collection<InternalNode>('meta-nodes');
-  const nodeIds = normalizeNodeIds(node_ids);
+  const nodeIds = itemToObjectId(node_ids);
 
   if (!(await itemExists(users, { key: 'username', id: username }))) {
     throw new NotFoundError(ErrorMessage.ItemNotFound(username, 'user'));

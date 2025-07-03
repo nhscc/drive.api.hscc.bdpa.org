@@ -40,7 +40,7 @@ export const ErrorMessage = {
           }s (inclusive)`
         : `${min} ${syntax === 'bytes' ? 'byte' : 'character'} string`
     }${nullable ? ' or null' : ''}`,
-  InvalidObjectId: (id: string) => `invalid id "${id}"`,
+  InvalidObjectId: (id: string) => `invalid ObjectId "${id}"`,
   UnknownField: (item: string) => `encountered unknown or illegal field \`${item}\``,
   UnknownSpecifier: (item: string, sub = false) =>
     `encountered unknown or illegal ${sub ? 'sub-' : ''}specifier \`${item}\``,
@@ -67,11 +67,13 @@ export const ErrorMessage = {
   ItemOrItemsNotFound: (itemsName: string) => `one or more ${itemsName} were not found`
 };
 
-// TODO: replace with @-xun/error
-
-export class AppError extends Error {}
-export class ValidationError extends AppError {}
-export class AppValidationError extends ValidationError {}
-export class AuthError extends AppError {}
-export class NotFoundError extends AppError {}
-export class NotImplementedError extends AppError {}
+export {
+  ApiError,
+  AuthError,
+  ClientValidationError,
+  ForbiddenError,
+  NotFoundError,
+  NotImplementedError,
+  SanityError,
+  ServerValidationError
+} from '@-xun/api-strategy/error';

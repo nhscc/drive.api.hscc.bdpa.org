@@ -1,7 +1,7 @@
+import { sendHttpOk } from '@-xun/respond';
+
 import { deleteUser, getUser, updateUser } from 'universe/backend';
 import { withMiddleware } from 'universe/backend/middleware';
-
-import { sendHttpOk } from 'multiverse/next-api-respond';
 
 export { defaultConfig as config } from 'universe/backend/api';
 
@@ -34,6 +34,10 @@ export default withMiddleware(
   },
   {
     descriptor: metadata.descriptor,
-    options: { allowedMethods: ['GET', 'DELETE', 'PUT'], apiVersion: '2' }
+    options: {
+      requiresAuth: true,
+      allowedMethods: ['GET', 'DELETE', 'PUT'],
+      apiVersion: '2'
+    }
   }
 );

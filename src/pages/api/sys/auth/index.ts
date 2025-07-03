@@ -1,7 +1,7 @@
-import { withSysMiddleware } from 'universe/backend/middleware';
+import { createToken, getTokens } from '@-xun/api-strategy/auth';
+import { sendHttpOk } from '@-xun/respond';
 
-import { sendHttpOk } from 'multiverse/next-api-respond';
-import { createToken, getTokensByAttribute } from 'multiverse/next-auth';
+import { withSysMiddleware } from 'universe/backend/middleware';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
 export { defaultConfig as config } from 'universe/backend/api';
@@ -11,7 +11,7 @@ export default withSysMiddleware(
     switch (req.method) {
       case 'GET': {
         sendHttpOk(res, {
-          fullTokens: await getTokensByAttribute({
+          fullTokens: await getTokens({
             filter: {},
             after_id: req.query.after?.toString()
           })
@@ -27,6 +27,6 @@ export default withSysMiddleware(
   },
   {
     descriptor: '/sys/auth',
-    options: { allowedMethods: ['GET', 'POST'] }
+    options: { requiresAuth: true, allowedMethods: ['GET', 'POST'] }
   }
 );

@@ -1991,7 +1991,7 @@ describe('::createNode', () => {
           permissions: {},
           contents: [1]
         },
-        ErrorMessage.InvalidArrayValue('contents', '1')
+        ErrorMessage.InvalidObjectId('1')
       ],
       [
         { type: 'symlink', name: 'x', permissions: {}, contents: ['bad'] },
@@ -2760,7 +2760,7 @@ describe('::updateNode', () => {
         {
           contents: [1]
         } as unknown as PatchNode,
-        ErrorMessage.InvalidArrayValue('contents', '1'),
+        ErrorMessage.InvalidObjectId('1'),
         knownDirNode
       ],
       [

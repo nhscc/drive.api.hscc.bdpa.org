@@ -1,4 +1,4 @@
-import { ErrorMessage, ValidationError } from 'universe/error';
+import { ClientValidationError, ErrorMessage } from 'universe/error';
 
 import type { JsonValue } from 'type-fest';
 
@@ -10,6 +10,6 @@ export function validateAndParseJson<T extends JsonValue>(
   try {
     return JSON.parse(input || '');
   } catch {
-    throw new ValidationError(ErrorMessage.InvalidJSON(property));
+    throw new ClientValidationError(ErrorMessage.InvalidJSON(property));
   }
 }

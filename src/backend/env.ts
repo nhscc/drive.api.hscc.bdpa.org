@@ -1,16 +1,11 @@
 import { getEnv as getDefaultEnv } from '@-xun/next-env';
 import { parse as parseAsBytes } from 'bytes';
 
-import { AppValidationError } from 'universe/error';
+import { ServerValidationError } from 'universe/error';
 
 import type { Environment } from '@-xun/next-env';
 
-// TODO: replace validation logic with zod instead (including defaults) and
-// TODO: integrate that logic with expect-env (also zod-based)
-
-// TODO: fix the badness that happens when trying to reference a non-existent
-// TODO: key from getEnv() (right now it says something like Primitive |
-// TODO: Primitive[] when it should be never)
+// TODO: replace validation logic with arktype instead (including defaults)
 
 /**
  * Returns an object representing the application's runtime environment.
@@ -79,7 +74,7 @@ export function getEnv<T extends Environment = Environment>() {
     }
 
     if (errors.length) {
-      throw new AppValidationError(`bad variables:\n - ${errors.join('\n - ')}`);
+      throw new ServerValidationError(`bad variables:\n - ${errors.join('\n - ')}`);
     }
   }
 

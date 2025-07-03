@@ -15,13 +15,18 @@ jest.mock('universe/backend/api', (): typeof import('universe/backend/api') => {
 jest.mock(
   'universe/backend/middleware',
   (): typeof import('universe/backend/middleware') => {
-    const { middlewareFactory } = require('multiverse/next-api-glue');
-    const { default: handleError } = require('multiverse/next-adhesive/handle-error');
+    const { middlewareFactory } = require('@-xun/api') as typeof import('@-xun/api');
+    const { makeMiddleware: makeErrorHandlingMiddleware } =
+      require('@-xun/api/middleware/handle-error') as typeof import('@-xun/api/middleware/handle-error');
 
     return {
-      withMiddleware: jest
-        .fn()
-        .mockImplementation(middlewareFactory({ use: [], useOnError: [handleError] }))
+      withMiddleware: jest.fn().mockImplementation(
+        middlewareFactory({
+          use: [],
+          useOnError: [makeErrorHandlingMiddleware()],
+          options: { legacyMode: true }
+        })
+      )
     } as unknown as typeof import('universe/backend/middleware');
   }
 );

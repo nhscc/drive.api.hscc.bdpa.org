@@ -1,6 +1,8 @@
+import { sendHttpNotFound } from '@-xun/respond';
+
 import { withMiddleware } from 'universe/backend/middleware';
 
-import { sendHttpNotFound } from 'multiverse/next-api-respond';
+import type { NextApiRequest } from 'next';
 
 // ? This is a NextJS special "config" export
 export { defaultConfig as config } from 'universe/backend/api';
@@ -13,7 +15,10 @@ const descriptorPrefix = '404:';
 
 export default withMiddleware(async (_req, res) => sendHttpNotFound(res), {
   prependUse: [
-    (req, _res, context) => {
+    (req_, _res, context_) => {
+      const req = req_ as NextApiRequest;
+      const context = context_!;
+
       context.runtime.endpoint.descriptor = `${descriptorPrefix}/${
         [req.query.catchAllForNotFound].flat().join('/') || '/'
       }`;
@@ -21,6 +26,7 @@ export default withMiddleware(async (_req, res) => sendHttpNotFound(res), {
   ],
   descriptor: descriptorPrefix,
   options: {
+    requiresAuth: true,
     allowedMethods: [
       'CONNECT',
       'DELETE',

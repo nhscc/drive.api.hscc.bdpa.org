@@ -1,5 +1,15 @@
-// TODO: simplify simplify simplify!
+/* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 
+import { middlewareFactory } from '@-xun/api';
+import { makeMiddleware as makeAuthMiddleware } from '@-xun/api/middleware/auth-request';
+import { makeMiddleware as makeContentTypeMiddleware } from '@-xun/api/middleware/check-content-type';
+import { makeMiddleware as makeMethodMiddleware } from '@-xun/api/middleware/check-method';
+import { makeMiddleware as makeVersionMiddleware } from '@-xun/api/middleware/check-version';
+import { makeMiddleware as makeContrivedMiddleware } from '@-xun/api/middleware/contrive-error';
+import { makeMiddleware as makeLimitMiddleware } from '@-xun/api/middleware/enforce-limits';
+import { makeMiddleware as makeErrorHandlingMiddleware } from '@-xun/api/middleware/handle-error';
+import { makeMiddleware as makeLoggingMiddleware } from '@-xun/api/middleware/log-request';
+import { makeMiddleware as makeCorsMiddleware } from '@-xun/api/middleware/use-cors';
 import { getDb, setSchemaConfig } from '@-xun/mongo-schema';
 import { hydrateDbWithDummyData, setDummyData } from '@-xun/mongo-test';
 import { createDebugLogger } from 'rejoinder';
@@ -7,32 +17,60 @@ import { createDebugLogger } from 'rejoinder';
 import { getSchemaConfig } from 'universe/backend/db';
 import { getEnv } from 'universe/backend/env';
 
-import authRequest from 'multiverse/next-adhesive/auth-request';
-import checkContentType from 'multiverse/next-adhesive/check-content-type';
-import checkMethod from 'multiverse/next-adhesive/check-method';
-import checkVersion from 'multiverse/next-adhesive/check-version';
-import contriveError from 'multiverse/next-adhesive/contrive-error';
-import handleError from 'multiverse/next-adhesive/handle-error';
-import limitRequest from 'multiverse/next-adhesive/limit-request';
-import logRequest from 'multiverse/next-adhesive/log-request';
-import useCors from 'multiverse/next-adhesive/use-cors';
-import { middlewareFactory } from 'multiverse/next-api-glue';
+import type {
+  Context as AuthMiddlewareContext,
+  Options as AuthMiddlewareOptions
+} from '@-xun/api/middleware/auth-request';
 
-import type { Simplify } from 'type-fest';
-import type { Options as AuthRequestOptions } from 'multiverse/next-adhesive/auth-request';
-import type { Options as CheckContentTypeOptions } from 'multiverse/next-adhesive/check-content-type';
-import type { Options as CheckMethodOptions } from 'multiverse/next-adhesive/check-method';
-import type { Options as CheckVersionOptions } from 'multiverse/next-adhesive/check-version';
-import type { Options as ContriveErrorOptions } from 'multiverse/next-adhesive/contrive-error';
-import type { Options as HandleErrorOptions } from 'multiverse/next-adhesive/handle-error';
-import type { Options as LimitRequestOptions } from 'multiverse/next-adhesive/limit-request';
-import type { Options as LogRequestOptions } from 'multiverse/next-adhesive/log-request';
-import type { Options as UseCorsOptions } from 'multiverse/next-adhesive/use-cors';
+import type {
+  Context as ContentTypeMiddlewareContext,
+  Options as ContentTypeMiddlewareOptions
+} from '@-xun/api/middleware/check-content-type';
 
-type ExposedOptions = LogRequestOptions &
-  CheckVersionOptions &
-  CheckMethodOptions &
-  CheckContentTypeOptions;
+import type {
+  Context as MethodMiddlewareContext,
+  Options as MethodMiddlewareOptions
+} from '@-xun/api/middleware/check-method';
+
+import type {
+  Context as VersionMiddlewareContext,
+  Options as VersionMiddlewareOptions
+} from '@-xun/api/middleware/check-version';
+
+import type {
+  Context as ContrivedMiddlewareContext,
+  Options as ContrivedMiddlewareOptions
+} from '@-xun/api/middleware/contrive-error';
+
+import type {
+  Context as LimitMiddlewareContext,
+  Options as LimitMiddlewareOptions
+} from '@-xun/api/middleware/enforce-limits';
+
+import type {
+  Context as ErrorHandlingMiddlewareContext,
+  LegacyErrorHandler,
+  Options as ErrorHandlingMiddlewareOptions
+} from '@-xun/api/middleware/handle-error';
+
+import type {
+  Context as LoggingMiddlewareContext,
+  Options as LoggingMiddlewareOptions
+} from '@-xun/api/middleware/log-request';
+
+import type {
+  Context as CorsMiddlewareContext,
+  Options as CorsMiddlewareOptions
+} from '@-xun/api/middleware/use-cors';
+
+type ExposedOptions = LoggingMiddlewareOptions &
+  ContentTypeMiddlewareOptions &
+  MethodMiddlewareOptions &
+  VersionMiddlewareOptions;
+
+type GenericErrorHandlingMiddlewareOptions = ErrorHandlingMiddlewareOptions<
+  LegacyErrorHandler<Record<string, unknown>, Record<PropertyKey, unknown>>
+>;
 
 const setSchemaAndHydrateDbDebug = createDebugLogger({
   namespace: 'next-api:f:hydrate-prod'
@@ -54,6 +92,7 @@ export default async function setSchemaAndMaybeHydrateDb() {
 
     if (isDevelopment && getEnv().API_HYDRATE_DB) {
       setSchemaAndHydrateDbDebug('executing api db hydration directive');
+      // ? This next line prevents webpack/esbuild from bundling testverse
       setDummyData(require('testverse/db'.toString()).getDummyData());
 
       await getDb({ name: 'root' });
@@ -80,38 +119,43 @@ export default async function setSchemaAndMaybeHydrateDb() {
  * should be exported alongside `defaultEndpointConfig`/`config` in every
  * Next.js API handler file.
  */
-export type EndpointMetadata = Simplify<ExposedOptions & { descriptor: string }>;
+export type EndpointMetadata = ExposedOptions & { descriptor: string };
 
 /**
- * Primary middleware runner for the REST API. Decorates a request handler.
- *
- * Passing `undefined` as `handler` or not calling `res.end()` (and not sending
- * headers) in your handler or use chain will trigger an `HTTP 501 Not
- * Implemented` response. This can be used to to stub out endpoints and their
- * middleware for later implementation.
+ * Primary middleware runner for the REST API.
  */
 /* istanbul ignore next */
 const withMiddleware = middlewareFactory<
   ExposedOptions &
-    UseCorsOptions &
-    AuthRequestOptions &
-    LimitRequestOptions &
-    HandleErrorOptions &
-    ContriveErrorOptions
+    AuthMiddlewareOptions &
+    ContrivedMiddlewareOptions &
+    GenericErrorHandlingMiddlewareOptions &
+    LimitMiddlewareOptions &
+    CorsMiddlewareOptions,
+  ContentTypeMiddlewareContext &
+    MethodMiddlewareContext &
+    VersionMiddlewareContext &
+    LoggingMiddlewareContext &
+    AuthMiddlewareContext &
+    ContrivedMiddlewareContext &
+    ErrorHandlingMiddlewareContext &
+    LimitMiddlewareContext &
+    CorsMiddlewareContext
 >({
   use: [
     setSchemaAndMaybeHydrateDb,
-    logRequest,
-    checkVersion,
-    useCors,
-    authRequest,
-    limitRequest,
-    checkMethod,
-    checkContentType,
-    contriveError
+    makeLoggingMiddleware(),
+    makeCorsMiddleware(),
+    makeVersionMiddleware(),
+    makeAuthMiddleware(),
+    makeLimitMiddleware(),
+    makeMethodMiddleware(),
+    makeContentTypeMiddleware(),
+    makeContrivedMiddleware()
   ],
-  useOnError: [handleError],
+  useOnError: [makeErrorHandlingMiddleware()],
   options: {
+    legacyMode: true,
     allowedContentTypes: ['application/json'],
     requiresAuth: true,
     enableContrivedErrors: true
@@ -119,34 +163,29 @@ const withMiddleware = middlewareFactory<
 });
 
 /**
- * Middleware runner for the special /sys API endpoints. Decorates a request
- * handler.
- *
- * Passing `undefined` as `handler` or not calling `res.end()` (and not sending
- * headers) in your handler or use chain will trigger an `HTTP 501 Not
- * Implemented` response. This can be used to to stub out endpoints and their
- * middleware for later implementation.
+ * Middleware runner for the special /sys API endpoints.
  */
 /* istanbul ignore next */
 const withSysMiddleware = middlewareFactory<
-  LogRequestOptions &
-    AuthRequestOptions &
-    CheckMethodOptions &
-    CheckContentTypeOptions &
-    HandleErrorOptions
+  LoggingMiddlewareOptions &
+    AuthMiddlewareOptions &
+    MethodMiddlewareOptions &
+    ContentTypeMiddlewareOptions &
+    GenericErrorHandlingMiddlewareOptions
 >({
   use: [
     setSchemaAndMaybeHydrateDb,
-    logRequest,
-    authRequest,
-    limitRequest,
-    checkMethod,
-    checkContentType
+    makeLoggingMiddleware(),
+    makeAuthMiddleware(),
+    makeLimitMiddleware(),
+    makeMethodMiddleware(),
+    makeContentTypeMiddleware()
   ],
-  useOnError: [handleError],
+  useOnError: [makeErrorHandlingMiddleware()],
   options: {
+    legacyMode: true,
     allowedContentTypes: ['application/json'],
-    requiresAuth: { constraints: 'isGlobalAdmin' }
+    requiresAuth: { filter: { isGlobalAdmin: true } }
   }
 });
 

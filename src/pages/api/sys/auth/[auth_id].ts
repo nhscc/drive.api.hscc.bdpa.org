@@ -1,13 +1,13 @@
 /* eslint-disable unicorn/filename-case */
-import { withSysMiddleware } from 'universe/backend/middleware';
-
-import { sendHttpOk } from 'multiverse/next-api-respond';
-
 import {
-  deleteTokenById,
-  getTokenById,
-  updateTokenAttributesById
-} from 'multiverse/next-auth';
+  deleteTokens,
+  getTokens,
+  updateTokensAttributes
+} from '@-xun/api-strategy/auth';
+
+import { sendHttpOk } from '@-xun/respond';
+
+import { withSysMiddleware } from 'universe/backend/middleware';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
 export { defaultConfig as config } from 'universe/backend/api';
@@ -17,16 +17,16 @@ export default withSysMiddleware(
     switch (req.method) {
       case 'GET': {
         sendHttpOk(res, {
-          fullToken: await getTokenById({ auth_id: req.query.auth_id?.toString() })
+          fullToken: await getTokens({ auth_ids: [req.query.auth_id?.toString()] })
         });
         break;
       }
 
       case 'PATCH': {
         sendHttpOk(res, {
-          updated: await updateTokenAttributesById({
-            auth_id: req.query.auth_id?.toString(),
-            update: req.body?.attributes
+          updated: await updateTokensAttributes({
+            auth_ids: [req.query.auth_id?.toString()],
+            data: req.body?.attributes
           })
         });
         break;
@@ -34,7 +34,7 @@ export default withSysMiddleware(
 
       case 'DELETE': {
         sendHttpOk(res, {
-          deleted: await deleteTokenById({ auth_id: req.query.auth_id?.toString() })
+          deleted: await deleteTokens({ auth_ids: [req.query.auth_id?.toString()] })
         });
         break;
       }
@@ -42,6 +42,6 @@ export default withSysMiddleware(
   },
   {
     descriptor: '/sys/auth/:auth_id',
-    options: { allowedMethods: ['GET', 'PATCH', 'DELETE'] }
+    options: { requiresAuth: true, allowedMethods: ['GET', 'PATCH', 'DELETE'] }
   }
 );

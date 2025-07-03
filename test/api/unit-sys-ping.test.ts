@@ -1,4 +1,7 @@
 /* eslint-disable no-global-assign */
+import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from '@-xun/api-strategy/auth';
+import { getCommonSchemaConfig } from '@-xun/api-strategy/mongo';
+import { getCommonDummyData } from '@-xun/api-strategy/mongo/dummy';
 import { getDb } from '@-xun/mongo-schema';
 import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { testApiHandler } from 'next-test-api-route-handler';
@@ -7,14 +10,7 @@ import Endpoint, { config as Config } from 'universe/pages/api/sys/ping';
 
 import { useMockDateNow } from 'testverse/util';
 
-import {
-  getCommonDummyData,
-  getCommonSchemaConfig
-} from 'multiverse/mongo-common/index';
-
-import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
-
-import type { InternalAuthBearerEntry } from 'multiverse/next-auth';
+import type { InternalAuthEntry } from '@-xun/api-strategy/auth';
 
 const pagesHandler = Endpoint as typeof Endpoint & { config?: typeof Config };
 pagesHandler.config = Config;
@@ -63,7 +59,7 @@ describe('middleware correctness tests', () => {
     expect.hasAssertions();
 
     await (await getDb({ name: 'root' }))
-      .collection<InternalAuthBearerEntry>('auth')
+      .collection<InternalAuthEntry>('auth')
       .updateOne(
         { token: { bearer: BANNED_BEARER_TOKEN } },
         { $set: { 'attributes.isGlobalAdmin': true } }

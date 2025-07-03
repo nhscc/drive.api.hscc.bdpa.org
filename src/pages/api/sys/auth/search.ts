@@ -1,13 +1,13 @@
+import {
+  deleteTokens,
+  getTokens,
+  updateTokensAttributes
+} from '@-xun/api-strategy/auth';
+
+import { sendHttpOk } from '@-xun/respond';
+
 import { withSysMiddleware } from 'universe/backend/middleware';
 import { validateAndParseJson } from 'universe/util';
-
-import { sendHttpOk } from 'multiverse/next-api-respond';
-
-import {
-  deleteTokensByAttribute,
-  getTokensByAttribute,
-  updateTokensAttributesByAttribute
-} from 'multiverse/next-auth';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
 export { defaultConfig as config } from 'universe/backend/api';
@@ -19,7 +19,7 @@ export default withSysMiddleware(
     switch (req.method) {
       case 'GET': {
         sendHttpOk(res, {
-          fullTokens: await getTokensByAttribute({
+          fullTokens: await getTokens({
             filter,
             after_id: req.query.after?.toString()
           })
@@ -29,22 +29,22 @@ export default withSysMiddleware(
 
       case 'PATCH': {
         sendHttpOk(res, {
-          updated: await updateTokensAttributesByAttribute({
+          updated: await updateTokensAttributes({
             filter,
-            update: req.body?.attributes
+            data: req.body?.attributes
           })
         });
         break;
       }
 
       case 'DELETE': {
-        sendHttpOk(res, { deleted: await deleteTokensByAttribute({ filter }) });
+        sendHttpOk(res, { deleted: await deleteTokens({ filter }) });
         break;
       }
     }
   },
   {
     descriptor: '/sys/auth/search',
-    options: { allowedMethods: ['GET', 'PATCH', 'DELETE'] }
+    options: { requiresAuth: true, allowedMethods: ['GET', 'PATCH', 'DELETE'] }
   }
 );

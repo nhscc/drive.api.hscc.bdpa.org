@@ -1,9 +1,9 @@
-import { getCommonSchemaConfig } from 'multiverse/mongo-common';
+import { getCommonSchemaConfig } from '@-xun/api-strategy/mongo';
 
+import type { TokenAttributes } from '@-xun/api-strategy/auth';
 import type { DbSchema } from '@-xun/mongo-schema';
 import type { UnixEpochMs } from '@-xun/types';
 import type { ObjectId, WithId, WithoutId } from 'mongodb';
-import type { TokenAttributes } from 'multiverse/next-auth';
 
 /**
  * A JSON representation of the backend Mongo database structure. This is used

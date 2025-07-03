@@ -1,7 +1,7 @@
+import { sendHttpOk } from '@-xun/respond';
+
 import { createNode } from 'universe/backend';
 import { withMiddleware } from 'universe/backend/middleware';
-
-import { sendHttpOk } from 'multiverse/next-api-respond';
 
 export { defaultConfig as config } from 'universe/backend/api';
 
@@ -25,6 +25,6 @@ export default withMiddleware(
   },
   {
     descriptor: metadata.descriptor,
-    options: { allowedMethods: ['POST'], apiVersion: '2' }
+    options: { requiresAuth: true, allowedMethods: ['POST'], apiVersion: '2' }
   }
 );

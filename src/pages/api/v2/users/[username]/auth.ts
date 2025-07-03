@@ -1,7 +1,7 @@
+import { sendHttpOk, sendHttpUnauthorized } from '@-xun/respond';
+
 import { authAppUser } from 'universe/backend';
 import { withMiddleware } from 'universe/backend/middleware';
-
-import { sendHttpOk, sendHttpUnauthorized } from 'multiverse/next-api-respond';
 
 export { defaultConfig as config } from 'universe/backend/api';
 
@@ -43,6 +43,6 @@ export default withMiddleware(
   },
   {
     descriptor: metadata.descriptor,
-    options: { allowedMethods: ['POST'], apiVersion: '1' }
+    options: { requiresAuth: true, allowedMethods: ['POST'], apiVersion: '1' }
   }
 );

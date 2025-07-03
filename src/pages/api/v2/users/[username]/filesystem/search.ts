@@ -1,8 +1,8 @@
+import { sendHttpOk } from '@-xun/respond';
+
 import { searchNodes } from 'universe/backend';
 import { withMiddleware } from 'universe/backend/middleware';
-import { ErrorMessage, ValidationError } from 'universe/error';
-
-import { sendHttpOk } from 'multiverse/next-api-respond';
+import { ClientValidationError, ErrorMessage } from 'universe/error';
 
 export { defaultConfig as config } from 'universe/backend/api';
 
@@ -16,7 +16,7 @@ export default withMiddleware(
       try {
         return JSON.parse((req.query.match || '{}').toString());
       } catch {
-        throw new ValidationError(ErrorMessage.InvalidMatcher('match'));
+        throw new ClientValidationError(ErrorMessage.InvalidMatcher('match'));
       }
     })();
 
@@ -24,7 +24,7 @@ export default withMiddleware(
       try {
         return JSON.parse((req.query.regexMatch || '{}').toString());
       } catch {
-        throw new ValidationError(ErrorMessage.InvalidMatcher('regexMatch'));
+        throw new ClientValidationError(ErrorMessage.InvalidMatcher('regexMatch'));
       }
     })();
 
@@ -44,6 +44,6 @@ export default withMiddleware(
   },
   {
     descriptor: metadata.descriptor,
-    options: { allowedMethods: ['GET'], apiVersion: '2' }
+    options: { requiresAuth: true, allowedMethods: ['GET'], apiVersion: '2' }
   }
 );

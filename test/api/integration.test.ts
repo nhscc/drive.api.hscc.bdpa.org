@@ -2,6 +2,7 @@
 /* eslint-disable jest/require-hook */
 import assert from 'node:assert';
 
+import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from '@-xun/api-strategy/auth';
 import { getDb } from '@-xun/mongo-schema';
 import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { get as dotPath } from 'dot-prop';
@@ -14,8 +15,6 @@ import { getDummyData } from 'testverse/db';
 import { api } from 'testverse/fixtures';
 import { getFixtures } from 'testverse/fixtures/integration';
 import { mockEnvFactory } from 'testverse/util';
-
-import { BANNED_BEARER_TOKEN, DUMMY_BEARER_TOKEN } from 'multiverse/next-auth';
 
 import type { TestResult, TestResultset } from 'testverse/fixtures/integration';
 
