@@ -47,11 +47,7 @@
       "pkgverse/*": ["packages/*"],
       "testverse/*": ["test/*"],
       "types/*": ["types/*"],
-      "universe/*": ["src/*"],
-      // ? These are used at various points (including at compile time by
-      // ? Next.js) to get mongo schema configuration and/or test dummy data.
-      "configverse/get-schema-config": ["src/backend/db.ts"],
-      "configverse/get-dummy-data": ["test/db.ts"]
+      "universe/*": ["src/*"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,

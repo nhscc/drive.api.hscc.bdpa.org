@@ -15,12 +15,7 @@ export default {
     '^testverse/(.*)$': '<rootDir>/test/$1',
     '^externals/(.*)$': '<rootDir>/external-scripts/$1',
     '^types/(.*)$': '<rootDir>/types/$1',
-    '^package$': '<rootDir>/package.json',
-    // ? These are used at various points (including at compile time by
-    // ? Next.js) to get mongo schema configuration and/or test dummy data.
-    // TODO: delete all of this everything
-    '^configverse/get-schema-config$': '<rootDir>/src/backend/db.ts',
-    '^configverse/get-dummy-data$': '<rootDir>/test/db.ts'
+    '^package$': '<rootDir>/package.json'
   },
   setupFilesAfterEnv: ['./test/setup.ts'],
   collectCoverageFrom: [
