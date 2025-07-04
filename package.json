@@ -57,7 +57,7 @@
     "jest-fixed-jsdom": "^0.0.9",
     "mongodb": "^6.17.0",
     "mongodb-memory-server": "^10.1.4",
-    "msw": "^2.9.0",
+    "msw": "^2.10.3",
     "next": "^15.3.3",
     "next-test-api-route-handler": "^4.0.16",
     "random-case": "^1.0.0",
