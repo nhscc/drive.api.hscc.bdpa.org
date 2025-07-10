@@ -33,7 +33,6 @@
     "lint:topological": "symbiote project topology --run lint --env NODE_NO_WARNINGS=1",
     "list-tasks": "symbiote list-tasks --env NODE_NO_WARNINGS=1 --scope this-package",
     "prepare": "symbiote project prepare --env NODE_NO_WARNINGS=1",
-    "release": "symbiote release --env NODE_NO_WARNINGS=1",
     "release:topological": "symbiote project topology --run release --env NODE_NO_WARNINGS=1",
     "renovate": "symbiote project renovate --env NODE_NO_WARNINGS=1 --github-reconfigure-repo --regenerate-assets --assets-preset basic cli lib lib-esm lib-web react nextjs wrangler",
     "renovate:aliases": "symbiote project renovate --env NODE_NO_WARNINGS=1 --regenerate-assets --assets-preset basic cli lib lib-esm lib-web react nextjs wrangler --only-aliases",
