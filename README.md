@@ -111,11 +111,11 @@ folder serves a similar purpose.
 `LICENSE` is an license file that says you can do whatever you want with the
 code in this project. Might switch to a CopyFair license eventually.
 
-`babel.config.js` returns a JSON object used to configure [Babel][48], our
+`babel.config.js` returns a JSON object used to configure [Babel][30], our
 transpiler. `webpack.config.js` returns a JSON object used to configure how
-[Webpack][49] builds the [external scripts][11]. `jest.config.js` returns a JSON
-object used to configure [Jest][50], our [test runner][51]. `.eslintrc.js`
-returns a JSON object used to configure [ESLint][52], our code correctness
+[Webpack][34] builds the [external scripts][11]. `jest.config.js` returns a JSON
+object used to configure [Jest][40], our [test runner][51]. `.eslintrc.js`
+returns a JSON object used to configure [ESLint][33], our code correctness
 checker or "linter".
 
 `.codecov.yml`, `.editorconfig`, `.prettierignore`, `.spellcheckignore`,
@@ -219,11 +219,7 @@ Currently, the following external scripts exist:
   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON
 [45]: https://www.npmjs.com/package/next
 [46]: https://www.npmjs.com/package/dotenv
-[48]: https://babeljs.io
-[49]: https://webpack.js.org
-[50]: https://jestjs.io
 [51]: https://jestjs.io/docs/en/getting-started
-[52]: https://eslint.org
 [57]: https://nextjs.org/docs/routing/dynamic-routes
 [58]: ./CONTRIBUTING.md
 [59]: .github/SUPPORT.md
