@@ -26,16 +26,16 @@ import type {
   PublicUser
 } from '@nhscc/backend-drive/db';
 
-// TODO: XXX: turn a lot of this into some kind of package; needs to be generic
-// TODO: XXX: enough to handle various use cases though :) Maybe
-// TODO: XXX: @-xun/fable for the generic version, @-xun/fable-next. Initial
-// TODO: XXX: version of @-xun/fable would just be the next API version.
+// TODO: turn a lot of this into some kind of package; needs to be generic
+// TODO: enough to handle various use cases though :) Maybe
+// TODO: @-xun/fable for the generic version, @-xun/fable-next. Initial
+// TODO: version of @-xun/fable would just be the next API version.
 
-// TODO: XXX: add an `id` param that allows getResultAt using that `id` (along
-// TODO: XXX: with index)
+// TODO: add an `id` param that allows getResultAt using that `id` (along
+// TODO: with index)
 
-// TODO: XXX: document functionality: RUN_ONLY='#, ##,###,...'
-// TODO: XXX: "fail fast" should be optional
+// TODO: document functionality: RUN_ONLY='#, ##,###,...'
+// TODO: "fail fast" should be optional
 
 const debug = createDebugLogger(`${packageName}:integration-fixtures`);
 
@@ -1389,7 +1389,7 @@ export function getFixtures(
     }
   ];
 
-  // TODO: XXX: ability to specify "depends" via index or name/id
+  // TODO: ability to specify "depends" via index or name/id
 
   const filteredFixtures = fixtures.filter<TestFixture>(
     (test, ndx): test is TestFixture => {
@@ -1402,11 +1402,11 @@ export function getFixtures(
     }
   );
 
-  // TODO: XXX: add ability to capture/suppress output via fixture option (even better: selectively use mock plugins like withMockEnv and withMockOutput via config options)
+  // TODO: add ability to capture/suppress output via fixture option (even better: selectively use mock plugins like withMockEnv and withMockOutput via config options)
 
-  // TODO: XXX: with @-xun/fable, have an "every X" type construct (the below is "every reqPerContrived")
-  // TODO: XXX: also allow middleware
-  // TODO: XXX: also custom props for fixtures
+  // TODO: with @-xun/fable, have an "every X" type construct (the below is "every reqPerContrived")
+  // TODO: also allow middleware
+  // TODO: also custom props for fixtures
 
   const reqPerContrived = getEnv().REQUESTS_PER_CONTRIVED_ERROR;
 
