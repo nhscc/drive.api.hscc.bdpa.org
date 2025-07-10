@@ -2,9 +2,9 @@ import { sendHttpOk } from '@-xun/respond';
 
 import { ClientValidationError, ErrorMessage } from 'multiverse+shared:error.ts';
 
-import { searchNodes } from '@nhscc/backend-drive';
-
 import { withMiddleware } from 'universe:middleware.ts';
+
+import { searchNodes } from '@nhscc/backend-drive';
 
 export { defaultConfig as config } from '@nhscc/backend-drive/api';
 

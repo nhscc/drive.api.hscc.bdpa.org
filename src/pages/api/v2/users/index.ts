@@ -1,8 +1,8 @@
 import { sendHttpOk } from '@-xun/respond';
 
-import { createUser, getAllUsers } from '@nhscc/backend-drive';
-
 import { withMiddleware } from 'universe:middleware.ts';
+
+import { createUser, getAllUsers } from '@nhscc/backend-drive';
 
 export { defaultConfig as config } from '@nhscc/backend-drive/api';
 
