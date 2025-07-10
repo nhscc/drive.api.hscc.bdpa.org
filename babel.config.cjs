@@ -83,15 +83,21 @@ function getBabelAliases() {
   // ! `npx symbiote project renovate --regenerate-assets --assets-preset ...`
   return {
     '^multiverse\\+backend:(.+)$': './packages/backend/src/$1',
+    '^multiverse\\+shared:(.+)$': './packages/shared/src/$1',
     '^multiverse\\+backend$': './packages/backend/src/index.js',
+    '^multiverse\\+shared$': './packages/shared/src/index.js',
     '^universe\\+backend:(.+)$': './packages/backend/src/$1',
+    '^universe\\+shared:(.+)$': './packages/shared/src/$1',
     '^universe\\+backend$': './packages/backend/src/index.js',
+    '^universe\\+shared$': './packages/shared/src/index.js',
     '^universe:(.+)$': './src/$1',
     '^universe$': './src/index.js',
     '^testverse\\+backend:(.+)$': './packages/backend/test/$1',
+    '^testverse\\+shared:(.+)$': './packages/shared/test/$1',
     '^testverse:(.+)$': './test/$1',
     '^typeverse:(.+)$': './types/$1',
     '^rootverse\\+backend:(.+)$': './packages/backend/$1',
+    '^rootverse\\+shared:(.+)$': './packages/shared/$1',
     '^rootverse:(.+)$': './$1'
   };
 }

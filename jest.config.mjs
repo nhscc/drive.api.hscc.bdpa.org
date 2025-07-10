@@ -26,15 +26,21 @@ function getJestAliases() {
   // ! `npx symbiote project renovate --regenerate-assets --assets-preset ...`
   return {
     '^multiverse\\+backend:(.+)$': '<rootDir>/packages/backend/src/$1',
+    '^multiverse\\+shared:(.+)$': '<rootDir>/packages/shared/src/$1',
     '^multiverse\\+backend$': `<rootDir>/packages/backend/src/index.${extension}`,
+    '^multiverse\\+shared$': `<rootDir>/packages/shared/src/index.${extension}`,
     '^universe\\+backend:(.+)$': '<rootDir>/packages/backend/src/$1',
+    '^universe\\+shared:(.+)$': '<rootDir>/packages/shared/src/$1',
     '^universe\\+backend$': `<rootDir>/packages/backend/src/index.${extension}`,
+    '^universe\\+shared$': `<rootDir>/packages/shared/src/index.${extension}`,
     '^universe:(.+)$': '<rootDir>/src/$1',
     '^universe$': `<rootDir>/src/index.${extension}`,
     '^testverse\\+backend:(.+)$': '<rootDir>/packages/backend/test/$1',
+    '^testverse\\+shared:(.+)$': '<rootDir>/packages/shared/test/$1',
     '^testverse:(.+)$': '<rootDir>/test/$1',
     '^typeverse:(.+)$': '<rootDir>/types/$1',
     '^rootverse\\+backend:(.+)$': '<rootDir>/packages/backend/$1',
+    '^rootverse\\+shared:(.+)$': '<rootDir>/packages/shared/$1',
     '^rootverse:(.+)$': '<rootDir>/$1'
   };
 }

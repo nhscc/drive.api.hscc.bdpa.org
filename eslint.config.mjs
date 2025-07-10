@@ -18,8 +18,6 @@ const config = await moduleExport({
 
 /* Add custom config objects here, such as those disabling certain rules */
 config.push(
-  // TODO: delete this line if you've updated symbiote past 4.6.4
-  { ignores: ['**/ignore.webpack.config.*', '**/ban-hammer.ignore.*'] },
   {
     /* Add custom config here, such as disabling certain rules */
     rules: {
@@ -71,14 +69,20 @@ function getEslintAliases() {
   // ! `npx symbiote project renovate --regenerate-assets --assets-preset ...`
   return [
     ['multiverse+backend:*', './packages/backend/src/*'],
+    ['multiverse+shared:*', './packages/shared/src/*'],
     ['multiverse+backend', './packages/backend/src/index.ts'],
+    ['multiverse+shared', './packages/shared/src/index.ts'],
     ['rootverse+backend:*', './packages/backend/*'],
+    ['rootverse+shared:*', './packages/shared/*'],
     ['rootverse:*', './*'],
     ['universe+backend:*', './packages/backend/src/*'],
+    ['universe+shared:*', './packages/shared/src/*'],
     ['universe+backend', './packages/backend/src/index.ts'],
+    ['universe+shared', './packages/shared/src/index.ts'],
     ['universe:*', './src/*'],
     ['universe', './src/index.ts'],
     ['testverse+backend:*', './packages/backend/test/*'],
+    ['testverse+shared:*', './packages/shared/test/*'],
     ['testverse:*', './test/*'],
     ['typeverse:*', './types/*']
   ];
