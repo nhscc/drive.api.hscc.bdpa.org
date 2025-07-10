@@ -1,7 +1,7 @@
 import { sendHttpOk } from '@-xun/respond';
 
 import { searchNodes } from 'universe+backend';
-import { ClientValidationError, ErrorMessage } from 'universe:error.ts';
+import { ClientValidationError, ErrorMessage } from 'universe+shared:error.ts';
 import { withMiddleware } from 'universe:middleware.ts';
 
 export { defaultConfig as config } from 'universe+backend:api.ts';

@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb';
 import * as Backend from 'universe+backend';
 import { getSchemaConfig, toPublicNode, toPublicUser } from 'universe+backend:db.ts';
 import { getEnv } from 'universe+backend:env.ts';
-import { ErrorMessage } from 'universe:error.ts';
+import { ErrorMessage } from 'universe+shared:error.ts';
 
 import { dummyAppData, getDummyData } from 'testverse:db.ts';
 

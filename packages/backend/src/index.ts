@@ -12,11 +12,12 @@ import {
 } from 'universe+backend:db.ts';
 
 import { getEnv } from 'universe+backend:env.ts';
+
 import {
   ClientValidationError,
   ErrorMessage,
   NotFoundError
-} from 'universe+backend:error.ts';
+} from 'universe+shared:error.ts';
 
 import type {
   InternalFileNode,
