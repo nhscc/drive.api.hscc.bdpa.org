@@ -1,9 +1,10 @@
 import { sendHttpOk, sendHttpUnauthorized } from '@-xun/respond';
 
-import { authAppUser } from 'universe+backend';
+import { authAppUser } from '@nhscc/backend-drive';
+
 import { withMiddleware } from 'universe:middleware.ts';
 
-export { defaultConfig as config } from 'universe+backend:api.ts';
+export { defaultConfig as config } from '@nhscc/backend-drive/api.ts';
 
 // TODO: 2025: didn't we implement this already?
 // * The next version of this should use GET and POST as follows:

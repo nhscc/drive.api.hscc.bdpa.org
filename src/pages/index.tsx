@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import { version as packageVersion } from 'rootverse:package.json';
 
-import { getEnv } from 'universe+backend:env.ts';
+import { getEnv } from '@nhscc/backend-drive/env.ts';
 
 //import { hydrateDb } from 'multiverse/mongo-test';
 

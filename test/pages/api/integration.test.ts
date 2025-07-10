@@ -8,8 +8,9 @@ import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { get as dotPath } from 'dot-prop';
 import { testApiHandler } from 'next-test-api-route-handler';
 
-import { getSchemaConfig } from 'universe+backend:db.ts';
-import { ErrorMessage } from 'universe+shared:error.ts';
+import { ErrorMessage } from 'multiverse+shared:error.ts';
+
+import { getSchemaConfig } from '@nhscc/backend-drive/db.ts';
 
 import { getDummyData } from 'testverse:db.ts';
 import { api } from 'testverse:fixtures/index.ts';

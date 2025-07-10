@@ -14,8 +14,8 @@ import { getDb, setSchemaConfig } from '@-xun/mongo-schema';
 import { hydrateDbWithDummyData, setDummyData } from '@-xun/mongo-test';
 import { createDebugLogger } from 'rejoinder';
 
-import { getSchemaConfig } from 'universe+backend:db.ts';
-import { getEnv } from 'universe+backend:env.ts';
+import { getSchemaConfig } from '@nhscc/backend-drive/db.ts';
+import { getEnv } from '@nhscc/backend-drive/env.ts';
 
 import type {
   Context as AuthMiddlewareContext,

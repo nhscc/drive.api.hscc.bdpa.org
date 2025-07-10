@@ -20,7 +20,7 @@
     "!packages/*.ignore*"
   ],
   "scripts": {
-    "build": "echo 'NOTICE: run `next build` manually to build the Next.js components of this project\n        or run `build:topological` to build packages\n        (replace this message with rejoinder-cli)'",
+    "build": "echo 'NOTICE: run `next build` manually to build the Next.js components of this project\n        or run `build:topological` to build packages\n        (replace this with symbiote build calling next build + typical import/export/deps linting)'",
     "build:topological": "symbiote project topology --run build --env NODE_NO_WARNINGS=1",
     "clean": "symbiote clean --env NODE_NO_WARNINGS=1",
     "format": "symbiote format --env NODE_NO_WARNINGS=1 --hush",
@@ -46,32 +46,24 @@
   },
   "dependencies": {
     "@-xun/api": "^1.0.10",
-    "@-xun/env": "^1.1.2",
     "@-xun/jest": "^2.2.7",
-    "@-xun/js": "^2.0.0",
     "@-xun/mongo-schema": "^1.2.1",
     "@-xun/mongo-test": "^1.1.7",
     "@-xun/symbiote": "^4.6.5",
-    "@-xun/types": "^1.1.0",
     "@nhscc/backend-drive": "1.0.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
-    "@types/bytes": "^3.1.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.13",
     "@types/react": "^19.1.8",
-    "bytes": "^3.1.2",
     "dotenv": "^17.2.0",
+    "jest-fixed-jsdom": "^0.0.9",
     "mongodb": "^6.17.0",
     "next": "^15.3.5",
     "next-test-api-route-handler": "^4.0.16",
     "react": "^19.1.0",
     "rejoinder": "^2.0.2",
-    "toss-expression": "^0.1.2",
     "type-fest": "^4.41.0"
-  },
-  "devDependencies": {
-    "jest-fixed-jsdom": "^0.0.9"
   },
   "engines": {
     "node": "^20.18.0 || >=22.12.0"

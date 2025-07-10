@@ -9,7 +9,7 @@ import type {
   InternalFileNode,
   InternalMetaNode,
   InternalUser
-} from 'universe+backend:db.ts';
+} from '@nhscc/backend-drive/db.ts';
 
 /**
  * Returns data used to hydrate databases and their collections.

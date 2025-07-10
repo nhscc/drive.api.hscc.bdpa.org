@@ -3,7 +3,7 @@ import { testApiHandler } from 'next-test-api-route-handler';
 
 import { api, setupMockBackend } from 'testverse:fixtures/index.ts';
 
-jest.mock('universe+backend');
+jest.mock('@nhscc/backend-drive');
 jest.mock<typeof import('universe:middleware.ts')>('universe:middleware.ts', () => {
   const { middlewareFactory } = require('@-xun/api') as typeof import('@-xun/api');
   const { makeMiddleware: makeErrorHandlingMiddleware } =

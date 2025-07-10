@@ -10,7 +10,7 @@ import { withSysMiddleware } from 'universe:middleware.ts';
 import { validateAndParseJson } from 'universe:util.ts';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
-export { defaultConfig as config } from 'universe+backend:api.ts';
+export { defaultConfig as config } from '@nhscc/backend-drive/api.ts';
 
 export default withSysMiddleware(
   async (req, res) => {

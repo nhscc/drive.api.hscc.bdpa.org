@@ -10,7 +10,7 @@ import {
   searchNodes,
   updateNode,
   updateUser
-} from 'universe+backend';
+} from '@nhscc/backend-drive';
 
 import CatchAllForNotFoundEndpoint, {
   config as CatchAllForNotFoundConfig,
@@ -80,7 +80,7 @@ import V2EndpointUsers, {
 import { asMocked } from 'testverse:util.ts';
 
 import type { NextApiHandler, PageConfig } from 'next';
-import type { PublicNode, PublicUser } from 'universe+backend:db.ts';
+import type { PublicNode, PublicUser } from '@nhscc/backend-drive/db.ts';
 
 export type NextApiHandlerMixin = NextApiHandler & {
   config?: PageConfig;
@@ -156,7 +156,7 @@ api.v2.usersUsernameFilesystemSearch.uri =
  * A convenience function that mocks the entire backend and returns the mock
  * functions. Uses `beforeEach` under the hood.
  *
- * **WARNING: YOU MUST CALL `jest.mock('universe+backend')` before calling this
+ * **WARNING: YOU MUST CALL `jest.mock('@nhscc/backend-drive')` before calling this
  * function!**
  */
 export function setupMockBackend() {

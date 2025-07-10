@@ -1,9 +1,10 @@
 import { sendHttpOk } from '@-xun/respond';
 
-import { deleteUser, getUser, updateUser } from 'universe+backend';
+import { deleteUser, getUser, updateUser } from '@nhscc/backend-drive';
+
 import { withMiddleware } from 'universe:middleware.ts';
 
-export { defaultConfig as config } from 'universe+backend:api.ts';
+export { defaultConfig as config } from '@nhscc/backend-drive/api.ts';
 
 export const metadata = {
   descriptor: '/v1/users/:username'

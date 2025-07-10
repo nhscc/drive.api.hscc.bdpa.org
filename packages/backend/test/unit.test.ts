@@ -3,10 +3,11 @@ import { getDb } from '@-xun/mongo-schema';
 import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { ObjectId } from 'mongodb';
 
+import { ErrorMessage } from 'multiverse+shared:error.ts';
+
 import * as Backend from 'universe+backend';
 import { getSchemaConfig, toPublicNode, toPublicUser } from 'universe+backend:db.ts';
 import { getEnv } from 'universe+backend:env.ts';
-import { ErrorMessage } from 'universe+shared:error.ts';
 
 import { dummyAppData, getDummyData } from 'testverse:db.ts';
 
@@ -1005,7 +1006,7 @@ describe('::searchNodes', () => {
       })
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
-        .filter((n) => n.createdAt < Date.now() && regex.test(n.permissions.User2!))
+        .filter((n) => n.createdAt < Date.now() && regex.test(n.permissions.User2))
         .map((n) => toPublicNode(n))
     );
   });

@@ -5,8 +5,8 @@ import { ObjectId } from 'mongodb';
 
 import { name as packageName } from 'rootverse:package.json';
 
-import { toPublicUser } from 'universe+backend:db.ts';
-import { getEnv } from 'universe+backend:env.ts';
+import { toPublicUser } from '@nhscc/backend-drive/db.ts';
+import { getEnv } from '@nhscc/backend-drive/env.ts';
 
 import { dummyAppData } from 'testverse:db.ts';
 
@@ -23,7 +23,7 @@ import type {
   PublicMetaNode,
   PublicNode,
   PublicUser
-} from 'universe+backend:db.ts';
+} from '@nhscc/backend-drive/db.ts';
 
 import type { NextApiHandlerMixin } from 'testverse:fixtures/index.ts';
 
