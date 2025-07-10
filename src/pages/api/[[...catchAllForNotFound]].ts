@@ -1,11 +1,11 @@
 import { sendHttpNotFound } from '@-xun/respond';
 
-import { withMiddleware } from 'universe/backend/middleware';
+import { withMiddleware } from 'universe:middleware.ts';
 
 import type { NextApiRequest } from 'next';
 
 // ? This is a NextJS special "config" export
-export { defaultConfig as config } from 'universe/backend/api';
+export { defaultConfig as config } from 'universe+backend:api.ts';
 
 export const metadata = {
   descriptor: 'catch-all-for-not-found'

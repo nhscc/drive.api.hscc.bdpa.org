@@ -28,7 +28,7 @@ version of this API locally following the instructions below.
 - Version 2 documentation and playground with examples:
   [https://hscchkie87hj.docs.apiary.io/][13]
 
-## Running a local instance of the API
+## Running a Local Instance of the API
 
 You should be using the production API (and your real key) for your application.
 However, for development purposes, you can also run a local version of the API
@@ -68,7 +68,7 @@ To run a local instance of the API:
    - If you're using MongoDB Compass, you'll be able to visually explore the
      dummy database's data at this point.
 
-## Project structure
+## Project Structure
 
 This project uses the following technologies:
 
@@ -85,7 +85,7 @@ This project uses the following technologies:
 - [JSON][42] (JavaScript Object Notation) for storing and transferring
   information
 
-### Files and directories
+### Files and Directories
 
 The various `tsconfig.*.json` files control the TypeScript settings used when
 type checking the project, building the docs, etc.
@@ -144,7 +144,7 @@ frontend business logic and the API client ORM layer for the API's tools UI.
 contains the actual API endpoints. The directories and files are so named to
 take advantage of [Next.js's dynamic routing][57].
 
-### External scripts
+### External Scripts
 
 The files found under `external-scripts/bin` are independently bundled
 standalone executables meant to be invoked manually by processes external to the
@@ -156,7 +156,7 @@ These scripts must be configured using the appropriate `.env` variables. See
 You can use `npm run` to build any external scripts. The executable will be
 placed in `external-scripts/bin`:
 
-```Bash
+```bash
 npm run build-externals
 ```
 
@@ -165,7 +165,7 @@ npm run build-externals
 
 All executables under `external-scripts/bin` can be run like so:
 
-```Bash
+```bash
 node external-scripts/bin/script-name-here.js
 ```
 
@@ -181,8 +181,7 @@ Currently, the following external scripts exist:
 **New issues and pull requests are always welcome and greatly appreciated!** See
 [CONTRIBUTING.md][58] and [SUPPORT.md][59] for more information.
 
-[1]: https://imgur.com/a/TytqlvJ
-[2]: https://jamstack.org/
+[2]: https://jamstack.org
 [3]: https://vercel.com
 [4]: https://www.mongodb.com/cloud/atlas
 [5]: https://github.com/nhscc/drive.api.hscc.bdpa.org/issues/new
@@ -192,27 +191,30 @@ Currently, the following external scripts exist:
 [9]: #project-structure
 [10]: #files-and-directories
 [11]: #external-scripts
+[12]: https://drive.api.hscc.bdpa.org/v2
+[13]: https://hscchkie87hj.docs.apiary.io
 [16]: #contributing
 [22]: https://drive.api.hscc.bdpa.org/v1
-[23]: https://hsccebun98j2.docs.apiary.io/
+[23]: https://hsccebun98j2.docs.apiary.io
 [24]: https://nodejs.org/en
 [25]: https://docs.mongodb.com/manual/installation
 [26]:
   https://docs.microsoft.com/en-us/windows/wsl/tutorials/wsl-database#install-mongodb
 [27]: https://docs.mongodb.com/compass/master/install
-[28]: https://www.postman.com/
-[29]: https://www.typescriptlang.org/
-[30]: https://babeljs.io/
-[32]: https://git-scm.com/
-[33]: https://eslint.org/
-[34]: https://webpack.js.org/
+[28]: https://www.postman.com
+[29]: https://www.typescriptlang.org
+[30]: https://babeljs.io
+[31]: https://www.npmjs.com/package/faker
+[32]: https://git-scm.com
+[33]: https://eslint.org
+[34]: https://webpack.js.org
 [35]: https://reactjs.org/docs/introducing-jsx.html
-[36]: https://reactjs.org/
-[37]: https://nextjs.org/
-[38]: https://www.mongodb.com/
+[36]: https://reactjs.org
+[37]: https://nextjs.org
+[38]: https://www.mongodb.com
 [39]: https://mongodb.github.io/node-mongodb-native
-[40]: https://jestjs.io/
-[41]: https://apiblueprint.org/
+[40]: https://jestjs.io
+[41]: https://apiblueprint.org
 [42]:
   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON
 [45]: https://www.npmjs.com/package/next
@@ -225,6 +227,3 @@ Currently, the following external scripts exist:
 [57]: https://nextjs.org/docs/routing/dynamic-routes
 [58]: ./CONTRIBUTING.md
 [59]: .github/SUPPORT.md
-[31]: https://www.npmjs.com/package/faker
-[12]: https://drive.api.hscc.bdpa.org/v2
-[13]: https://hscchkie87hj.docs.apiary.io/

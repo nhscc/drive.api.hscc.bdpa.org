@@ -14,8 +14,8 @@ import { getDb, setSchemaConfig } from '@-xun/mongo-schema';
 import { hydrateDbWithDummyData, setDummyData } from '@-xun/mongo-test';
 import { createDebugLogger } from 'rejoinder';
 
-import { getSchemaConfig } from 'universe/backend/db';
-import { getEnv } from 'universe/backend/env';
+import { getSchemaConfig } from 'universe+backend:db.ts';
+import { getEnv } from 'universe+backend:env.ts';
 
 import type {
   Context as AuthMiddlewareContext,
@@ -93,7 +93,7 @@ export default async function setSchemaAndMaybeHydrateDb() {
     if (isDevelopment && getEnv().API_HYDRATE_DB) {
       setSchemaAndHydrateDbDebug('executing api db hydration directive');
       // ? This next line prevents webpack/esbuild from bundling testverse
-      setDummyData(require('testverse/db'.toString()).getDummyData());
+      setDummyData(require('testverse:db.ts'.toString()).getDummyData());
 
       await getDb({ name: 'root' });
       await getDb({ name: 'app' });

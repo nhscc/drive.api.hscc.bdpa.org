@@ -1,4 +1,4 @@
-import { getEnv } from 'universe/backend/env';
+import { getEnv } from 'universe+backend:env.ts';
 
 import type { PageConfig } from 'next';
 

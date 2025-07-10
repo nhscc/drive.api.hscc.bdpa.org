@@ -16,16 +16,43 @@ const config = await moduleExport({
   ...(await assertEnvironment())
 });
 
+/* Add custom config objects here, such as those disabling certain rules */
 config.push(
-  // TODO: delete this the next time you see it (unless webpack is still around)
-  { ignores: ['**/webpack.config.js', '**/ban-hammer.js'] },
+  // TODO: delete this line if you've updated symbiote past 4.6.4
+  { ignores: ['**/ignore.webpack.config.*', '**/ban-hammer.ignore.*'] },
   {
     /* Add custom config here, such as disabling certain rules */
     rules: {
-      'import/extensions': 'off',
-      'no-restricted-syntax': 'off'
+      //'import/extensions': 'off',
+      //'no-restricted-syntax': 'off'
     }
   }
+  // ? Paths listed here are ignored by Eslint and related tooling.
+  // { ignores: [] },
+  // * Configs applying to both JavaScript & TypeScript files (all extensions)
+  // ? Keep in mind that JS files can use @ts-check and "become" TS files,
+  // ? hence the existence of this block. Logically, most rules should be
+  // ? loaded here.
+  // ...[
+  //   { ...eslintPluginReactConfigs.flat.recommended, name: 'react:recommended' },
+  //   // ? For react@>=17
+  //   { ...eslintPluginReactConfigs.flat['jsx-runtime'], name: 'react:jsx-runtime' },
+  //   {
+  //     ...eslintPluginReactHooksConfigs['recommended-latest'],
+  //     name: 'react-hooks:recommended-latest'
+  //   },
+  //   { ...eslintPluginJsxA11yFlatConfigs.recommended, name: 'jsx-a11y:recommended' }
+  // ].flatMap((configs) =>
+  //   overwriteProperty(configs, 'files', [
+  //     `**/*.{ts,cts,mts,tsx}`
+  //   ])
+  // ),
+  // {
+  //   rules: {
+  //     'unicorn/no-keyword-prefix': 'off',
+  //     'no-restricted-syntax': 'off'
+  //   }
+  // }
 );
 
 // TODO: delete this the next time you see it (unless /test/fixtures/ still
@@ -43,9 +70,15 @@ function getEslintAliases() {
   // ! directly, consider regenerating aliases across the entire project with:
   // ! `npx symbiote project renovate --regenerate-assets --assets-preset ...`
   return [
+    ['multiverse+backend:*', './packages/backend/src/*'],
+    ['multiverse+backend', './packages/backend/src/index.ts'],
+    ['rootverse+backend:*', './packages/backend/*'],
     ['rootverse:*', './*'],
+    ['universe+backend:*', './packages/backend/src/*'],
+    ['universe+backend', './packages/backend/src/index.ts'],
     ['universe:*', './src/*'],
     ['universe', './src/index.ts'],
+    ['testverse+backend:*', './packages/backend/test/*'],
     ['testverse:*', './test/*'],
     ['typeverse:*', './types/*']
   ];

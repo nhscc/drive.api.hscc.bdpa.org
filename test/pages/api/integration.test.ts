@@ -8,15 +8,15 @@ import { setupMemoryServerOverride } from '@-xun/mongo-test';
 import { get as dotPath } from 'dot-prop';
 import { testApiHandler } from 'next-test-api-route-handler';
 
-import { getSchemaConfig } from 'universe/backend/db';
-import { ErrorMessage } from 'universe/error';
+import { getSchemaConfig } from 'universe+backend:db.ts';
+import { ErrorMessage } from 'universe:error.ts';
 
-import { getDummyData } from 'testverse/db';
-import { api } from 'testverse/fixtures';
-import { getFixtures } from 'testverse/fixtures/integration';
-import { mockEnvFactory } from 'testverse/util';
+import { getDummyData } from 'testverse:db.ts';
+import { api } from 'testverse:fixtures/index.ts';
+import { getFixtures } from 'testverse:fixtures/integration.ts';
+import { mockEnvFactory } from 'testverse:util.ts';
 
-import type { TestResult, TestResultset } from 'testverse/fixtures/integration';
+import type { TestResult, TestResultset } from 'testverse:fixtures/integration.ts';
 
 setupMemoryServerOverride({
   // ? Ensure all tests share the same database state

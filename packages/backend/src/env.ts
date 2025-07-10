@@ -1,7 +1,7 @@
 import { getEnv as getDefaultEnv } from '@-xun/env';
 import { parse as parseAsBytes } from 'bytes';
 
-import { ServerValidationError } from 'universe/error';
+import { ServerValidationError } from 'universe+backend:error.ts';
 
 import type { Environment } from '@-xun/env';
 

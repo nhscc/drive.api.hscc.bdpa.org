@@ -1,8 +1,9 @@
 import * as React from 'react';
 
-import { getEnv } from 'universe/backend/env';
+import { version as packageVersion } from 'rootverse:package.json';
 
-import { version as packageVersion } from 'package';
+import { getEnv } from 'universe+backend:env.ts';
+
 //import { hydrateDb } from 'multiverse/mongo-test';
 
 export async function getServerSideProps() {

@@ -3,12 +3,12 @@ import assert from 'node:assert';
 import createDebugLogger from 'debug';
 import { ObjectId } from 'mongodb';
 
-import { toPublicUser } from 'universe/backend/db';
-import { getEnv } from 'universe/backend/env';
+import { name as packageName } from 'rootverse:package.json';
 
-import { dummyAppData } from 'testverse/db';
+import { toPublicUser } from 'universe+backend:db.ts';
+import { getEnv } from 'universe+backend:env.ts';
 
-import { name as packageName } from 'package';
+import { dummyAppData } from 'testverse:db.ts';
 
 import type { Promisable } from 'type-fest';
 
@@ -23,9 +23,9 @@ import type {
   PublicMetaNode,
   PublicNode,
   PublicUser
-} from 'universe/backend/db';
+} from 'universe+backend:db.ts';
 
-import type { NextApiHandlerMixin } from 'testverse/fixtures';
+import type { NextApiHandlerMixin } from 'testverse:fixtures/index.ts';
 
 // TODO: XXX: turn a lot of this into some kind of package; needs to be generic
 // TODO: XXX: enough to handle various use cases though :) Maybe
@@ -164,7 +164,7 @@ export type TestFixture = {
 };
 
 export function getFixtures(
-  api: typeof import('testverse/fixtures').api
+  api: typeof import('testverse:fixtures/index.ts').api
 ): TestFixture[] {
   const runOnly = process.env.RUN_ONLY?.split(',')
     .flatMap((n) => {

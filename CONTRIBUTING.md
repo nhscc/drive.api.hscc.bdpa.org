@@ -84,7 +84,7 @@ PR passes review:
 
 At this point, you're ready to create your PR and ✨ contribute ✨!
 
-## npm Scripts
+## Npm Scripts
 
 This repo ships with several [npm scripts][49]. Use `npm run list-tasks` to see
 which of the following scripts are available for this project.
@@ -141,7 +141,7 @@ which of the following scripts are available for this project.
 - `npm run build-stats` to gather statistics about Webpack (look for
   `bundle-stats.ignore.json`)
 
-### NPX Scripts
+### Npx Scripts
 
 > These commands might be installed as a project dependency but are expected to
 > be run using [`npx X`][54] instead of `npm run X` regardless.
@@ -155,7 +155,7 @@ which of the following scripts are available for this project.
 [2]: /.github/CODE_OF_CONDUCT.md
 [3]: https://github.com/features/actions
 [4]: https://github.com/Xunnamius/drive.api.hscc.bdpa.org/tree/main/.husky
-[5]: .github/workflows/build-test.yml
+[5]: #
 [6]: https://github.com/semantic-release/semantic-release#readme
 [7]: https://www.npmjs.com/package/debug
 [8]: https://www.npmjs.com/package/rejoinder
@@ -171,13 +171,16 @@ which of the following scripts are available for this project.
 [15]: https://github.com/Xunnamius/drive.api.hscc.bdpa.org/compare
 [16]: https://github.com/Xunnamius/drive.api.hscc.bdpa.org/issues/new/choose
 [17]: https://github.com/Xunnamius/drive.api.hscc.bdpa.org/issues?q=
-[18]: https://www.codewithjason.com/atomic-commits-testing/
-[19]: https://about.codecov.io/
-[20]: https://www.conventionalcommits.org/en/v1.0.0/#summary
+[18]: https://www.codewithjason.com/atomic-commits-testing
+[19]: https://about.codecov.io
+[20]: https://www.conventionalcommits.org/en/v1.0.0#summary
 [21]: https://github.com/rails/rails/pull/13771#issuecomment-32746700
 [22]:
-  https://help.github.com/articles/github-terms-of-service/#6-contributions-under-repository-license
+  https://help.github.com/articles/github-terms-of-service#6-contributions-under-repository-license
 [23]: LICENSE
+[24]:
+  https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping
+[25]: tsconfig.json
 [49]: https://docs.npmjs.com/cli/v6/commands/npm-run-script
 [50]: https://docs.microsoft.com/en-us/windows/wsl/install-win10
 [51]: https://jestjs.io/docs/en/cli.html#--coverageboolean
@@ -186,6 +189,3 @@ which of the following scripts are available for this project.
 [54]: https://www.npmjs.com/package/npx
 [55]:
   https://semantic-release.gitbook.io/semantic-release/usage/configuration#dryrun
-[24]:
-  https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping
-[25]: tsconfig.json

@@ -1,7 +1,7 @@
 import { getCommonDummyData } from '@-xun/api-strategy/mongo/dummy';
 import { ObjectId } from 'mongodb';
 
-import { mockDateNowMs } from 'testverse/util';
+import { mockDateNowMs } from 'testverse:util.ts';
 
 import type { DummyData } from '@-xun/mongo-test';
 
@@ -9,7 +9,7 @@ import type {
   InternalFileNode,
   InternalMetaNode,
   InternalUser
-} from 'universe/backend/db';
+} from 'universe+backend:db.ts';
 
 /**
  * Returns data used to hydrate databases and their collections.

@@ -6,33 +6,20 @@
 // * containers, and are built to run in GitHub Actions CI pipelines; some can
 // * also be run locally.
 
-import { toAbsolutePath, toDirname } from '@-xun/fs';
 import { createDebugLogger } from 'rejoinder';
 
-import {
-  exports as packageExports,
-  name as packageName
-} from 'rootverse+backend:package.json';
+import { name as packageName } from 'rootverse:package.json';
 
-import {
-  ensurePackageHasBeenBuilt,
-  reconfigureJestGlobalsToSkipTestsInThisFileIfRequested
-} from 'testverse:util.ts';
+import { reconfigureJestGlobalsToSkipTestsInThisFileIfRequested } from 'testverse:util.ts';
 
 const TEST_IDENTIFIER = `${packageName.split('/').at(-1)!}-e2e`;
-const debug = createDebugLogger({ namespace: 'backend' }).extend(TEST_IDENTIFIER);
+const debug = createDebugLogger({ namespace: 'drive.api.hscc.bdpa.org' }).extend(
+  TEST_IDENTIFIER
+);
 const nodeVersion = process.env.XPIPE_MATRIX_NODE_VERSION || process.version;
 
 debug(`nodeVersion: "${nodeVersion}" (process.version=${process.version})`);
 
 reconfigureJestGlobalsToSkipTestsInThisFileIfRequested({ it: true, test: true });
-
-beforeAll(async () => {
-  await ensurePackageHasBeenBuilt(
-    toDirname(toAbsolutePath(require.resolve('rootverse+backend:package.json'))),
-    packageName,
-    packageExports
-  );
-});
 
 test.todo('this');

@@ -22,13 +22,17 @@
   "include": ["types/**/*", "src/**/*"],
   "exclude": [
     "**/dist/**/*",
-    "**/build/**/*",
+    "**/.next/**/*",
+    "**/.wrangler/**/*",
     "**/test/fixtures/**/*",
     "**/node_modules/**/*",
     "packages/**/*",
     "packages/**/.*",
     "**/*.ignore",
-    "**/*.ignore.*/**/*",
-    "**/ignore.*"
+    "**/*.ignore/**/*",
+    "**/ignore.*",
+    "**/ignore.*/**/*",
+    "**/*.ignore.*",
+    "**/*.ignore.*/**/*"
   ]
 }

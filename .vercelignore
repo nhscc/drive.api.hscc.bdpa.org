@@ -12,7 +12,7 @@
 
 # Re-add root-level files
 !/.gitignore
-!/babel.config.js
+!/babel.config.cjs
 !/next.config.mjs
 !/package-lock.json
 !/package.json

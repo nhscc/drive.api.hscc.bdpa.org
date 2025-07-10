@@ -1,10 +1,10 @@
 import { createToken, getTokens } from '@-xun/api-strategy/auth';
 import { sendHttpOk } from '@-xun/respond';
 
-import { withSysMiddleware } from 'universe/backend/middleware';
+import { withSysMiddleware } from 'universe:middleware.ts';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
-export { defaultConfig as config } from 'universe/backend/api';
+export { defaultConfig as config } from 'universe+backend:api.ts';
 
 export default withSysMiddleware(
   async (req, res) => {

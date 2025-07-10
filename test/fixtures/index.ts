@@ -10,77 +10,77 @@ import {
   searchNodes,
   updateNode,
   updateUser
-} from 'universe/backend';
+} from 'universe+backend';
 
 import CatchAllForNotFoundEndpoint, {
   config as CatchAllForNotFoundConfig,
   metadata as CatchAllForNotFoundMetadata
-} from 'universe/pages/api/[[...catchAllForNotFound]]';
-
-import V1EndpointFilesystemUsername, {
-  config as V1ConfigFilesystemUsername,
-  metadata as V1MetadataFilesystemUsername
-} from 'universe/pages/api/v1/filesystem/[username]';
+} from 'universe:pages/api/[[...catchAllForNotFound]].ts';
 
 import V1EndpointFilesystemUsernameNodeId, {
   config as V1ConfigFilesystemUsernameNodeId,
   metadata as V1MetadataFilesystemUsernameNodeId
-} from 'universe/pages/api/v1/filesystem/[username]/[...node_ids]';
+} from 'universe:pages/api/v1/filesystem/[username]/[...node_ids].ts';
+
+import V1EndpointFilesystemUsername, {
+  config as V1ConfigFilesystemUsername,
+  metadata as V1MetadataFilesystemUsername
+} from 'universe:pages/api/v1/filesystem/[username]/index.ts';
 
 import V1EndpointFilesystemUsernameSearch, {
   config as V1ConfigFilesystemUsernameSearch,
   metadata as V1MetadataFilesystemUsernameSearch
-} from 'universe/pages/api/v1/filesystem/[username]/search';
-
-import V1EndpointUsers, {
-  config as V1ConfigUsers,
-  metadata as V1MetadataUsers
-} from 'universe/pages/api/v1/users';
-
-import V1EndpointUsersUsername, {
-  config as V1ConfigUsersUsername,
-  metadata as V1MetadataUsersUsername
-} from 'universe/pages/api/v1/users/[username]';
+} from 'universe:pages/api/v1/filesystem/[username]/search.ts';
 
 import V1EndpointUsersUsernameAuth, {
   config as V1ConfigUsersUsernameAuth,
   metadata as V1MetadataUsersUsernameAuth
-} from 'universe/pages/api/v1/users/[username]/auth';
+} from 'universe:pages/api/v1/users/[username]/auth.ts';
 
-import V2EndpointUsers, {
-  config as V2ConfigUsers,
-  metadata as V2MetadataUsers
-} from 'universe/pages/api/v2/users';
+import V1EndpointUsersUsername, {
+  config as V1ConfigUsersUsername,
+  metadata as V1MetadataUsersUsername
+} from 'universe:pages/api/v1/users/[username]/index.ts';
 
-import V2EndpointUsersUsername, {
-  config as V2ConfigUsersUsername,
-  metadata as V2MetadataUsersUsername
-} from 'universe/pages/api/v2/users/[username]';
+import V1EndpointUsers, {
+  config as V1ConfigUsers,
+  metadata as V1MetadataUsers
+} from 'universe:pages/api/v1/users/index.ts';
 
 import V2EndpointUsersUsernameAuth, {
   config as V2ConfigUsersUsernameAuth,
   metadata as V2MetadataUsersUsernameAuth
-} from 'universe/pages/api/v2/users/[username]/auth';
-
-import V2EndpointUsersUsernameFilesystem, {
-  config as V2ConfigUsersUsernameFilesystem,
-  metadata as V2MetadataUsersUsernameFilesystem
-} from 'universe/pages/api/v2/users/[username]/filesystem';
+} from 'universe:pages/api/v2/users/[username]/auth.ts';
 
 import V2EndpointUsersUsernameFilesystemNodeId, {
   config as V2ConfigUsersUsernameFilesystemNodeId,
   metadata as V2MetadataUsersUsernameFilesystemNodeId
-} from 'universe/pages/api/v2/users/[username]/filesystem/[...node_ids]';
+} from 'universe:pages/api/v2/users/[username]/filesystem/[...node_ids].ts';
+
+import V2EndpointUsersUsernameFilesystem, {
+  config as V2ConfigUsersUsernameFilesystem,
+  metadata as V2MetadataUsersUsernameFilesystem
+} from 'universe:pages/api/v2/users/[username]/filesystem/index.ts';
 
 import V2EndpointUsersUsernameFilesystemSearch, {
   config as V2ConfigUsersUsernameFilesystemSearch,
   metadata as V2MetadataUsersUsernameFilesystemSearch
-} from 'universe/pages/api/v2/users/[username]/filesystem/search';
+} from 'universe:pages/api/v2/users/[username]/filesystem/search.ts';
 
-import { asMocked } from 'testverse/util';
+import V2EndpointUsersUsername, {
+  config as V2ConfigUsersUsername,
+  metadata as V2MetadataUsersUsername
+} from 'universe:pages/api/v2/users/[username]/index.ts';
+
+import V2EndpointUsers, {
+  config as V2ConfigUsers,
+  metadata as V2MetadataUsers
+} from 'universe:pages/api/v2/users/index.ts';
+
+import { asMocked } from 'testverse:util.ts';
 
 import type { NextApiHandler, PageConfig } from 'next';
-import type { PublicNode, PublicUser } from 'universe/backend/db';
+import type { PublicNode, PublicUser } from 'universe+backend:db.ts';
 
 export type NextApiHandlerMixin = NextApiHandler & {
   config?: PageConfig;
@@ -156,7 +156,7 @@ api.v2.usersUsernameFilesystemSearch.uri =
  * A convenience function that mocks the entire backend and returns the mock
  * functions. Uses `beforeEach` under the hood.
  *
- * **WARNING: YOU MUST CALL `jest.mock('universe/backend')` before calling this
+ * **WARNING: YOU MUST CALL `jest.mock('universe+backend')` before calling this
  * function!**
  */
 export function setupMockBackend() {

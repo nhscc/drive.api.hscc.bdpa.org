@@ -2,34 +2,31 @@
 
 import { testApiHandler } from 'next-test-api-route-handler';
 
-import { api, setupMockBackend } from 'testverse/fixtures';
+import { api, setupMockBackend } from 'testverse:fixtures/index.ts';
 
-jest.mock('universe/backend');
-jest.mock('universe/backend/api', (): typeof import('universe/backend/api') => {
+jest.mock('universe+backend');
+jest.mock('universe+backend:api.ts', (): typeof import('universe+backend:api.ts') => {
   return {
-    ...jest.requireActual('universe/backend/api')
+    ...jest.requireActual('universe+backend:api.ts')
     //authorizationHeaderToOwnerAttribute: jest.fn(() => Promise.resolve('mock-owner'))
   };
 });
 
-jest.mock(
-  'universe/backend/middleware',
-  (): typeof import('universe/backend/middleware') => {
-    const { middlewareFactory } = require('@-xun/api') as typeof import('@-xun/api');
-    const { makeMiddleware: makeErrorHandlingMiddleware } =
-      require('@-xun/api/middleware/handle-error') as typeof import('@-xun/api/middleware/handle-error');
+jest.mock('universe:middleware.ts', (): typeof import('universe:middleware.ts') => {
+  const { middlewareFactory } = require('@-xun/api') as typeof import('@-xun/api');
+  const { makeMiddleware: makeErrorHandlingMiddleware } =
+    require('@-xun/api/middleware/handle-error') as typeof import('@-xun/api/middleware/handle-error');
 
-    return {
-      withMiddleware: jest.fn().mockImplementation(
-        middlewareFactory({
-          use: [],
-          useOnError: [makeErrorHandlingMiddleware()],
-          options: { legacyMode: true }
-        })
-      )
-    } as unknown as typeof import('universe/backend/middleware');
-  }
-);
+  return {
+    withMiddleware: jest.fn().mockImplementation(
+      middlewareFactory({
+        use: [],
+        useOnError: [makeErrorHandlingMiddleware()],
+        options: { legacyMode: true }
+      })
+    )
+  } as unknown as typeof import('universe:middleware.ts');
+});
 
 setupMockBackend();
 
