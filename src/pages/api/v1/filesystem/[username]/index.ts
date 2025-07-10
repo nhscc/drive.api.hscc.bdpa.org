@@ -4,7 +4,7 @@ import { createNode } from '@nhscc/backend-drive';
 
 import { withMiddleware } from 'universe:middleware.ts';
 
-export { defaultConfig as config } from '@nhscc/backend-drive/api.ts';
+export { defaultConfig as config } from '@nhscc/backend-drive/api';
 
 export const metadata = {
   descriptor: '/v1/filesystem/:username'

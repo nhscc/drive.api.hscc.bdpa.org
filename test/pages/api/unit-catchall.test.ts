@@ -5,15 +5,12 @@ import { testApiHandler } from 'next-test-api-route-handler';
 import { api, setupMockBackend } from 'testverse:fixtures/index.ts';
 
 jest.mock('@nhscc/backend-drive');
-jest.mock(
-  '@nhscc/backend-drive/api.ts',
-  (): typeof import('@nhscc/backend-drive/api.ts') => {
-    return {
-      ...jest.requireActual('@nhscc/backend-drive/api.ts')
-      //authorizationHeaderToOwnerAttribute: jest.fn(() => Promise.resolve('mock-owner'))
-    };
-  }
-);
+jest.mock('@nhscc/backend-drive/api', (): typeof import('@nhscc/backend-drive/api') => {
+  return {
+    ...jest.requireActual('@nhscc/backend-drive/api')
+    //authorizationHeaderToOwnerAttribute: jest.fn(() => Promise.resolve('mock-owner'))
+  };
+});
 
 jest.mock('universe:middleware.ts', (): typeof import('universe:middleware.ts') => {
   const { middlewareFactory } = require('@-xun/api') as typeof import('@-xun/api');

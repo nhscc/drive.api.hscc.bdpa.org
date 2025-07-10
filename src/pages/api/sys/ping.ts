@@ -3,7 +3,7 @@ import { sendHttpOk } from '@-xun/respond';
 import { withSysMiddleware } from 'universe:middleware.ts';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
-export { defaultConfig as config } from '@nhscc/backend-drive/api.ts';
+export { defaultConfig as config } from '@nhscc/backend-drive/api';
 
 export default withSysMiddleware(
   async (req, res) => {

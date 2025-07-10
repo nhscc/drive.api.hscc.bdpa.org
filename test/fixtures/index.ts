@@ -80,7 +80,7 @@ import V2EndpointUsers, {
 import { asMocked } from 'testverse:util.ts';
 
 import type { NextApiHandler, PageConfig } from 'next';
-import type { PublicNode, PublicUser } from '@nhscc/backend-drive/db.ts';
+import type { PublicNode, PublicUser } from '@nhscc/backend-drive/db';
 
 export type NextApiHandlerMixin = NextApiHandler & {
   config?: PageConfig;

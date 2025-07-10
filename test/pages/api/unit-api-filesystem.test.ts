@@ -3,7 +3,7 @@ import { testApiHandler } from 'next-test-api-route-handler';
 
 import { api, setupMockBackend } from 'testverse:fixtures/index.ts';
 
-import type { PublicNode } from '@nhscc/backend-drive/db.ts';
+import type { PublicNode } from '@nhscc/backend-drive/db';
 
 jest.mock('@nhscc/backend-drive');
 jest.mock<typeof import('universe:middleware.ts')>('universe:middleware.ts', () => {

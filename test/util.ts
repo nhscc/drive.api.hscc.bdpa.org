@@ -5,7 +5,7 @@
 
 import { disableLoggers, enableLoggers, LoggerType } from 'rejoinder';
 
-import { defaultConfig } from '@nhscc/backend-drive/api.ts';
+import { defaultConfig } from '@nhscc/backend-drive/api';
 
 import type { withMockedEnv } from '@-xun/jest';
 import type { NextApiHandler, NextApiRequest, NextApiResponse, PageConfig } from 'next';

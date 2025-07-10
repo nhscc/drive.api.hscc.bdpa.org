@@ -20,6 +20,18 @@
       "types": "./dist/packages/backend/src/index.d.ts",
       "default": "./dist/packages/backend/src/index.js"
     },
+    "./api": {
+      "types": "./dist/packages/backend/src/api.d.ts",
+      "default": "./dist/packages/backend/src/api.js"
+    },
+    "./db": {
+      "types": "./dist/packages/backend/src/db.d.ts",
+      "default": "./dist/packages/backend/src/db.js"
+    },
+    "./env": {
+      "types": "./dist/packages/backend/src/env.d.ts",
+      "default": "./dist/packages/backend/src/env.js"
+    },
     "./package": "./package.json",
     "./package.json": "./package.json"
   },
@@ -27,6 +39,15 @@
     "*": {
       "index": [
         "dist/packages/backend/src/index.d.ts"
+      ],
+      "api": [
+        "dist/packages/backend/src/api.d.ts"
+      ],
+      "db": [
+        "dist/packages/backend/src/db.d.ts"
+      ],
+      "env": [
+        "dist/packages/backend/src/env.d.ts"
       ],
       "package": [
         "package.json"

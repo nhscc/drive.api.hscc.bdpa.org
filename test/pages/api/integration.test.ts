@@ -10,7 +10,7 @@ import { testApiHandler } from 'next-test-api-route-handler';
 
 import { ErrorMessage } from 'multiverse+shared:error.ts';
 
-import { getSchemaConfig } from '@nhscc/backend-drive/db.ts';
+import { getSchemaConfig } from '@nhscc/backend-drive/db';
 
 import { getDummyData } from 'testverse:db.ts';
 import { api } from 'testverse:fixtures/index.ts';

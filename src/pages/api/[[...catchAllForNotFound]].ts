@@ -5,7 +5,7 @@ import { withMiddleware } from 'universe:middleware.ts';
 import type { NextApiRequest } from 'next';
 
 // ? This is a NextJS special "config" export
-export { defaultConfig as config } from '@nhscc/backend-drive/api.ts';
+export { defaultConfig as config } from '@nhscc/backend-drive/api';
 
 export const metadata = {
   descriptor: 'catch-all-for-not-found'

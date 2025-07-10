@@ -1006,7 +1006,7 @@ describe('::searchNodes', () => {
       })
     ).resolves.toStrictEqual(
       getOwnedAndSharedNodes(dummyAppData.users[2]!.username)
-        .filter((n) => n.createdAt < Date.now() && regex.test(n.permissions.User2))
+        .filter((n) => n.createdAt < Date.now() && regex.test(n.permissions.User2!))
         .map((n) => toPublicNode(n))
     );
   });
