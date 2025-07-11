@@ -24,6 +24,7 @@
     "build": "echo 'NOTICE: run `next build` manually to build the Next.js components of this project\n        or run `build:topological` to build packages\n        (replace this with symbiote build calling next build + typical import/export/deps linting)'",
     "build:topological": "symbiote project topology --run build --env NODE_NO_WARNINGS=1",
     "clean": "symbiote clean --env NODE_NO_WARNINGS=1",
+    "dev": "next -p `npx -q acquire-port`",
     "format": "symbiote format --env NODE_NO_WARNINGS=1 --hush",
     "info": "symbiote project info --env NODE_NO_WARNINGS=1",
     "lint": "npm run lint:package --",
