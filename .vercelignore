@@ -10,7 +10,7 @@
 !/src
 !/types
 
-# Re-add shared packages
+# Re-add unpublished internal packages
 !/packages/shared/package.json
 !/packages/shared/src
 
