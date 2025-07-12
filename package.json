@@ -56,7 +56,7 @@
     "@-xun/jest": "^2.2.7",
     "@-xun/mongo-schema": "^1.2.1",
     "@-xun/mongo-test": "^1.1.7",
-    "@-xun/symbiote": "^4.10.0",
+    "@-xun/symbiote": "^4.11.0",
     "@nhscc/backend-drive": "^1.0.0",
     "@nhscc/backend-drive~npm": "npm:@nhscc/backend-drive@^1.0.0",
     "@testing-library/jest-dom": "^6.6.3",
