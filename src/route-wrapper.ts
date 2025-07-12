@@ -83,17 +83,18 @@ export default async function setSchemaAndMaybeHydrateDb() {
     setSchemaConfig(() => getSchemaConfig());
 
     if (isDevelopment && getEnv().API_HYDRATE_DB) {
-      // ? The .toString() prevents webpack/turbopack from bundling the thing
-
       const { createGenericLogger } = require(
+        // ? This expression prevents webpack/turbopack from bundling the thing
         'rejoinder'.toString()
       ) as typeof import('rejoinder');
 
       const { getDummyData } = require(
+        // ? This expression prevents webpack/turbopack from bundling the thing
         'testverse:db.ts'.toString()
       ) as typeof import('testverse:db.ts');
 
       const { hydrateDbWithDummyData, setDummyData } = require(
+        // ? This expression prevents webpack/turbopack from bundling the thing
         '@-xun/mongo-test'.toString()
       ) as typeof import('@-xun/mongo-test');
 
