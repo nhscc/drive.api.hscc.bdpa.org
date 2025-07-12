@@ -1,24 +1,24 @@
-# shellcheck disable=all
-# This file's syntax is only KINDA similar like .gitignore...
+# # shellcheck disable=all
+# # This file's syntax is only KINDA similar like .gitignore...
 
-# Ignore all root-level files
-/*
+# # Ignore all root-level files
+# /*
 
-# Re-add root-level dirs
-!/data
-!/public
-!/src
-!/types
+# # Re-add root-level dirs
+# !/data
+# !/public
+# !/src
+# !/types
 
-# Re-add shared packages
-!/packages/shared
+# # Re-add shared packages
+# !/packages/shared
 
-# Re-add root-level files
-!/.gitignore
-!/babel.config.cjs
-!/next.config.mjs
-!/package-lock.json
-!/package.json
-!/tsconfig.json
+# # Re-add root-level files
+# !/.gitignore
+# !/babel.config.cjs
+# !/next.config.mjs
+# !/package-lock.json
+# !/package.json
+# !/tsconfig.json
 
-# Custom adds
+# # Custom adds
