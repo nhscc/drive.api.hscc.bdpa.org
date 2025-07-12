@@ -1,12 +1,11 @@
 import { sendHttpOk } from '@-xun/respond';
+import { searchNodes } from '@nhscc/backend-drive~npm';
 
 import { ClientValidationError, ErrorMessage } from 'multiverse+shared:error.ts';
 
 import { withMiddleware } from 'universe:route-wrapper.ts';
 
-import { searchNodes } from '@nhscc/backend-drive';
-
-export { defaultConfig as config } from '@nhscc/backend-drive/api';
+export { defaultConfig as config } from '@nhscc/backend-drive~npm/api';
 
 export const metadata = {
   descriptor: '/v2/users/:username/filesystem/search'

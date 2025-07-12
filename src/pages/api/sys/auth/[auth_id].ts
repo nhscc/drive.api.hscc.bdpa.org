@@ -10,7 +10,7 @@ import { sendHttpOk } from '@-xun/respond';
 import { withSysMiddleware } from 'universe:route-wrapper.ts';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config
-export { defaultConfig as config } from '@nhscc/backend-drive/api';
+export { defaultConfig as config } from '@nhscc/backend-drive~npm/api';
 
 export default withSysMiddleware(
   async (req, res) => {

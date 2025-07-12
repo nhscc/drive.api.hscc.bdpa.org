@@ -5,7 +5,7 @@ import { withMiddleware } from 'universe:route-wrapper.ts';
 import type { NextApiRequest } from 'next';
 
 // ? This is a NextJS special "config" export
-export { defaultConfig as config } from '@nhscc/backend-drive/api';
+export { defaultConfig as config } from '@nhscc/backend-drive~npm/api';
 
 export const metadata = {
   descriptor: 'catch-all-for-not-found'

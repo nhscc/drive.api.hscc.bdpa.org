@@ -11,9 +11,8 @@ import { makeMiddleware as makeErrorHandlingMiddleware } from '@-xun/api/middlew
 import { makeMiddleware as makeLoggingMiddleware } from '@-xun/api/middleware/log-request';
 import { makeMiddleware as makeCorsMiddleware } from '@-xun/api/middleware/use-cors';
 import { getDb, setSchemaConfig } from '@-xun/mongo-schema';
-
-import { getSchemaConfig } from '@nhscc/backend-drive/db';
-import { getEnv } from '@nhscc/backend-drive/env';
+import { getSchemaConfig } from '@nhscc/backend-drive~npm/db';
+import { getEnv } from '@nhscc/backend-drive~npm/env';
 
 import type {
   Context as AuthMiddlewareContext,

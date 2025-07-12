@@ -1,8 +1,7 @@
+import { getEnv } from '@nhscc/backend-drive~npm/env';
 import * as React from 'react';
 
 import { version as packageVersion } from 'rootverse:package.json';
-
-import { getEnv } from '@nhscc/backend-drive/env';
 
 //import { hydrateDb } from 'multiverse/mongo-test';
 

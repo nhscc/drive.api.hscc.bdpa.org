@@ -1,10 +1,9 @@
 import { sendHttpOk } from '@-xun/respond';
+import { deleteNodes, getNodes, updateNode } from '@nhscc/backend-drive~npm';
 
 import { withMiddleware } from 'universe:route-wrapper.ts';
 
-import { deleteNodes, getNodes, updateNode } from '@nhscc/backend-drive';
-
-export { defaultConfig as config } from '@nhscc/backend-drive/api';
+export { defaultConfig as config } from '@nhscc/backend-drive~npm/api';
 
 export const metadata = {
   descriptor: '/v1/filesystem/:username/:...node_ids'

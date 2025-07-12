@@ -16,3 +16,5 @@ import 'jest-extended';
 import 'jest-extended/all';
 
 loadEnv({ path: toPath(__dirname, '..', '.env'), quiet: true });
+
+jest.mock('@nhscc/backend-drive~npm', () => require('@nhscc/backend-drive'));

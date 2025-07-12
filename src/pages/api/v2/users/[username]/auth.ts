@@ -1,10 +1,9 @@
 import { sendHttpOk, sendHttpUnauthorized } from '@-xun/respond';
+import { authAppUser } from '@nhscc/backend-drive~npm';
 
 import { withMiddleware } from 'universe:route-wrapper.ts';
 
-import { authAppUser } from '@nhscc/backend-drive';
-
-export { defaultConfig as config } from '@nhscc/backend-drive/api';
+export { defaultConfig as config } from '@nhscc/backend-drive~npm/api';
 
 // TODO: 2025: didn't we implement this already?
 // * The next version of this should use GET and POST as follows:
