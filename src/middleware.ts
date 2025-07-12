@@ -11,8 +11,6 @@ import { makeMiddleware as makeErrorHandlingMiddleware } from '@-xun/api/middlew
 import { makeMiddleware as makeLoggingMiddleware } from '@-xun/api/middleware/log-request';
 import { makeMiddleware as makeCorsMiddleware } from '@-xun/api/middleware/use-cors';
 import { getDb, setSchemaConfig } from '@-xun/mongo-schema';
-import { hydrateDbWithDummyData, setDummyData } from '@-xun/mongo-test';
-import { createDebugLogger } from 'rejoinder';
 
 import { getSchemaConfig } from '@nhscc/backend-drive/db';
 import { getEnv } from '@nhscc/backend-drive/env';
@@ -72,18 +70,12 @@ type GenericErrorHandlingMiddlewareOptions = ErrorHandlingMiddlewareOptions<
   LegacyErrorHandler<Record<string, unknown>, Record<PropertyKey, unknown>>
 >;
 
-const setSchemaAndHydrateDbDebug = createDebugLogger({
-  namespace: 'next-api:f:hydrate-prod'
-});
-
 /**
  * Sets the database schema if NODE_ENV starts with "production" or
  * "development". Additionally hydrates the database with dummy data if NODE_ENV
  * starts with "development".
  */
 export default async function setSchemaAndMaybeHydrateDb() {
-  setSchemaAndHydrateDbDebug('entered middleware runtime');
-
   const isProduction = getEnv().NODE_ENV.startsWith('production');
   const isDevelopment = getEnv().NODE_ENV.startsWith('development');
 
@@ -91,19 +83,37 @@ export default async function setSchemaAndMaybeHydrateDb() {
     setSchemaConfig(() => getSchemaConfig());
 
     if (isDevelopment && getEnv().API_HYDRATE_DB) {
-      setSchemaAndHydrateDbDebug('executing api db hydration directive');
-      // ? This next line prevents webpack/esbuild from bundling testverse
-      setDummyData(require('testverse:db.ts'.toString()).getDummyData());
+      // ? The .toString() prevents webpack/turbopack from bundling the thing
+
+      const { createGenericLogger } = require(
+        'rejoinder'.toString()
+      ) as typeof import('rejoinder');
+
+      const { getDummyData } = require(
+        'testverse:db.ts'.toString()
+      ) as typeof import('testverse:db.ts');
+
+      const { hydrateDbWithDummyData, setDummyData } = require(
+        '@-xun/mongo-test'.toString()
+      ) as typeof import('@-xun/mongo-test');
+
+      const setSchemaAndHydrateDbLogger = createGenericLogger({
+        namespace: 'setSchemaAndMaybeHydrateDb'
+      });
+
+      setSchemaAndHydrateDbLogger('executing api db hydration directive');
+
+      setDummyData(getDummyData());
 
       await getDb({ name: 'root' });
       await getDb({ name: 'app' });
 
-      setSchemaAndHydrateDbDebug('dbs initialized successfully: root, app');
+      setSchemaAndHydrateDbLogger('dbs initialized successfully: root, app');
 
       await hydrateDbWithDummyData({ name: 'root' });
       await hydrateDbWithDummyData({ name: 'app' });
 
-      setSchemaAndHydrateDbDebug('db hydrated successfully: root, app');
+      setSchemaAndHydrateDbLogger('db hydrated successfully: root, app');
 
       throw new Error(
         'database was hydrated successfully. You may invoke the app normally now (without API_HYDRATE_DB)'
