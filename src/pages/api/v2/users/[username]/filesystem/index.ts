@@ -1,6 +1,6 @@
 import { sendHttpOk } from '@-xun/respond';
 
-import { withMiddleware } from 'universe:middleware.ts';
+import { withMiddleware } from 'universe:route-wrapper.ts';
 
 import { createNode } from '@nhscc/backend-drive';
 

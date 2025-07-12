@@ -6,7 +6,7 @@ import {
 
 import { sendHttpOk } from '@-xun/respond';
 
-import { withSysMiddleware } from 'universe:middleware.ts';
+import { withSysMiddleware } from 'universe:route-wrapper.ts';
 import { validateAndParseJson } from 'universe:util.ts';
 
 // ? https://nextjs.org/docs/api-routes/api-middlewares#custom-config

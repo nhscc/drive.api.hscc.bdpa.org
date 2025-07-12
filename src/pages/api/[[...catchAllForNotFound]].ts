@@ -1,6 +1,6 @@
 import { sendHttpNotFound } from '@-xun/respond';
 
-import { withMiddleware } from 'universe:middleware.ts';
+import { withMiddleware } from 'universe:route-wrapper.ts';
 
 import type { NextApiRequest } from 'next';
 

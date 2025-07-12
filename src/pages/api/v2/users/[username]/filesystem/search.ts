@@ -2,7 +2,7 @@ import { sendHttpOk } from '@-xun/respond';
 
 import { ClientValidationError, ErrorMessage } from 'multiverse+shared:error.ts';
 
-import { withMiddleware } from 'universe:middleware.ts';
+import { withMiddleware } from 'universe:route-wrapper.ts';
 
 import { searchNodes } from '@nhscc/backend-drive';
 

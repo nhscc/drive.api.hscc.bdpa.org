@@ -12,21 +12,24 @@ jest.mock('@nhscc/backend-drive/api', (): typeof import('@nhscc/backend-drive/ap
   };
 });
 
-jest.mock('universe:middleware.ts', (): typeof import('universe:middleware.ts') => {
-  const { middlewareFactory } = require('@-xun/api') as typeof import('@-xun/api');
-  const { makeMiddleware: makeErrorHandlingMiddleware } =
-    require('@-xun/api/middleware/handle-error') as typeof import('@-xun/api/middleware/handle-error');
+jest.mock(
+  'universe:route-wrapper.ts',
+  (): typeof import('universe:route-wrapper.ts') => {
+    const { middlewareFactory } = require('@-xun/api') as typeof import('@-xun/api');
+    const { makeMiddleware: makeErrorHandlingMiddleware } =
+      require('@-xun/api/middleware/handle-error') as typeof import('@-xun/api/middleware/handle-error');
 
-  return {
-    withMiddleware: jest.fn().mockImplementation(
-      middlewareFactory({
-        use: [],
-        useOnError: [makeErrorHandlingMiddleware()],
-        options: { legacyMode: true }
-      })
-    )
-  } as unknown as typeof import('universe:middleware.ts');
-});
+    return {
+      withMiddleware: jest.fn().mockImplementation(
+        middlewareFactory({
+          use: [],
+          useOnError: [makeErrorHandlingMiddleware()],
+          options: { legacyMode: true }
+        })
+      )
+    } as unknown as typeof import('universe:route-wrapper.ts');
+  }
+);
 
 setupMockBackend();
 
