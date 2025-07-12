@@ -2,7 +2,7 @@
 # This file's syntax is only KINDA similar like .gitignore...
 
 # Ignore all files
-*
+/**/*
 
 # Re-add root-level dirs
 !/data
