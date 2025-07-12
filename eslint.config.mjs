@@ -17,14 +17,8 @@ const config = await moduleExport({
 });
 
 /* Add custom config objects here, such as those disabling certain rules */
-config.push(
-  {
-    /* Add custom config here, such as disabling certain rules */
-    rules: {
-      //'import/extensions': 'off',
-      //'no-restricted-syntax': 'off'
-    }
-  }
+config
+  .push
   // ? Paths listed here are ignored by Eslint and related tooling.
   // { ignores: [] },
   // * Configs applying to both JavaScript & TypeScript files (all extensions)
@@ -51,7 +45,7 @@ config.push(
   //     'no-restricted-syntax': 'off'
   //   }
   // }
-);
+  ();
 
 // TODO: delete this the next time you see it (unless /test/fixtures/ still
 // TODO: unwisely contains integration.ts)

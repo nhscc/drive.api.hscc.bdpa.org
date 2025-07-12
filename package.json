@@ -22,6 +22,9 @@
   ],
   "scripts": {
     "build": "NODE_ENV=production npx next build",
+    "build:changelog": "symbiote build changelog --env NODE_NO_WARNINGS=1",
+    "build:dist": "rejoin This package is does not have buildable distributables",
+    "build:docs": "rejoin This package does not have buildable documentation",
     "build:topological": "symbiote project topology --run build --env NODE_NO_WARNINGS=1 --skip drive.api.hscc.bdpa.org",
     "clean": "symbiote clean --env NODE_NO_WARNINGS=1",
     "dev": "next -p `npx -q acquire-port`",
@@ -34,6 +37,7 @@
     "lint:topological": "symbiote project topology --run lint --env NODE_NO_WARNINGS=1",
     "list-tasks": "symbiote list-tasks --env NODE_NO_WARNINGS=1 --scope this-package",
     "prepare": "symbiote project prepare --env NODE_NO_WARNINGS=1",
+    "release": "rejoin This package is not releasable",
     "release:topological": "symbiote project topology --run release --env NODE_NO_WARNINGS=1",
     "renovate": "symbiote project renovate --env NODE_NO_WARNINGS=1 --github-reconfigure-repo --regenerate-assets --assets-preset nextjs",
     "renovate:aliases": "symbiote project renovate --env NODE_NO_WARNINGS=1 --regenerate-assets --assets-preset nextjs --only-aliases",
@@ -69,6 +73,7 @@
     "rejoinder": "^2.0.2",
     "type-fest": "^4.41.0"
   },
+  "devDependencies": {},
   "engines": {
     "node": "^20.18.0 || >=22.12.0"
   }

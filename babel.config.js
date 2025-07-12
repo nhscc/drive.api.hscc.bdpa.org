@@ -5,6 +5,7 @@ const { deepMergeConfig } = require('@-xun/symbiote/assets');
 
 const {
   assertEnvironment,
+  getNextJsBabelPreset,
   moduleExport
 } = require('@-xun/symbiote/assets/babel.config.cjs');
 
@@ -12,36 +13,6 @@ const { createDebugLogger } = require('rejoinder');
 
 const debug = createDebugLogger({ namespace: 'symbiote:config:babel' });
 
-// ? Next.js-specific Babel settings
-const nextBabelPreset = [
-  'next/babel',
-  {
-    'preset-env': {
-      targets: 'defaults',
-
-      // ? If users import all core-js they're probably not concerned with
-      // ? bundle size. We shouldn't rely on magic to try and shrink it.
-      useBuiltIns: false,
-
-      // ? Do not transform modules to CJS
-      // ! MUST BE FALSE (see: https://nextjs.org/docs/#customizing-babel-config)
-      modules: false,
-
-      // ? Exclude transforms that make all code slower
-      exclude: ['transform-typeof-symbol']
-    },
-    'preset-typescript': {
-      allowDeclareFields: true
-    },
-    'preset-react': {
-      runtime: 'automatic',
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      development: !process.env.NODE_ENV?.startsWith('production')
-    }
-  }
-];
-
-/** @type{any} */
 const config = deepMergeConfig(
   moduleExport({
     derivedAliases: getBabelAliases(),
@@ -49,6 +20,7 @@ const config = deepMergeConfig(
   }),
   {
     // Any custom configs here will be deep merged with moduleExport's result
+    //
     // You may wish to enable explicit exports references for improved testing
     // DX, but be aware that it is currently a wee buggy as of 5/2025 (fix it!)
     //
@@ -62,15 +34,15 @@ const config = deepMergeConfig(
 
 // * Used by Vercel, `npm start`, and `npm run build`
 config.env.production = {
-  // ? Source maps are handled by Next.js and Webpack
-  presets: [nextBabelPreset]
-  // ? Minification is handled by Webpack
+  // ? Source maps are handled by Next.js/Webpack
+  presets: [getNextJsBabelPreset()]
+  // ? Minification is handled by Next.js/Webpack
 };
 
-// * Used by `npm run dev`; is also the default environment
+// * Used by `npm run dev` and is also the default environment
 config.env.development = {
-  // ? Source maps are handled by Next.js and Webpack
-  presets: [nextBabelPreset]
+  // ? Source maps are handled by Next.js/Webpack
+  presets: [getNextJsBabelPreset()]
   // ? We don't care about minification
 };
 

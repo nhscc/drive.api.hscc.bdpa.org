@@ -20,6 +20,7 @@ const baseConfig = moduleExport({
 
 const config = deepMergeConfig(baseConfig, {
   // Any custom configs here will be deep merged with moduleExport's result
+  // ! Take care not to overwrite certain configs (e.g. baseConfig.webpack)
 });
 
 export default config;
@@ -31,19 +32,19 @@ function getNextJsAliases() {
   // ! directly, consider regenerating aliases across the entire project with:
   // ! `npx symbiote project renovate --regenerate-assets --assets-preset ...`
   return {
-    universe$: 'src/index.ts',
-    'universe:*': 'src/*',
-    'universe+backend$': 'packages/backend/src/index.ts',
-    'universe+shared$': 'packages/shared/src/index.ts',
-    'universe+backend:*': 'packages/backend/src/*',
-    'universe+shared:*': 'packages/shared/src/*',
-    'multiverse+backend$': 'packages/backend/src/index.ts',
-    'multiverse+shared$': 'packages/shared/src/index.ts',
     'multiverse+backend:*': 'packages/backend/src/*',
     'multiverse+shared:*': 'packages/shared/src/*',
-    'testverse:*': 'test/*',
+    'multiverse+backend$': 'packages/backend/src/index.ts',
+    'multiverse+shared$': 'packages/shared/src/index.ts',
+    'universe+backend:*': 'packages/backend/src/*',
+    'universe+shared:*': 'packages/shared/src/*',
+    'universe+backend$': 'packages/backend/src/index.ts',
+    'universe+shared$': 'packages/shared/src/index.ts',
+    'universe:*': 'src/*',
+    universe$: 'src/index.ts',
     'testverse+backend:*': 'packages/backend/test/*',
     'testverse+shared:*': 'packages/shared/test/*',
+    'testverse:*': 'test/*',
     'typeverse:*': 'types/*',
     'rootverse+backend:*': 'packages/backend/*',
     'rootverse+shared:*': 'packages/shared/*',
