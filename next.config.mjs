@@ -14,11 +14,6 @@ const baseConfig = moduleExport({
   derivedAliases: getNextJsAliases(),
   projectRoot: import.meta.dirname,
   configureWebpack(currentConfig) {
-    currentConfig.module.rules.push({
-      // XXX: delete this whole thing
-      loader: '/repos/.nhscc/drive.api.hscc.bdpa.org/ignore.loader.mjs'
-    });
-
     return currentConfig;
   }
 });
