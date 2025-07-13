@@ -52,7 +52,7 @@
     "test:topological": "symbiote project topology --run test --env NODE_NO_WARNINGS=1"
   },
   "dependencies": {
-    "@-xun/api": "^1.0.10",
+    "@-xun/api": "^1.1.0",
     "@-xun/jest": "^2.2.7",
     "@-xun/mongo-schema": "^1.2.1",
     "@-xun/mongo-test": "^1.1.7",
