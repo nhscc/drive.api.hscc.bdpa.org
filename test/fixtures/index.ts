@@ -156,8 +156,8 @@ api.v2.usersUsernameFilesystemSearch.uri =
  * A convenience function that mocks the entire backend and returns the mock
  * functions. Uses `beforeEach` under the hood.
  *
- * **WARNING: YOU MUST CALL `jest.mock('@nhscc/backend-drive')` before calling this
- * function!**
+ * **WARNING: YOU MUST CALL `jest.mock('@nhscc/backend-drive')` before calling
+ * this function!**
  */
 export function setupMockBackend() {
   const mockedAuthAppUser = asMocked(authAppUser);
