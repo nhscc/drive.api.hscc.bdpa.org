@@ -42,6 +42,6 @@ export default withSysMiddleware(
   },
   {
     descriptor: '/sys/auth/search',
-    options: { requiresAuth: true, allowedMethods: ['GET', 'PATCH', 'DELETE'] }
+    options: { allowedMethods: ['GET', 'PATCH', 'DELETE'] }
   }
 );

@@ -26,6 +26,6 @@ export default withMiddleware(
   },
   {
     descriptor: metadata.descriptor,
-    options: { requiresAuth: true, allowedMethods: ['GET', 'POST'], apiVersion: '2' }
+    options: { allowedMethods: ['GET', 'POST'], apiVersion: '2' }
   }
 );

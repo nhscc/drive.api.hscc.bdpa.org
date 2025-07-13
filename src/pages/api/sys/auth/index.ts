@@ -27,6 +27,6 @@ export default withSysMiddleware(
   },
   {
     descriptor: '/sys/auth',
-    options: { requiresAuth: true, allowedMethods: ['GET', 'POST'] }
+    options: { allowedMethods: ['GET', 'POST'] }
   }
 );

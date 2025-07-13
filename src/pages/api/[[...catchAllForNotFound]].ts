@@ -26,7 +26,6 @@ export default withMiddleware(async (_req, res) => sendHttpNotFound(res), {
   ],
   descriptor: descriptorPrefix,
   options: {
-    requiresAuth: true,
     allowedMethods: [
       'CONNECT',
       'DELETE',

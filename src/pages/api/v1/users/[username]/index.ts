@@ -35,7 +35,6 @@ export default withMiddleware(
   {
     descriptor: metadata.descriptor,
     options: {
-      requiresAuth: true,
       allowedMethods: ['GET', 'DELETE', 'PUT'],
       apiVersion: '1'
     }
