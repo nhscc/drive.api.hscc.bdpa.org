@@ -97,7 +97,7 @@
     "toss-expression": "^0.1.2"
   },
   "devDependencies": {
-    "@-xun/mongo-test": "^1.1.7"
+    "@-xun/mongo-test": "^2.0.0"
   },
   "engines": {
     "node": "^20.18.0 || >=22.12.0"
