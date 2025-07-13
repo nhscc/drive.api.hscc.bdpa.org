@@ -1,64 +1,31 @@
-/* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
-
 import { middlewareFactory } from '@-xun/api';
 import { makeMiddleware as makeAuthMiddleware } from '@-xun/api/middleware/auth-request';
 import { makeMiddleware as makeContentTypeMiddleware } from '@-xun/api/middleware/check-content-type';
 import { makeMiddleware as makeMethodMiddleware } from '@-xun/api/middleware/check-method';
 import { makeMiddleware as makeVersionMiddleware } from '@-xun/api/middleware/check-version';
+import { makeMiddleware as makeDatabaseMiddleware } from '@-xun/api/middleware/connect-databases';
 import { makeMiddleware as makeContrivedMiddleware } from '@-xun/api/middleware/contrive-error';
 import { makeMiddleware as makeLimitMiddleware } from '@-xun/api/middleware/enforce-limits';
 import { makeMiddleware as makeErrorHandlingMiddleware } from '@-xun/api/middleware/handle-error';
 import { makeMiddleware as makeLoggingMiddleware } from '@-xun/api/middleware/log-request';
 import { makeMiddleware as makeCorsMiddleware } from '@-xun/api/middleware/use-cors';
-import { getDb, setSchemaConfig } from '@-xun/mongo-schema';
 import { getSchemaConfig } from '@nhscc/backend-drive~npm/db';
-import { getEnv } from '@nhscc/backend-drive~npm/env';
+
+import type { Options as AuthMiddlewareOptions } from '@-xun/api/middleware/auth-request';
+import type { Options as ContentTypeMiddlewareOptions } from '@-xun/api/middleware/check-content-type';
+import type { Options as MethodMiddlewareOptions } from '@-xun/api/middleware/check-method';
+import type { Options as VersionMiddlewareOptions } from '@-xun/api/middleware/check-version';
+import type { Options as DatabaseMiddlewareOptions } from '@-xun/api/middleware/connect-databases';
+import type { Options as ContrivedMiddlewareOptions } from '@-xun/api/middleware/contrive-error';
+import type { Options as LimitMiddlewareOptions } from '@-xun/api/middleware/enforce-limits';
 
 import type {
-  Context as AuthMiddlewareContext,
-  Options as AuthMiddlewareOptions
-} from '@-xun/api/middleware/auth-request';
-
-import type {
-  Context as ContentTypeMiddlewareContext,
-  Options as ContentTypeMiddlewareOptions
-} from '@-xun/api/middleware/check-content-type';
-
-import type {
-  Context as MethodMiddlewareContext,
-  Options as MethodMiddlewareOptions
-} from '@-xun/api/middleware/check-method';
-
-import type {
-  Context as VersionMiddlewareContext,
-  Options as VersionMiddlewareOptions
-} from '@-xun/api/middleware/check-version';
-
-import type {
-  Context as ContrivedMiddlewareContext,
-  Options as ContrivedMiddlewareOptions
-} from '@-xun/api/middleware/contrive-error';
-
-import type {
-  Context as LimitMiddlewareContext,
-  Options as LimitMiddlewareOptions
-} from '@-xun/api/middleware/enforce-limits';
-
-import type {
-  Context as ErrorHandlingMiddlewareContext,
   LegacyErrorHandler,
   Options as ErrorHandlingMiddlewareOptions
 } from '@-xun/api/middleware/handle-error';
 
-import type {
-  Context as LoggingMiddlewareContext,
-  Options as LoggingMiddlewareOptions
-} from '@-xun/api/middleware/log-request';
-
-import type {
-  Context as CorsMiddlewareContext,
-  Options as CorsMiddlewareOptions
-} from '@-xun/api/middleware/use-cors';
+import type { Options as LoggingMiddlewareOptions } from '@-xun/api/middleware/log-request';
+import type { Options as CorsMiddlewareOptions } from '@-xun/api/middleware/use-cors';
 
 type ExposedOptions = LoggingMiddlewareOptions &
   ContentTypeMiddlewareOptions &
@@ -68,59 +35,6 @@ type ExposedOptions = LoggingMiddlewareOptions &
 type GenericErrorHandlingMiddlewareOptions = ErrorHandlingMiddlewareOptions<
   LegacyErrorHandler<Record<string, unknown>, Record<PropertyKey, unknown>>
 >;
-
-/**
- * Sets the database schema if NODE_ENV starts with "production" or
- * "development". Additionally hydrates the database with dummy data if NODE_ENV
- * starts with "development".
- */
-export default async function setSchemaAndMaybeHydrateDb() {
-  const isProduction = getEnv().NODE_ENV.startsWith('production');
-  const isDevelopment = getEnv().NODE_ENV.startsWith('development');
-
-  if (isProduction || isDevelopment) {
-    setSchemaConfig(() => getSchemaConfig());
-
-    if (isDevelopment && getEnv().API_HYDRATE_DB) {
-      const { createGenericLogger } = require(
-        // ? This expression prevents webpack/turbopack from bundling the thing
-        'rejoinder'.toString()
-      ) as typeof import('rejoinder');
-
-      const { getDummyData } = require(
-        // ? This expression prevents webpack/turbopack from bundling the thing
-        'testverse:db.ts'.toString()
-      ) as typeof import('testverse:db.ts');
-
-      const { hydrateDbWithDummyData, setDummyData } = require(
-        // ? This expression prevents webpack/turbopack from bundling the thing
-        '@-xun/mongo-test'.toString()
-      ) as typeof import('@-xun/mongo-test');
-
-      const setSchemaAndHydrateDbLogger = createGenericLogger({
-        namespace: 'setSchemaAndMaybeHydrateDb'
-      });
-
-      setSchemaAndHydrateDbLogger('executing api db hydration directive');
-
-      setDummyData(getDummyData());
-
-      await getDb({ name: 'root' });
-      await getDb({ name: 'app' });
-
-      setSchemaAndHydrateDbLogger('dbs initialized successfully: root, app');
-
-      await hydrateDbWithDummyData({ name: 'root' });
-      await hydrateDbWithDummyData({ name: 'app' });
-
-      setSchemaAndHydrateDbLogger('db hydrated successfully: root, app');
-
-      throw new Error(
-        'database was hydrated successfully. You may invoke the app normally now (without API_HYDRATE_DB)'
-      );
-    }
-  }
-}
 
 /**
  * The shape of an API endpoint metadata object.
@@ -137,23 +51,17 @@ export type EndpointMetadata = ExposedOptions & { descriptor: string };
 /* istanbul ignore next */
 const withMiddleware = middlewareFactory<
   ExposedOptions &
+    DatabaseMiddlewareOptions &
+    LoggingMiddlewareOptions &
+    CorsMiddlewareOptions &
     AuthMiddlewareOptions &
-    ContrivedMiddlewareOptions &
-    GenericErrorHandlingMiddlewareOptions &
+    // eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
     LimitMiddlewareOptions &
-    CorsMiddlewareOptions,
-  ContentTypeMiddlewareContext &
-    MethodMiddlewareContext &
-    VersionMiddlewareContext &
-    LoggingMiddlewareContext &
-    AuthMiddlewareContext &
-    ContrivedMiddlewareContext &
-    ErrorHandlingMiddlewareContext &
-    LimitMiddlewareContext &
-    CorsMiddlewareContext
+    ContrivedMiddlewareOptions &
+    GenericErrorHandlingMiddlewareOptions
 >({
   use: [
-    setSchemaAndMaybeHydrateDb,
+    makeDatabaseMiddleware(),
     makeLoggingMiddleware(),
     makeCorsMiddleware(),
     makeVersionMiddleware(),
@@ -168,7 +76,20 @@ const withMiddleware = middlewareFactory<
     legacyMode: true,
     allowedContentTypes: ['application/json'],
     requiresAuth: true,
-    enableContrivedErrors: true
+    enableContrivedErrors: true,
+    database: {
+      schema() {
+        return getSchemaConfig();
+      },
+      data() {
+        const { getDummyData } = require(
+          // ? This expression prevents webpack/turbopack from bundling things
+          'testverse:db.ts'.toString()
+        ) as typeof import('testverse:db.ts');
+
+        return getDummyData();
+      }
+    }
   }
 });
 
@@ -177,14 +98,17 @@ const withMiddleware = middlewareFactory<
  */
 /* istanbul ignore next */
 const withSysMiddleware = middlewareFactory<
-  LoggingMiddlewareOptions &
+  DatabaseMiddlewareOptions &
+    LoggingMiddlewareOptions &
     AuthMiddlewareOptions &
+    // eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
+    LimitMiddlewareOptions &
     MethodMiddlewareOptions &
     ContentTypeMiddlewareOptions &
     GenericErrorHandlingMiddlewareOptions
 >({
   use: [
-    setSchemaAndMaybeHydrateDb,
+    makeDatabaseMiddleware(),
     makeLoggingMiddleware(),
     makeAuthMiddleware(),
     makeLimitMiddleware(),
@@ -195,7 +119,20 @@ const withSysMiddleware = middlewareFactory<
   options: {
     legacyMode: true,
     allowedContentTypes: ['application/json'],
-    requiresAuth: { filter: { isGlobalAdmin: true } }
+    requiresAuth: { filter: { isGlobalAdmin: true } },
+    database: {
+      schema() {
+        return getSchemaConfig();
+      },
+      data() {
+        const { getDummyData } = require(
+          // ? This expression prevents webpack/turbopack from bundling things
+          'testverse:db.ts'.toString()
+        ) as typeof import('testverse:db.ts');
+
+        return getDummyData();
+      }
+    }
   }
 });
 
