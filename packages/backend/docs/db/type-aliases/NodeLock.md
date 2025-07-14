@@ -8,7 +8,7 @@
 
 > **NodeLock** = `object`
 
-Defined in: [packages/backend/src/db.ts:86](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/778d79f3487f712a80fb10da82bed3843d3db5fd/packages/backend/src/db.ts#L86)
+Defined in: [packages/backend/src/db.ts:86](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/df5b4b7c72e05ed9c30cb0da8579abce7387b8fa/packages/backend/src/db.ts#L86)
 
 The shape of a filesystem node lock.
 
@@ -18,7 +18,7 @@ The shape of a filesystem node lock.
 
 > **client**: `string`
 
-Defined in: [packages/backend/src/db.ts:88](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/778d79f3487f712a80fb10da82bed3843d3db5fd/packages/backend/src/db.ts#L88)
+Defined in: [packages/backend/src/db.ts:88](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/df5b4b7c72e05ed9c30cb0da8579abce7387b8fa/packages/backend/src/db.ts#L88)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [packages/backend/src/db.ts:88](https://github.com/nhscc/drive.api.h
 
 > **createdAt**: `UnixEpochMs`
 
-Defined in: [packages/backend/src/db.ts:89](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/778d79f3487f712a80fb10da82bed3843d3db5fd/packages/backend/src/db.ts#L89)
+Defined in: [packages/backend/src/db.ts:89](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/df5b4b7c72e05ed9c30cb0da8579abce7387b8fa/packages/backend/src/db.ts#L89)
 
 ***
 
@@ -34,4 +34,4 @@ Defined in: [packages/backend/src/db.ts:89](https://github.com/nhscc/drive.api.h
 
 > **user**: [`Username`](Username.md)
 
-Defined in: [packages/backend/src/db.ts:87](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/778d79f3487f712a80fb10da82bed3843d3db5fd/packages/backend/src/db.ts#L87)
+Defined in: [packages/backend/src/db.ts:87](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/df5b4b7c72e05ed9c30cb0da8579abce7387b8fa/packages/backend/src/db.ts#L87)
