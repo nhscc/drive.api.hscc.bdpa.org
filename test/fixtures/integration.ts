@@ -5,9 +5,8 @@ import { ObjectId } from 'mongodb';
 
 import { name as packageName } from 'rootverse:package.json';
 
-import { dummyAppData } from 'testverse:db.ts';
-
 import { toPublicUser } from '@nhscc/backend-drive/db';
+import { dummyAppData } from '@nhscc/backend-drive/dummy';
 import { getEnv } from '@nhscc/backend-drive/env';
 
 import type { Promisable } from 'type-fest';

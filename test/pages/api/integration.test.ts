@@ -10,12 +10,12 @@ import { testApiHandler } from 'next-test-api-route-handler';
 
 import { ErrorMessage } from 'multiverse+shared:error.ts';
 
-import { getDummyData } from 'testverse:db.ts';
 import { api } from 'testverse:fixtures/index.ts';
 import { getFixtures } from 'testverse:fixtures/integration.ts';
 import { mockEnvFactory } from 'testverse:util.ts';
 
 import { getSchemaConfig } from '@nhscc/backend-drive/db';
+import { getDummyData } from '@nhscc/backend-drive/dummy';
 
 import type { TestResult, TestResultset } from 'testverse:fixtures/integration.ts';
 
