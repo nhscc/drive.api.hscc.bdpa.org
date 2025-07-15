@@ -6,9 +6,9 @@
 
 # Function: getEnv()
 
-> **getEnv**\<`T`\>(): `object` & `object` & `T`
+> **getEnv**\<`T`\>(): `object` & `T`
 
-Defined in: [packages/backend/src/env.ts:14](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/14391c7d4b0a42834d6c5f1ebd8fcde34a9bede8/packages/backend/src/env.ts#L14)
+Defined in: [packages/backend/src/env.ts:16](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/718231ebbb0b386db32934d648e2479e8a0b4a18/packages/backend/src/env.ts#L16)
 
 Returns an object representing the application's runtime environment.
 
@@ -20,4 +20,4 @@ Returns an object representing the application's runtime environment.
 
 ## Returns
 
-`object` & `object` & `T`
+`object` & `T`

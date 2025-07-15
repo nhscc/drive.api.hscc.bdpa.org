@@ -8,6 +8,6 @@
 
 > **PatchUser** = `Partial`\<`Omit`\<`WithoutId`\<[`InternalUser`](InternalUser.md)\>, `"username"`\>\>
 
-Defined in: [packages/backend/src/db.ts:230](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/14391c7d4b0a42834d6c5f1ebd8fcde34a9bede8/packages/backend/src/db.ts#L230)
+Defined in: [packages/backend/src/db.ts:230](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/718231ebbb0b386db32934d648e2479e8a0b4a18/packages/backend/src/db.ts#L230)
 
 The shape of a patch application user.

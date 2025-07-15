@@ -1,6 +1,6 @@
 {
   "name": "@nhscc/backend-drive",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "https://drive.api.hscc.bdpa.org",
   "keywords": [],
   "homepage": "https://github.com/nhscc/drive.api.hscc.bdpa.org/tree/main/packages/backend#readme",
