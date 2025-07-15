@@ -5,6 +5,8 @@ import { ServerValidationError } from 'multiverse+shared:error.ts';
 
 import type { Environment } from '@-xun/env';
 
+let envOverrides: Environment = {};
+
 // TODO: replace validation logic with arktype instead (including defaults)
 
 /**
@@ -12,24 +14,27 @@ import type { Environment } from '@-xun/env';
  */
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 export function getEnv<T extends Environment = Environment>() {
-  const env = getDefaultEnv({
-    MAX_PARAMS_PER_REQUEST: Number(process.env.MAX_PARAMS_PER_REQUEST) || 100,
-    MAX_SEARCHABLE_TAGS: Number(process.env.MAX_SEARCHABLE_TAGS) || 10,
-    MIN_USER_NAME_LENGTH: Number(process.env.MIN_USER_NAME_LENGTH) || 4,
-    MAX_USER_NAME_LENGTH: Number(process.env.MAX_USER_NAME_LENGTH) || 25,
-    MIN_USER_EMAIL_LENGTH: Number(process.env.MIN_USER_EMAIL_LENGTH) || 4,
-    MAX_USER_EMAIL_LENGTH: Number(process.env.MAX_USER_EMAIL_LENGTH) || 75,
-    USER_SALT_LENGTH: Number(process.env.USER_SALT_LENGTH) || 32,
-    USER_KEY_LENGTH: Number(process.env.USER_KEY_LENGTH) || 128,
-    MAX_LOCK_CLIENT_LENGTH: Number(process.env.MAX_LOCK_CLIENT_LENGTH) || 25,
-    MAX_NODE_NAME_LENGTH: Number(process.env.MAX_NODE_NAME_LENGTH) || 50,
-    MAX_NODE_TAGS: Number(process.env.MAX_NODE_TAGS) || 5,
-    MAX_NODE_TAG_LENGTH: Number(process.env.MAX_NODE_TAG_LENGTH) || 25,
-    MAX_NODE_PERMISSIONS: Number(process.env.MAX_NODE_PERMISSIONS) || 10,
-    MAX_NODE_CONTENTS: Number(process.env.MAX_NODE_CONTENTS) || 10,
-    MAX_NODE_TEXT_LENGTH_BYTES:
-      parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10_240
-  });
+  const env = {
+    ...getDefaultEnv({
+      MAX_PARAMS_PER_REQUEST: Number(process.env.MAX_PARAMS_PER_REQUEST) || 100,
+      MAX_SEARCHABLE_TAGS: Number(process.env.MAX_SEARCHABLE_TAGS) || 10,
+      MIN_USER_NAME_LENGTH: Number(process.env.MIN_USER_NAME_LENGTH) || 4,
+      MAX_USER_NAME_LENGTH: Number(process.env.MAX_USER_NAME_LENGTH) || 25,
+      MIN_USER_EMAIL_LENGTH: Number(process.env.MIN_USER_EMAIL_LENGTH) || 4,
+      MAX_USER_EMAIL_LENGTH: Number(process.env.MAX_USER_EMAIL_LENGTH) || 75,
+      USER_SALT_LENGTH: Number(process.env.USER_SALT_LENGTH) || 32,
+      USER_KEY_LENGTH: Number(process.env.USER_KEY_LENGTH) || 128,
+      MAX_LOCK_CLIENT_LENGTH: Number(process.env.MAX_LOCK_CLIENT_LENGTH) || 25,
+      MAX_NODE_NAME_LENGTH: Number(process.env.MAX_NODE_NAME_LENGTH) || 50,
+      MAX_NODE_TAGS: Number(process.env.MAX_NODE_TAGS) || 5,
+      MAX_NODE_TAG_LENGTH: Number(process.env.MAX_NODE_TAG_LENGTH) || 25,
+      MAX_NODE_PERMISSIONS: Number(process.env.MAX_NODE_PERMISSIONS) || 10,
+      MAX_NODE_CONTENTS: Number(process.env.MAX_NODE_CONTENTS) || 10,
+      MAX_NODE_TEXT_LENGTH_BYTES:
+        parseAsBytes(process.env.MAX_NODE_TEXT_LENGTH_BYTES ?? '-Infinity') || 10_240
+    }),
+    ...envOverrides
+  };
 
   /* istanbul ignore next */
   if (env.NODE_ENV !== 'test') {
@@ -79,4 +84,18 @@ export function getEnv<T extends Environment = Environment>() {
   }
 
   return env as typeof env & T;
+}
+
+/**
+ * Set an internal `overrides` object that will be merged over any environment
+ * variables coming from `process.env`. The values of `overrides` _must_ be in
+ * their final form, e.g. of type `number` (✅ `42`) instead of a string (🚫
+ * `"42"`), the latter being what the real `process.env` would provide but that
+ * this function does not support.
+ *
+ * This function should only be used in a multitenant situation where relying on
+ * exclusive access to `process.env` is not possible (e.g. `@nhscc/bdpa-cli`).
+ */
+export function overwriteEnv(overrides: typeof envOverrides) {
+  envOverrides = overrides;
 }
