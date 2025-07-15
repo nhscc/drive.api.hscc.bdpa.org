@@ -102,7 +102,7 @@
     "bytes": "^3.1.2",
     "core-js": "^3.44.0",
     "mongodb": "^6.17.0",
-    "next": "^15.3.5",
+    "next": "^15.4.1",
     "toss-expression": "^0.1.2"
   },
   "engines": {
