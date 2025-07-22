@@ -8,7 +8,7 @@
 
 > **DummyAppData** = `object`
 
-Defined in: [packages/backend/src/dummy.ts:23](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/718231ebbb0b386db32934d648e2479e8a0b4a18/packages/backend/src/dummy.ts#L23)
+Defined in: [packages/backend/src/dummy.ts:23](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/cc6ab5a21520f62a19ce4eb5924de51caa830ea7/packages/backend/src/dummy.ts#L23)
 
 The shape of the application database's test data.
 
@@ -18,7 +18,7 @@ The shape of the application database's test data.
 
 > **\_generatedAt**: `number`
 
-Defined in: [packages/backend/src/dummy.ts:24](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/718231ebbb0b386db32934d648e2479e8a0b4a18/packages/backend/src/dummy.ts#L24)
+Defined in: [packages/backend/src/dummy.ts:24](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/cc6ab5a21520f62a19ce4eb5924de51caa830ea7/packages/backend/src/dummy.ts#L24)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [packages/backend/src/dummy.ts:24](https://github.com/nhscc/drive.ap
 
 > **file-nodes**: `InternalFileNode`[]
 
-Defined in: [packages/backend/src/dummy.ts:26](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/718231ebbb0b386db32934d648e2479e8a0b4a18/packages/backend/src/dummy.ts#L26)
+Defined in: [packages/backend/src/dummy.ts:26](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/cc6ab5a21520f62a19ce4eb5924de51caa830ea7/packages/backend/src/dummy.ts#L26)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [packages/backend/src/dummy.ts:26](https://github.com/nhscc/drive.ap
 
 > **meta-nodes**: `InternalMetaNode`[]
 
-Defined in: [packages/backend/src/dummy.ts:27](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/718231ebbb0b386db32934d648e2479e8a0b4a18/packages/backend/src/dummy.ts#L27)
+Defined in: [packages/backend/src/dummy.ts:27](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/cc6ab5a21520f62a19ce4eb5924de51caa830ea7/packages/backend/src/dummy.ts#L27)
 
 ***
 
@@ -42,4 +42,4 @@ Defined in: [packages/backend/src/dummy.ts:27](https://github.com/nhscc/drive.ap
 
 > **users**: `InternalUser`[]
 
-Defined in: [packages/backend/src/dummy.ts:25](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/718231ebbb0b386db32934d648e2479e8a0b4a18/packages/backend/src/dummy.ts#L25)
+Defined in: [packages/backend/src/dummy.ts:25](https://github.com/nhscc/drive.api.hscc.bdpa.org/blob/cc6ab5a21520f62a19ce4eb5924de51caa830ea7/packages/backend/src/dummy.ts#L25)
